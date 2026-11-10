@@ -134,18 +134,17 @@ const LAYER_UI={
   api:{title:'Write an API test',empty:'No API autotests written yet. Describe a case above.',
     placeholder:`Describe it the way you would write it in a test plan, e.g.
 
-Changing an account group's default leverage in PLAT Admin
-must not change the leverage of a trading account that was
-already created from an offer with its own leverage.`,
-    folder:'Picked by topic if left blank',notes:'e.g. add it to the existing test_open_market_position.py'},
+Changing a group's default setting must not change the
+setting of an account that already has its own value.`,
+    folder:'Picked by topic if left blank',notes:'e.g. add it to the existing test_create_item.py'},
   ui:{title:'Write a UI test',empty:'No Playwright autotests written yet. Describe a case above.',
-    placeholder:`Describe what a user does on a screen of the CORE app, e.g.
+    placeholder:`Describe what a user does on a screen of the web app, e.g.
 
-PRJ & Risk > Notifications: filtering by a rule name shows only
-that rule's notifications, and the count under the table matches
-what the backend returns for the same filter.`,
-    folder:'Picked by CORE menu section if left blank',notes:'e.g. extend the existing page object for this screen',
-    hint:'Playwright drives the CORE web app in a browser; the backend supplies the expected values, setup and cleanup. Tests go to tests/ui/, selectors to page objects in utils/pages/.'},
+Notifications: filtering by a rule name shows only that rule's
+notifications, and the count under the table matches what the
+backend returns for the same filter.`,
+    folder:'Picked by menu section if left blank',notes:'e.g. extend the existing page object for this screen',
+    hint:'Playwright drives the web app in a browser; the backend supplies the expected values, setup and cleanup. Tests go to tests/ui/, selectors to page objects in utils/pages/.'},
 };
 let AT_META=null, AT_API_HINT='';
 
@@ -423,7 +422,7 @@ function renderAutotestMeta(){
   $('#aEnv').innerHTML=[
     `<span class="b ok">autotests/${ui?'tests/ui/':''}</span>`,
     `<span class="b">${part.tests} test file${part.tests===1?'':'s'} · ${part.folders.length} area${part.folders.length===1?'':'s'}</span>`,
-    `<span class="note">${ui?'Playwright, logged in to the CORE web app. Style comes from tests/ui/ and utils/pages/.':'Style comes from the tests already in this folder.'}</span>`,
+    `<span class="note">${ui?'Playwright, logged in to the web app. Style comes from tests/ui/ and utils/pages/.':'Style comes from the tests already in this folder.'}</span>`,
   ].join('');
 }
 function setALayer(l){

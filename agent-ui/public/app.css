@@ -69,7 +69,6 @@ kbd{
 .sidebar{
   position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
   background:color-mix(in srgb,var(--bg) 72%,transparent);
-  -webkit-
   border-right:1px solid var(--line);z-index:50;
 }
 .brand{display:flex;align-items:center;gap:12px;padding:20px 18px 18px}
@@ -197,7 +196,6 @@ header.topbar{
   display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
   padding:22px 36px 18px;border-bottom:1px solid var(--line);
   background:color-mix(in srgb,var(--bg) 70%,transparent);
-  -webkit-
 }
 .tb-title{min-width:0}
 .crumb{
@@ -1088,7 +1086,6 @@ pre.errpre{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background
 .toast{
   position:fixed;right:24px;bottom:24px;z-index:90;max-width:400px;padding:12px 16px 12px 18px;border-radius:var(--r);
   background:var(--surface);border:1px solid var(--line2);box-shadow:var(--shadow-lg);font-size:13px;line-height:1.5;
-  -webkit-
 }
 .toast::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:var(--acc)}
 .toast.bad{border-color:color-mix(in srgb,var(--bad) 45%,transparent)}
@@ -1158,7 +1155,7 @@ pre.errpre{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background
 .pipe .pt1{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
 .pipe .pt{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink3);flex:none}
 /* ================= comment dialog ================= */
-.modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);-webkit-padding:16px}
+.modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px}
 .modal[hidden]{display:none}
 .modal-box{width:min(580px,100%);background:var(--surface);border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:26px;font-family:var(--display);font-size:16px;font-weight:500;}
 .modal-box textarea{width:100%;min-height:130px;margin-top:6px}
@@ -1503,3 +1500,43 @@ pre.errpre{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background
 .fx-row.open{flex-wrap:wrap;row-gap:2px}
 #view-fix .fx-row.open .fx-tx{flex:1 1 100%;padding-left:22px}
 #view-fix .fx-logpanel .fx-logbar input#fxQ{flex:1 1 220px}
+
+/* ================= structure & contrast (light theme) =================
+   Grey canvas, white bordered surfaces, a white sidebar and top bar separated by real borders,
+   so every area reads as its own block. */
+:root{
+  --bg:#eef0f3; --bg2:#e6e9ed;
+  --surface:#ffffff; --surface2:#f6f7f9; --surface3:#eceef2;
+  --line:#dadde2; --line2:#c5cad1;
+  --ink2:#30343a; --ink3:#5b616b; --ink4:#868d97;
+  --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+.sidebar{background:var(--surface);border-right:1px solid var(--line)}
+.brand{border-bottom:1px solid var(--line);padding:16px 18px;margin-bottom:6px}
+.nav-group{padding:16px 12px 6px;font-size:11.5px;font-weight:600;color:var(--ink4)}
+.nav-group::after{display:none}
+.nav button{padding:8px 12px;font-size:13.5px}
+.nav button:hover{background:var(--surface3)}
+.nav button.on{background:var(--acc-soft);border-color:transparent;color:var(--acc-tx);box-shadow:none}
+.nav button.on::before{left:-12px}
+.side-foot,.env-switch{background:var(--surface2)}
+header.topbar{background:var(--surface);align-items:center;padding:14px 28px}
+.crumb::before{display:none}
+.tb-title h1{margin-top:2px;font-size:18px;font-weight:500}
+main{padding:24px 28px 48px;gap:20px}
+.col{gap:20px}
+.panel,.card{box-shadow:var(--shadow);border-color:var(--line)}
+.panel:hover{border-color:var(--line)}
+.panel-h{background:var(--surface2);border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.panel-h h2,.card>h2{font-size:15px;font-weight:500}
+label{flex-wrap:wrap;font-weight:500}
+input,textarea,select{border-color:var(--line2)}
+.ov-sec h4{font-size:13px;font-weight:500;color:var(--ink2);padding-bottom:8px;border-bottom:1px solid var(--line)}
+.kpi{background:var(--surface2)}
+.kpi .l{color:var(--ink3)}
+.steps li{background:var(--surface2);border-color:var(--line)}
+.steps li:hover{transform:none}
+.dtbl th{background:var(--surface3);color:var(--ink2)}
+.dtbl tbody tr:hover td{background:var(--surface2)}
+.nav{border-bottom:1px solid var(--line);margin-bottom:10px}
+.steps{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
