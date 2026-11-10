@@ -33,11 +33,11 @@ function setupRender(){
   stage.classList.remove('enter');void stage.offsetWidth;stage.classList.add('enter');
   const ready=setupApiReady();
   $('#setupBack').hidden=SETUP.i===0;
-  $('#setupSkip').hidden=SETUP.i===0||SETUP.i===5;
+  $('#setupSkip').hidden=SETUP.i===5;
   const next=$('#setupNext');
   next.textContent=SETUP.i===5?'Start using Flawtrace':'Next';
-  next.disabled=SETUP.i===0&&!ready;
-  $('#setupHint').textContent=SETUP.i===0&&!ready?'Save and import the endpoints to continue.':SETUP.i===5&&!ready?'Connect the API in step 1 first.':'';
+  next.disabled=false;
+  $('#setupHint').textContent=SETUP.i===0&&!ready?'Required to finish the setup. You can fill in the other steps first.':SETUP.i===5&&!ready?'Connect the API in step 1 to finish the setup.':'';
   if(SETUP.i===5)next.disabled=!ready;
 }
 function setupRestore(p){const i=setupPanels().indexOf(p);const h=SETUP.homes[i];if(h&&h.parentNode)h.replaceWith(p)}
@@ -85,7 +85,7 @@ function setupGo(i){SETUP.i=Math.max(0,Math.min(SETUP_STEPS.length-1,i));setupRe
 $('#setupNext').onclick=()=>{if(SETUP.i===5)return closeSetup();setupGo(SETUP.i+1)};
 $('#setupBack').onclick=()=>setupGo(SETUP.i-1);
 $('#setupSkip').onclick=()=>setupGo(SETUP.i+1);
-$('#setupSteps').addEventListener('click',e=>{const li=e.target.closest('li');if(!li)return;const i=+li.dataset.i;if(i>0&&!setupApiReady())return;setupGo(i)});
+$('#setupSteps').addEventListener('click',e=>{const li=e.target.closest('li');if(!li)return;const i=+li.dataset.i;setupGo(i)});
 $('#setupGuide').onclick=()=>$('#srcGuide').click();
 $('#srcWizard').onclick=()=>openSetup(0);
 // Esc and clicks outside never close the wizard before the API is connected.
