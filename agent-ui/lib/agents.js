@@ -71,7 +71,7 @@ const agentDir = (a) => a.absDir || path.join(AGENTS_ROOT, a.dir);
 
 /** Czy agent ma z czego wystartować. QA MCP potrzebuje .mcp.json, reszta — CLAUDE.md u siebie. */
 const agentAvailable = (a) => (a.mode === 'qamcp' || a.mode === 'execution'
-  ? fs.existsSync(path.join(ROOT, '.mcp.json'))
+  ? require('./sources').apiReady()
   // Autotests nie ma CLAUDE.md — jego instrukcją jest README.md repo (to samo sprawdza /api/autotest-meta).
   : a.mode === 'autotest'
   ? fs.existsSync(path.join(a.absDir, 'README.md'))
@@ -93,9 +93,18 @@ function servicesFor(key) {
   return [...new Set([...found, ...(EXTRA_SERVICES[key] || [])])].sort();
 }
 
+/** Why an agent cannot run, in words for the UI. Empty when it can. */
+const agentReason = (a) => {
+  if (agentAvailable(a)) return '';
+  if (a.mode === 'qamcp' || a.mode === 'execution') return 'Connect the test environment API under Sources first.';
+  if (a.mode === 'autotest') return 'No autotest repository with a README.md.';
+  return 'No CLAUDE.md in ' + agentDir(a) + '.';
+};
+
 module.exports = {
   AGENTS,
   agentAvailable,
   agentDir,
+  agentReason,
   servicesFor,
 };

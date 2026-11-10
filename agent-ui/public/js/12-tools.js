@@ -42,11 +42,12 @@ function tlReport(){
 function renderTools(){
   const box=$('#tlList');if(!box)return;
   const d=TL.data;
-  $('#tlSt').textContent=TL.error?'':d?`${d.total} endpoints in ${d.groups.length} services · last scanned ${tlAgo(d.scannedAt)}`:'Loading…';
-  const go=$('#tlFull');go.disabled=TL.busy;go.textContent=TL.busy?'Scanning…':'Reinitialize all endpoints';
-  $('#tlReport').innerHTML=TL.busy?'<div class="tl-rep">Refreshing the specifications and comparing every endpoint. This takes a few seconds…</div>':tlReport();
+  $('#tlSt').textContent=TL.error?'':d?`${d.total} endpoints in ${d.groups.length} ${d.groups.length===1?'group':'groups'}${d.baseUrl?' · '+d.baseUrl:''} · last scanned ${tlAgo(d.scannedAt)}`:'Loading…';
+  const go=$('#tlFull');go.disabled=TL.busy;go.textContent=TL.busy?'Scanning…':'Rescan specifications';
+  $('#tlReport').innerHTML=TL.busy?'<div class="tl-rep">Downloading the specifications and comparing every endpoint…</div>':tlReport();
   if(TL.error){box.innerHTML=`<div class="chk bad">${esc(TL.error)}</div>`;return}
   if(!d){box.innerHTML='<div class="sk"></div><div class="sk"></div>';return}
+  if(!d.total){box.innerHTML='<div class="muted-note">No endpoints yet. Add the OpenAPI or Swagger address of the test environment in <a href="#sources" data-tab-link="sources">Sources</a>.</div>';return}
   let h='',shown=0;
   const byGw=new Map();
   d.groups.forEach(g=>{if(!byGw.has(g.gateway))byGw.set(g.gateway,[]);byGw.get(g.gateway).push(g)});
@@ -85,7 +86,7 @@ function renderTools(){
   $('#tlChanged').onchange=e=>{TL.changed=e.target.checked;renderTools()};
   $('#tlFull').onclick=async()=>{
     if(TL.busy)return;
-    if(!confirm('Reinitializing refreshes the specifications from the services and then compares every endpoint with the previous scan, looking for added endpoints and changed parameters. Services that cannot be reached keep their cached specification. Continue?'))return;
+    if(!confirm('Download the API specifications again and compare every endpoint with the previous scan? A specification that cannot be downloaded keeps its previous copy.'))return;
     TL.busy=true;renderTools();
     try{TL.data=await api('/api/tools/rescan',{method:'POST'});TL.error=null;const h=TL.data.history[0];
       toast(h&&!h.baseline?`Scan finished: ${h.added.length} new, ${h.changed.length} changed, ${h.removed.length} removed`:'Scan finished')}

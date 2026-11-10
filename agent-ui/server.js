@@ -7,7 +7,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { body, json, jsonEtag, serveStatic } = require('./lib/http');
-const { AGENTS, agentAvailable, agentDir, servicesFor } = require('./lib/agents');
+const { AGENTS, agentAvailable, agentDir, agentReason, servicesFor } = require('./lib/agents');
+const sources = require('./lib/sources');
 const { AGENTS_ROOT, AGENT_DIRS, AUTOTEST_REPO, HOST, MODEL, PORT, ROOT, RUNS_DIR, TICKET_KEY } = require('./lib/config');
 const { chatBatteries, chatCases, parseReport } = require('./lib/report-format');
 const { PE_TARGETS, autotestsFromRun, bgJobs, claudeOnce, parsePE, peBusyRuns, peRun, peSystem, startJob, stripTag, unknownToolsIn } = require('./lib/pe');
@@ -75,6 +76,7 @@ const server = http.createServer(async (req, res) => {
         agentsRoot: AGENTS_ROOT,
         // QA MCP nie czyta repozytoriów, więc nie ma CLAUDE.md — jego warunkiem jest serwer MCP.
         available: agentAvailable(a),
+        reason: agentReason(a),
       })));
     }
     // Przełącznik środowiska (przycisk w UI): GET stan, POST zmiana. Zawsze startuje na test-env przy
@@ -235,6 +237,29 @@ const server = http.createServer(async (req, res) => {
       metricsLib.defectLifecycleRefresh(true).catch(() => {});
       return json(res, 202, { busy: true });
     }
+    // Sources: Jira, Confluence, repositories, knowledge base and the API of the test environment.
+    if (req.method === 'GET' && p === '/api/plat-status') {
+      const c = sources.read(); const st = sources.status();
+      return json(res, 200, { configured: st.api, environment: 'test', hosts: c.api.baseUrl ? [c.api.baseUrl] : [], endpoints: st.endpoints, readOnly: !!c.api.readOnly });
+    }
+    if (req.method === 'GET' && p === '/api/sources') return json(res, 200, sources.view());
+    if (req.method === 'POST' && p === '/api/sources') {
+      const b = await body(req, 1e6);
+      if (!b || b.__tooLarge) return json(res, 400, { error: 'Invalid settings' });
+      try { return json(res, 200, sources.save(b)); } catch (e) { return json(res, 400, { error: e.message }); }
+    }
+    if (req.method === 'POST' && p === '/api/sources/test') {
+      try { return json(res, 200, await sources.test()); } catch (e) { return json(res, 500, { error: e.message }); }
+    }
+    if (req.method === 'POST' && p === '/api/sources/repos/sync') {
+      try { return json(res, 200, { results: await sources.syncRepos(), view: sources.view() }); } catch (e) { return json(res, 500, { error: e.message }); }
+    }
+    if (req.method === 'POST' && p === '/api/sources/specs/upload') {
+      const b = await body(req, 3e7);
+      if (!b || b.__tooLarge) return json(res, 413, { error: 'The file is too large' });
+      try { const r = sources.uploadSpec(b.name, b.text); await toolsLib.refresh(); return json(res, 200, r); } catch (e) { return json(res, 400, { error: e.message }); }
+    }
+    if (req.method === 'GET' && p === '/api/sources/knowledge') return json(res, 200, sources.knowledgeFiles());
     // Zakładka Tools: katalog endpointów mcp-server po serwisach; rescan odświeża specyfikacje i porównuje wszystkie endpointy.
     if (req.method === 'GET' && p === '/api/tools') {
       try { return json(res, 200, await toolsLib.getTools()); } catch (e) { return json(res, 500, { error: e.message }); }

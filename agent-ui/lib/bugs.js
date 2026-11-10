@@ -137,6 +137,9 @@ Nie streszczaj, nie skracaj, nie poprawiaj i nie interpretuj treści. Obrazy i w
 }
 /** Opis i komentarze ticketów jako tekst (markdown). Rzuca błąd, gdy odpowiedź jest niepełna. */
 async function jiraIssueText(keys) {
+  // Jira connected under Sources: read it directly through the REST API, which is faster and exact.
+  const src = require('./sources');
+  if (src.status().jira) return src.jiraIssueText(keys);
   const text = await jiraAsk(jiraIssueTextPrompt(keys), 240000, MODEL, true);
   const i = text.lastIndexOf(JIRA_TEXT_END);
   if (i < 0 || !/^## /m.test(text)) throw new Error('Jira answer was incomplete');

@@ -77,8 +77,8 @@ const OVERRIDE_DESIGN = `TRYB APLIKACJI (nadrzędny wobec CLAUDE.md w tej sesji)
 --- TREŚĆ ---
 <pełny projekt testów po angielsku, bajt w bajt taki, jaki przeszedł walidację>
 --- KONIEC TREŚCI ---
-oraz opcjonalnie linie POMINIĘTO / UWAGI (te mogą być po polsku). Bez żadnych innych wstępów.
-- "STATUS: PRZERWANO" z jednozdaniowym powodem po polsku zwracasz wyłącznie wtedy, gdy Jira, Confluence i kod nie dały żadnej podstawy (patrz BRAK TICKETU wyżej).`;
+oraz opcjonalnie linie POMINIĘTO / UWAGI (też po angielsku). Bez żadnych innych wstępów.
+- "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku zwracasz wyłącznie wtedy, gdy Jira, Confluence i kod nie dały żadnej podstawy (patrz BRAK TICKETU wyżej).`;
 
 // Zasoby testowe, z których agenci mają korzystać na wspólnym środowisku test-env (SYS). To ustalenie zespołu:
 // grupa kont AUTOTEST w PLAT oraz reguły AUTOTEST w Hedgerze są przeznaczone do testów automatycznych i AI.
@@ -129,13 +129,13 @@ const OVERRIDE_PLANNING = `TRYB APLIKACJI — TEST FLOW: PLANNING (nadrzędny wo
 - WERDYKT: "STATUS: GOTOWY DO FAZY 2" tylko gdy ŻADNE ryzyko nie ma jednocześnie prawdopodobieństwo:wysokie i wpływ:wysokie, i "Niemożliwe/sprzeczne założenia:" mówi "brak". W innym przypadku "STATUS: WYMAGA POPRAWY", z uzasadnieniem odwołującym się do konkretnych ryzyk/kryteriów.
 - Bash przyjmuje tylko pojedyncze, proste polecenia z allowlisty (bez "cd X && ...", średników, potoków): bash "${QA_GIT}" prepare/find jako SAMODZIELNE polecenie (ZAWSZE ze słowem "bash" na początku, ścieżka w podwójnym cudzysłowie, ma spację "QA MANAGER"), i walidator skilla test-planning jako samo polecenie. Kod czytasz Read/Grep/Glob, zapisujesz Write wyłącznie w WORK_DIR. Odrzucenie innego Bash nie jest powodem do przerwania.
 - Zanim oddasz, uruchom bash .claude/skills/test-planning/scripts/validate-plan.sh --plan "<WORK_DIR>/plan.txt". "PLAN OK" → oddajesz dokładnie tę treść. "PLAN ODRZUCONY" → popraw WSZYSTKIE problemy, maks. 2 rundy.
-- CAŁY raport jest PO POLSKU (to wewnętrzny proces, nie ma odbiorcy zewnętrznego wymagającego angielskiego).
+- CAŁY raport piszesz PO ANGIELSKU, prostym i formalnym językiem (cała aplikacja jest po angielsku).
 - NIE wysyłaj niczego na Slacka. Nie projektujesz przypadków testowych (to Test Design) i nie piszesz kodu testów.
 - Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: PLAN OK" (albo inny status z walidatora), potem blok
 --- TREŚĆ ---
 <treść planu bajt w bajt, w formacie skilla test-planning, jaka przeszła walidację>
 --- KONIEC TREŚCI ---
-Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po polsku tylko, gdy Jira, treść zlecenia i kod nie dały żadnej podstawy.`;
+Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy Jira, treść zlecenia i kod nie dały żadnej podstawy.`;
 
 // Test Flow — Phase 3 Analysis: dobiera i uzasadnia strategię testów, liczy lukę w coverage i sprawdza
 // zasięg wpływu (blast radius) przez realne qa-git.sh find, zanim Faza 4 (Test Design) zaprojektuje
@@ -151,12 +151,12 @@ const OVERRIDE_ANALYSIS = `TRYB APLIKACJI — TEST FLOW: ANALYSIS (nadrzędny wo
 - BRAK TICKETU TO NIE BRAK ZADANIA — jak w Planning: analizuj to, co dano, nie pytaj o ticket. "STATUS: PRZERWANO" tylko, gdy Jira, treść zlecenia i kod razem nie dają żadnej podstawy.
 - Bash przyjmuje tylko pojedyncze, proste polecenia z allowlisty: bash "${QA_GIT}" find/prepare jako SAMODZIELNE polecenie (ZAWSZE ze słowem "bash" na początku, ścieżka w podwójnym cudzysłowie, ma spację "QA MANAGER"), i walidator skilla test-strategy jako samo polecenie. Kod czytasz Read/Grep/Glob, zapisujesz Write wyłącznie w WORK_DIR.
 - Zanim oddasz, uruchom bash .claude/skills/test-strategy/scripts/validate-strategy.sh --report "<WORK_DIR>/analysis.txt". "ANALIZA OK" → oddajesz dokładnie tę treść. "ANALIZA ODRZUCONA" → popraw WSZYSTKIE problemy, maks. 2 rundy.
-- CAŁY raport jest PO POLSKU. Nie wysyłaj niczego na Slacka.
+- CAŁY raport piszesz PO ANGIELSKU, prostym i formalnym językiem. Nie wysyłaj niczego na Slacka.
 - Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: ANALIZA OK" (albo inny status z walidatora), potem blok
 --- TREŚĆ ---
 <treść analizy bajt w bajt, w formacie skilla test-strategy, jaka przeszła walidację>
 --- KONIEC TREŚCI ---
-Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po polsku tylko, gdy Jira, treść zlecenia i kod nie dały żadnej podstawy.`;
+Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy Jira, treść zlecenia i kod nie dały żadnej podstawy.`;
 
 // Test Flow — Phase 5 Implementation: scala punkty Fazy 4 w jedną procedurę wykonawczą, priorytetyzuje
 // (ryzyko z Fazy 1/3, albo bug-registry), szacuje czas, i śledzi każdy punkt z powrotem do źródła —
@@ -171,12 +171,12 @@ const OVERRIDE_IMPLEMENTATION = `TRYB APLIKACJI — TEST FLOW: IMPLEMENTATION (n
 - BRAK TICKETU TO NIE BRAK ZADANIA — jak w innych fazach: wklejony raport Fazy 4 wprost to też poprawne wejście, nie pytaj o ticket.
 - Bash: tylko walidator skilla test-implementation jako samodzielne polecenie. Kod/pliki czytasz Read/Grep/Glob, zapisujesz Write wyłącznie w WORK_DIR.
 - Zanim oddasz, uruchom bash .claude/skills/test-implementation/scripts/validate-implementation.sh --report "<WORK_DIR>/implementation.txt". "IMPLEMENTACJA OK" → oddajesz dokładnie tę treść. "IMPLEMENTACJA ODRZUCONA" → popraw WSZYSTKIE problemy, maks. 2 rundy.
-- CAŁY raport jest PO POLSKU. Nie wysyłaj niczego na Slacka.
+- CAŁY raport piszesz PO ANGIELSKU, prostym i formalnym językiem. Nie wysyłaj niczego na Slacka.
 - Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: IMPLEMENTACJA OK" (albo inny status z walidatora), potem blok
 --- TREŚĆ ---
 <treść procedury bajt w bajt, w formacie skilla test-implementation, jaka przeszła walidację>
 --- KONIEC TREŚCI ---
-Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po polsku tylko, gdy nie ma żadnego projektu testów (ani ticketu, ani wklejonego tekstu Fazy 4) do scalenia.`;
+Bez żadnych innych wstępów. "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy nie ma żadnego projektu testów (ani ticketu, ani wklejonego tekstu Fazy 4) do scalenia.`;
 
 // Test Flow — Phase 7 Completion: krótkie, proste po ludzku wyjaśnienie jak zakończony task działa
 // i dlaczego, plus znane defekty tego obszaru — wpis do przeszukiwalnej bazy wiedzy (ISTQB ATM 2012
@@ -188,7 +188,7 @@ const OVERRIDE_COMPLETION = `TRYB APLIKACJI — TEST FLOW: COMPLETION (nadrzędn
 - ZERO ŻARGONU SPOZA ŹRÓDEŁ: "co to jest" i "dlaczego tak" biorą fakty z opisu/komentarzy/kodu, nigdy z domysłu. Brak udokumentowanego powodu decyzji → napisz wprost "powód wyboru tego podejścia nie jest udokumentowany w tickecie", nie zmyślaj go.
 - ZNANE DEFEKTY (ISTQB ATM 2012 §1.8, wyciągnięcie wniosków): przeczytaj $WORK_DIR/bug-registry.md przez Grep po serwisie/funkcji. Są wpisy dla tego obszaru → krótka lista (klucz + jedno zdanie). Brak → napisz wprost "Brak znanych defektów tego obszaru w rejestrze" (nie pomijaj linii).
 - STATUS TICKETU NIEKOŃCOWY nie jest powodem do przerwania — napisz to na początku wyjaśnienia i pracuj na tym, co jest.
-- Zero sekcji poza szablonem niżej. Cały wynik po polsku, sam tekst (bez tabel, bez zagnieżdżonych list).
+- Zero sekcji poza szablonem niżej. Cały wynik po angielsku, sam tekst (bez tabel, bez zagnieżdżonych list).
 - Brak walidatora bash dla tej fazy — trzymaj się szablonu dokładnie, bo UI nie parsuje tego na karty.
 - Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: WYJAŚNIONO", potem blok
 --- TREŚĆ ---
@@ -208,7 +208,7 @@ Znane defekty tego obszaru:
 
 Źródła: <Jira (opis + N komentarzy) | + transkrypcja nagrania | + nagranie niedostępne jako tekst>
 --- KONIEC TREŚCI ---
-"STATUS: PRZERWANO" z jednozdaniowym powodem po polsku tylko, gdy ticket w ogóle nie istnieje albo nie da się go odczytać.`;
+"STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy ticket w ogóle nie istnieje albo nie da się go odczytać.`;
 
 // QA MCP: wykonuje proces testowy na żywym środowisku przez serwer MCP `qa`.
 // Sedno trybu: użytkownik ma widzieć POSTĘP (co zrobiono i co odczytano) oraz UŻYTE ENDPOINTY.
@@ -227,7 +227,15 @@ JEDYNE ŹRÓDŁO DOSTĘPU
 Wyłącznie narzędzia \`mcp__${MCP_SERVER}__*\`. Żadnego Bash, Read, Edit, Write, Grep ani curl — nie masz ich
 i nie są potrzebne. Zacznij od \`mcp__${MCP_SERVER}__general_get_status\`, żeby wiedzieć, na jakie środowisko
 patrzysz. Gdy nie znasz nazwy narzędzia, znajdź je przez
-\`general_read_list_endpoints\` lub \`general_read_describe_endpoint\`, nigdy nie zgaduj.
+\`general_read_list_endpoints\` lub \`general_read_describe_endpoint\`, nigdy nie zgaduj. Wywołanie wykonujesz przez
+\`general_call_endpoint\` (nazwa endpointu, path_params, query, body).
+Drugi serwer, \`mcp__sources__*\`, daje odczyt źródeł wiedzy zespołu. ZANIM wykonasz pierwszy krok na środowisku:
+(1) przeczytaj z bazy wiedzy how-we-test.md (knowledge_read): środowiska, dane testowe, prefiks zasobów testowych,
+sprzątanie; dla zadań o czasie odpowiedzi, obciążeniu lub liczbie użytkowników także performance-testing.md;
+(2) gdy zlecenie wskazuje ticket, a nie ma bloku "TREŚĆ Z JIRY", przeczytaj go przez jira_get_issue;
+(3) oczekiwane wyniki, których nie podaje zlecenie, bierz z ticketu, Confluence (confluence_search) i kontraktu
+endpointu, nigdy z pamięci. Strategię i techniki z procedury stosujesz na żywym środowisku: każdy krok to realne
+wywołanie, każdy wynik porównany z oczekiwanym, każda rozbieżność potwierdzona retestem.
 
 ZLECENIE Z TICKETEM JIRY
 Narzędzi Jiry nie masz i nie potrzebujesz: gdy zlecenie wskazuje ticket, aplikacja pobrała go przed startem i
@@ -294,6 +302,9 @@ WIERNOŚĆ ZLECENIU I FAKTOM (nadrzędne wobec reszty)
 
 ODPOWIEDŹ KOŃCOWA — czyta ją tester, który nie widział logu. Krótko, prostym językiem, dokładnie w tym układzie.
 Notatki o postępie poszły już do UI; tutaj tylko wynik.
+JĘZYK: notatki o postępie i całą treść odpowiedzi (zdania w WYNIK, ZLECENIE, KROKI, OTRZYMANO, STAN KOŃCOWY, PYTANIA)
+piszesz PO ANGIELSKU, prostym i formalnym językiem. Znaczniki układu (STATUS, WYNIK:, ZLECENIE:, [ZROBIONO], KROKI:,
+STAN KOŃCOWY:, PYTANIA: i pozostałe) zostają dokładnie takie jak niżej, bo aplikacja je parsuje.
 
 STATUS: SUKCES      (albo: BŁĄD, NIEWERYFIKOWALNE, PRZERWANO)
 --- TREŚĆ ---

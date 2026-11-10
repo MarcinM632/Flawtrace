@@ -6,3 +6,8 @@ test-results/
 agent-ui/*.json
 !agent-ui/package.json
 agent-ui/jira-sync.last.txt
+agent-ui/specs/
+agent-ui/repos/
+agent-ui/specs-backup/
+agent-ui/server.log
+agent-ui/server.err.log

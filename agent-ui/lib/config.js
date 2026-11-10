@@ -41,7 +41,7 @@ const AGENT_DIRS = ['claudeAgent', 'claudeAgentB', 'claudeAgentMcp', 'claudeAgen
 const holdsAgents = (dir) => AGENT_DIRS.some((d) => fs.existsSync(path.join(dir, d, 'CLAUDE.md')));
 const AGENTS_ROOT = process.env.QA_AGENTS_ROOT
   ? path.resolve(process.env.QA_AGENTS_ROOT)
-  : [ROOT, path.resolve(ROOT, '..', 'Agents')].find(holdsAgents) || ROOT;
+  : [ROOT, path.join(ROOT, 'agents'), path.resolve(ROOT, '..', 'Agents')].find(holdsAgents) || path.join(ROOT, 'agents');
 
 const TICKET_KEY = /^[A-Za-z][A-Za-z0-9]*-\d+$/;
 const QA_GIT = path.join(APP_DIR, 'qa-git.sh').split(path.sep).join('/');

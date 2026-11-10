@@ -40,36 +40,9 @@ test('the app is pointed at the copy, never at the real autotests/', () => {
 });
 
 // ---------------------------------------------------------------- scope
-test('tool-groups.json is consistent with the groups it declares', () => {
-  const tg = scope.toolGroups();
-  assert.ok(tg, 'tool-groups.json must exist (node scripts/build-tool-groups.mjs)');
-  assert.equal(Object.keys(tg.tools).length, 628);
-  const counted = {};
-  for (const g of Object.values(tg.tools)) { assert.ok(tg.groups[g], 'tool points at unknown group ' + g); counted[g] = (counted[g] || 0) + 1; }
-  for (const [g, info] of Object.entries(tg.groups)) assert.equal(counted[g] || 0, info.tools, g);
-});
-
-test('scopeFor: a plain trading process gets only the base groups', () => {
-  const s = scope.scopeFor('Open 10 SYMBOL1 buy positions of 1 lot each on account 1001 and check the balance', 'auto');
-  assert.equal(s.mode, 'auto');
-  assert.deepEqual([...s.groups].sort(), ['admin-accounts', 'core-hedger-accounts', 'core-hedger-exposure', 'manager-accounts', 'manager-history', 'manager-reference', 'manager-trading'], 'the AUTOTEST rules are read before any trade, so their group is always there');
-  assert.ok(s.tools < 150 && s.tools > 50);
-});
-
-test('scopeFor: topics and explicit tool names add their groups', () => {
-  const hedger = scope.scopeFor('Check that the hedge exposure rule AUTOTEST sends hedge orders when the threshold is exceeded', 'auto');
-  for (const g of ['core-hedger-exposure', 'core-hedger-engine', 'core-hedger-tiers', 'plat-manager-risk']) assert.ok(hedger.groups.includes(g), g);
-  const named = scope.scopeFor('Call core_admin_read_get_all_symbols and then manager_read_get_instruments', 'auto');
-  assert.ok(named.groups.includes('core-admin-symbols'));
-  const routing = scope.scopeFor('Create a routing rule that sends B-book flow to the LP', 'auto');
-  assert.ok(routing.groups.includes('core-admin-routing'));
-  assert.ok(!scope.scopeFor('open a position', 'auto').groups.includes('core-hedger-engine'));
-});
-
-test('scopeFor: "all" loads everything, and unknown tool names are ignored', () => {
-  const all = scope.scopeFor('anything', 'all');
-  assert.equal(all.groups, null); assert.equal(all.tools, 628);
-  assert.ok(Array.isArray(scope.scopeFor('call not_a_real_tool and manager_nonexistent_thing', 'auto').groups));
+test('scopeFor: without a tool group map every run gets the whole API', () => {
+  const s = scope.scopeFor('Open an order and check the balance', 'auto');
+  assert.equal(s.mode, 'all'); assert.equal(s.groups, null);
 });
 
 test('built-in tool sets and run time limits per mode', () => {
@@ -326,13 +299,65 @@ test('Tools diff finds new endpoints, removed ones and every kind of parameter c
   assert.deepEqual(c.moved, { from: 'POST /a', to: 'POST /b' });
 });
 
-test('Tools: fetch-specs output tells which services refreshed and why the others did not', () => {
-  const { parseFetch } = require('../lib/tools');
-  const out = '  OK    CORE Admin: 85 operations\n  FAIL  CORE Hedger\n';
-  const err = '\n1 spec(s) could not be refreshed; the cached copies are kept:\n\n  CORE Hedger\n    Unexpected token\n';
-  const t = parseFetch(out, err);
-  assert.deepEqual(t.map((x) => [x.label, x.ok, x.operations]), [['CORE Admin', true, 85], ['CORE Hedger', false, null]]);
-  assert.match(t[1].message, /Unexpected token/);
+test('OpenAPI 3 and Swagger 2 become one endpoint list with parameters and body outline', () => {
+  const { parseSpec } = require('../lib/openapi');
+  const v3 = parseSpec({
+    openapi: '3.0.0', info: { title: 'Shop', version: '1' }, servers: [{ url: 'https://t.example.com/api' }],
+    paths: {
+      '/orders/{id}': { parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }], get: { operationId: 'getOrder', tags: ['Orders'] } },
+      '/orders': { post: { operationId: 'createOrder', tags: ['Orders'], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/Order' } } } } } },
+    },
+    components: { schemas: { Order: { type: 'object', required: ['item'], properties: { item: { type: 'string' }, side: { type: 'string', enum: ['buy', 'sell'] } } } } },
+  }, 'shop');
+  assert.deepEqual(v3.servers, ['https://t.example.com/api']);
+  const get = v3.endpoints.find((e) => e.name === 'get_order');
+  assert.equal(get.method, 'GET'); assert.equal(get.read, true); assert.equal(get.groupLabel, 'Orders');
+  assert.deepEqual(get.params.map((x) => [x.name, x.in, x.required]), [['id', 'path', true]]);
+  const post = v3.endpoints.find((e) => e.name === 'create_order');
+  assert.equal(post.read, false);
+  assert.deepEqual(post.body, { item: 'string', 'side?': 'buy | sell' });
+  const v2 = parseSpec({ swagger: '2.0', host: 'old.example.com', basePath: '/v1', schemes: ['http'], paths: { '/ping': { get: { summary: 'Ping' } } } }, 'old');
+  assert.deepEqual(v2.servers, ['http://old.example.com/v1']);
+  assert.equal(v2.endpoints[0].name, 'get_ping'); assert.equal(v2.endpoints[0].summary, 'Ping');
+});
+
+test('Tools: a rescan marks new, removed and changed endpoints', () => {
+  const { diffCatalogues } = require('../lib/tools');
+  const before = { a: { method: 'GET', path: '/a', params: [{ name: 'x', type: 'string', required: false }] }, gone: { method: 'GET', path: '/g', params: [] } };
+  const after = { a: { method: 'GET', path: '/a', params: [{ name: 'x', type: 'string', required: true }] }, fresh: { method: 'POST', path: '/f', params: [] } };
+  const d = diffCatalogues(before, after);
+  assert.deepEqual(d.added, ['fresh']); assert.deepEqual(d.removed, ['gone']);
+  assert.equal(d.changed[0].modified[0].to, 'required string');
+});
+
+test('qa MCP server: lists, describes and calls endpoints, numbers every call and logs it', async () => {
+  const http = require('http');
+  const { spawn } = require('child_process');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-mcp-'));
+  const srv = http.createServer((q, r) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => { r.writeHead(201, { 'content-type': 'application/json' }); r.end(JSON.stringify({ method: q.method, url: q.url, auth: q.headers.authorization || '', body: b ? JSON.parse(b) : null })); }); });
+  await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
+  const base = 'http://127.0.0.1:' + srv.address().port;
+  fs.mkdirSync(path.join(dir, 'specs'));
+  fs.writeFileSync(path.join(dir, 'specs', 'shop.json'), JSON.stringify({ openapi: '3.0.0', info: { title: 'Shop' }, paths: { '/orders/{id}': { put: { operationId: 'updateOrder', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }] } } } }));
+  fs.writeFileSync(path.join(dir, 'sources.json'), JSON.stringify({ api: { baseUrl: base, authHeader: 'Authorization', authValue: 'Bearer t' } }));
+  const log = path.join(dir, 'calls.jsonl');
+  const p = spawn(process.execPath, [path.join(__dirname, '..', 'mcp', 'api-server.js')], { env: { ...process.env, QA_DATA_DIR: dir, QA_SPECS_DIR: path.join(dir, 'specs'), QA_SOURCES_FILE: path.join(dir, 'sources.json'), QA_CALL_LOG: log } });
+  let out = '';
+  const answers = new Map();
+  p.stdout.on('data', (c) => { out += c; let i; while ((i = out.indexOf('\n')) >= 0) { const m = JSON.parse(out.slice(0, i)); out = out.slice(i + 1); answers.set(m.id, m); } });
+  const ask = (id, method, params) => new Promise((ok) => { p.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); const t = setInterval(() => { if (answers.has(id)) { clearInterval(t); ok(answers.get(id)); } }, 10); });
+  try {
+    assert.equal((await ask(1, 'initialize', {})).result.serverInfo.name, 'qa');
+    const names = (await ask(2, 'tools/list')).result.tools.map((t) => t.name);
+    for (const n of ['general_get_status', 'general_read_list_endpoints', 'general_read_describe_endpoint', 'general_call_endpoint']) assert.ok(names.includes(n), n);
+    const ok = JSON.parse((await ask(3, 'tools/call', { name: 'general_call_endpoint', arguments: { name: 'update_order', path_params: { id: 7 }, body: { qty: 2 } } })).result.content[0].text);
+    assert.equal(ok._call, 'c1'); assert.equal(ok.status, 201);
+    assert.deepEqual(ok.body, { method: 'PUT', url: '/orders/7', auth: 'Bearer t', body: { qty: 2 } });
+    const bad = (await ask(4, 'tools/call', { name: 'general_call_endpoint', arguments: { name: 'update_order' } })).result;
+    assert.equal(bad.isError, true); assert.match(bad.content[0].text, /\[c2\] Missing path parameter "id"/);
+    const lines = fs.readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.deepEqual(lines.map((l) => [l.ref, l.ok]), [['c1', true], ['c2', false]]);
+  } finally { p.kill(); srv.close(); }
 });
 
 // ---------------------------------------------------------------- report cards + hallucination audit

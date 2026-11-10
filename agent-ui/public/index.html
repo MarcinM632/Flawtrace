@@ -49,6 +49,7 @@
   <nav class="nav" aria-label="Main">
     <div class="nav-group">Workspace</div>
     <button data-tab="workspace"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Workspace</span><span class="live" id="nb-workspace" hidden></span></button>
+    <button data-tab="sources"><svg width="16" height="16"><use href="#i-plug"/></svg><span class="lbl">Sources</span><span class="count" id="srcCount" hidden></span></button>
     <div class="nav-group">Agents</div>
     <button data-tab="runs" class="on"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">Analyses</span><span class="live" id="nb-runs" hidden></span></button>
     <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
@@ -477,16 +478,92 @@
   <section class="panel detail at-pane" data-pane="suite" id="sDetail" hidden></section>
 </main>
 
+<main id="view-sources" class="wide" hidden>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Connected sources</h2><span class="jbtns"><button type="button" class="btn sm" id="srcTest">Test connections</button></span></div>
+      <div class="panel-b"><div class="src-st" id="srcSt"></div><div id="srcTestOut"></div></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Test environment API</h2><span class="meta-r" id="srcApiMeta"></span></div>
+      <div class="panel-b">
+        <div class="row2">
+          <div class="field"><label for="srcBase">Base address</label><input id="srcBase" placeholder="https://test.example.com/api" autocomplete="off"></div>
+          <div class="field"><label for="srcAuthV">Authorization <span class="opt">optional</span></label>
+            <div class="src-auth"><input id="srcAuthH" value="Authorization" aria-label="Header name" autocomplete="off"><input id="srcAuthV" type="password" placeholder="Bearer token" autocomplete="new-password"></div></div>
+        </div>
+        <div class="field"><label>Specifications</label>
+          <div id="srcSpecs" class="src-rows"></div>
+          <div class="src-acts"><button type="button" class="btn sm" id="srcSpecAdd">Add address</button><button type="button" class="btn sm" id="srcSpecFile">Upload JSON</button><input type="file" id="srcSpecInput" accept=".json,application/json" hidden></div>
+        </div>
+        <label class="tl-chk"><input type="checkbox" id="srcRO" class="su-cb"> Read only. Agents may only send GET requests.</label>
+        <div class="src-save"><button type="button" class="go" id="srcApiSave">Save and import endpoints</button><span class="err" id="srcApiErr"></span></div>
+        <div id="srcApiOut"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Jira</h2></div>
+      <div class="panel-b">
+        <div class="row2">
+          <div class="field"><label for="srcJiraUrl">Address</label><input id="srcJiraUrl" placeholder="https://your-org.atlassian.net" autocomplete="off"></div>
+          <div class="field"><label for="srcJiraProj">Projects <span class="opt">optional</span></label><input id="srcJiraProj" placeholder="PRJ, SVC" autocomplete="off"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="srcJiraEmail">Email</label><input id="srcJiraEmail" autocomplete="off"></div>
+          <div class="field"><label for="srcJiraToken">API token</label><input id="srcJiraToken" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="src-save"><button type="button" class="btn" id="srcJiraSave">Save</button></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Confluence</h2></div>
+      <div class="panel-b">
+        <div class="row2">
+          <div class="field"><label for="srcConfUrl">Address <span class="opt">empty uses the Jira address</span></label><input id="srcConfUrl" placeholder="https://your-org.atlassian.net/wiki" autocomplete="off"></div>
+          <div class="field"><label for="srcConfSpaces">Spaces <span class="opt">optional</span></label><input id="srcConfSpaces" placeholder="QA, DEV" autocomplete="off"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="srcConfEmail">Email <span class="opt">empty uses Jira</span></label><input id="srcConfEmail" autocomplete="off"></div>
+          <div class="field"><label for="srcConfToken">API token <span class="opt">empty uses Jira</span></label><input id="srcConfToken" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="src-save"><button type="button" class="btn" id="srcConfSave">Save</button></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Code repositories</h2><span class="meta-r" id="srcRepoMeta"></span></div>
+      <div class="panel-b">
+        <div id="srcRepos" class="src-rows"></div>
+        <div class="src-acts"><button type="button" class="btn sm" id="srcRepoAdd">Add repository</button></div>
+        <div class="src-save"><button type="button" class="btn" id="srcRepoSave">Save and sync</button><span class="err" id="srcRepoErr"></span></div>
+        <div id="srcRepoOut"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Knowledge base</h2><span class="meta-r" id="srcKbMeta"></span></div>
+      <div class="panel-b">
+        <div class="field"><label for="srcKbDir">Folder</label><input id="srcKbDir" autocomplete="off"></div>
+        <div id="srcKbFiles" class="src-files"></div>
+        <div class="src-save"><button type="button" class="btn" id="srcKbSave">Save</button></div>
+      </div>
+    </section>
+  </div>
+</main>
+
 <main id="view-tools" class="wide" hidden>
   <div class="col">
     <section class="panel jirapanel">
-      <div class="jirabar"><span id="tlSt">Loading</span><span class="jbtns"><button type="button" id="tlFull" title="Refresh the specifications and look for new or changed endpoints. Services that cannot be reached keep their cached specification.">Reinitialize all endpoints</button></span></div>
+      <div class="jirabar"><span id="tlSt">Loading</span><span class="jbtns"><button type="button" id="tlFull">Rescan specifications</button></span></div>
       <div id="tlReport"></div>
     </section>
     <section class="panel">
-      <div class="panel-h"><h2>Endpoints by service</h2><span class="meta-r" id="tlCount"></span></div>
+      <div class="panel-h"><h2>Endpoints</h2><span class="meta-r" id="tlCount"></span></div>
       <div class="panel-b" style="padding-bottom:8px">
-        <input id="tlQ" placeholder="Search by tool name, path or description" autocomplete="off" aria-label="Search endpoints">
+        <input id="tlQ" placeholder="Search by name, path or description" autocomplete="off" aria-label="Search endpoints">
         <label class="tl-chk"><input type="checkbox" id="tlChanged" class="su-cb"> Only new or changed in the last 2 weeks</label>
       </div>
       <div class="panel-b" id="tlList"></div>
@@ -2573,6 +2650,7 @@
 <script src="/js/17-workspace.js"></script>
 <script src="/js/18-release-watch.js"></script>
 <script src="/js/19-run-summary.js"></script>
+<script src="/js/20-sources.js"></script>
 <script src="/js/10-main.js"></script>
 </body>
 </html>

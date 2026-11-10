@@ -392,7 +392,7 @@ document.documentElement.dataset.theme='light';
 try{localStorage.removeItem('theme')}catch(e){}
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','runs','qamcp','autotest','planning','tfmonitor','analysis','design','implementation','execution','completion','runsummary','bugs','risk','metricsgen','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','runs','qamcp','autotest','planning','tfmonitor','analysis','design','implementation','execution','completion','runsummary','bugs','risk','metricsgen','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
@@ -410,7 +410,8 @@ const PAGE={
   risk:['Metrics','Risk','Defect density by service, calculated from the bug registry.'],
   metricsgen:['Metrics','Metrics generation','Build and save charts from the bug registry, run history and Jira releases.'],
   fix:['FIX Sessions','FIX client','Connect as a FIX client, send messages and review the message log.'],
-  tools:['Reference','Tools','All endpoints the QA agents can call, grouped by service.'],
+  sources:['Workspace','Sources','Knowledge the agents learn from and the test environment they test on.'],
+  tools:['Reference','Tools','Endpoints of the test environment imported from its API specifications.'],
   doc:['Reference','Manual testing','Test levels, design techniques and how to choose between them.'],
   ai:['Reference','AI testing','Testing AI systems and testing with generative AI.'],
   autodoc:['Reference','Automated testing','How a test automation suite is structured.'],
@@ -449,6 +450,7 @@ function showTab(t){
   if(t==='completion')refreshAll();
   if(t==='runsummary')loadRunSummary();
   if(t==='tools')loadTools();
+  if(t==='sources')loadSources();
   if(t==='fix')fxLoad();
   renderPipe();
   requestAnimationFrame(relayoutDoc);

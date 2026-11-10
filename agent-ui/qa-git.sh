@@ -8,10 +8,11 @@
 #   qa-git.sh git [-C <dir>] <podkomenda> ...       przepuszcza WYŁĄCZNIE podkomendy odczytu
 set -euo pipefail
 
-QA_ROOT="$HOME/qa/repos"
+# Repositories connected in the Sources tab are cloned by the app into QA_REPOS_DIR (DATA_DIR/repos).
+QA_ROOT="${QA_REPOS_DIR:-$HOME/qa/repos}"
 MCP_LOCAL="$HOME/qa/local/mcp-server"
-GIT_HOST="git.example.internal"
-export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_qa -o BatchMode=yes"
+GIT_HOST="${QA_GIT_HOST:-git.example.internal}"
+if [ -f "$HOME/.ssh/id_qa" ]; then export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_qa -o BatchMode=yes"; fi
 export GIT_TERMINAL_PROMPT=0
 
 READ_ONLY=" fetch ls-remote diff log show show-ref cat-file for-each-ref ls-tree rev-parse rev-list merge-base grep blame "
@@ -61,6 +62,7 @@ prepare() {
   else
     dir="$QA_ROOT/$repo"
     if [ ! -d "$dir/.git" ]; then
+      [ -z "${QA_REPOS_DIR:-}" ] || die "repo $repo is not connected in Sources. Connected: $(ls "$QA_ROOT" 2>/dev/null | tr '\n' ' ')"
       mkdir -p "$QA_ROOT"
       git clone --no-checkout "git@$GIT_HOST:$(group_for "$repo")/$repo.git" "$dir" >&2
     fi

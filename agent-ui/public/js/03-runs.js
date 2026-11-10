@@ -215,6 +215,18 @@ function renderOverview(t,rs){
 }
 
 /* ---------- analyses ---------- */
+/* Run buttons follow the availability of each agent; the hint under the field says what is missing. */
+const AVAIL={qamcp:['#qGo','#qHint'],planning:['#pfGo','#pfHint'],analysis:['#anGo','#anHint'],design:['#dsGo','#dsHint'],implementation:['#imGo','#imHint'],execution:['#exGo','#exHint'],completion:['#cpGo','#cpHint']};
+function applyAvailability(){
+  for(const [mode,[go,hint]] of Object.entries(AVAIL)){
+    const a=agents.find(x=>x.mode===mode);if(!a||!$(go))continue;
+    $(go).disabled=!a.available;
+    const h=$(hint);if(h)h.innerHTML=a.available?'':esc(a.reason||'Not available.')+(/Sources/.test(a.reason||'')?' <a href="#sources" data-tab-link="sources">Open Sources</a>':'');
+  }
+  const at=agents.find(a=>a.mode==='autotest');
+  if(at){AT_API_HINT=at.hint||''; if(!at.available)$('#aGo').disabled=true}
+}
+async function refreshAvailability(){try{agents=await api('/api/agents');applyAvailability()}catch(_){}}
 async function init(){
   RUN_TABS.forEach(t=>$(LIST[t]).innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>');
   try{agents=await api('/api/agents');setConn(true)}
@@ -223,22 +235,7 @@ async function init(){
     RUN_TABS.forEach(t=>$(PANEL[t]).innerHTML=emptyBox('inbox','Cannot reach the server','Retrying in a few seconds. Check that the Agent UI server is running.'));
     return setTimeout(init,4000);
   }
-  const q=agents.find(a=>a.mode==='qamcp');
-  if(q){$('#qHint').textContent=''; if(!q.available)$('#qGo').disabled=true}
-  const at=agents.find(a=>a.mode==='autotest');
-  if(at){AT_API_HINT=at.hint||''; if(!at.available)$('#aGo').disabled=true}
-  const pf=agents.find(a=>a.mode==='planning');
-  if(pf){$('#pfHint').textContent=''; if(!pf.available)$('#pfGo').disabled=true}
-  const an=agents.find(a=>a.mode==='analysis');
-  if(an){$('#anHint').textContent=''; if(!an.available)$('#anGo').disabled=true}
-  const ds=agents.find(a=>a.mode==='design');
-  if(ds){$('#dsHint').textContent=''; if(!ds.available)$('#dsGo').disabled=true}
-  const im=agents.find(a=>a.mode==='implementation');
-  if(im){$('#imHint').textContent=''; if(!im.available)$('#imGo').disabled=true}
-  const ex=agents.find(a=>a.mode==='execution');
-  if(ex){$('#exHint').textContent=''; if(!ex.available)$('#exGo').disabled=true}
-  const cp=agents.find(a=>a.mode==='completion');
-  if(cp){$('#cpHint').textContent=''; if(!cp.available)$('#cpGo').disabled=true}
+  applyAvailability();
   setALayer(aLayer);
   /* Preferuj agenta, który faktycznie ma czym wystartować; gdy żaden nie ma, renderAgents()
      wyjaśni dlaczego, zamiast zostawić pierwszego z listy wyglądającego na wybranego. */
@@ -296,12 +293,12 @@ $('#go').onclick=async()=>{
 async function loadPlatStatus(sel='#qEnv'){
   const el=$(sel);
   let s; try{s=await api('/api/plat-status')}catch(e){el.innerHTML=`<span class="b bad">status unavailable</span>`;return}
-  if(!s.configured){el.innerHTML=`<span class="b bad">mcp-server not configured</span><span class="note">Fill in mcp-server/.env first.</span>`;return}
-  const host=(s.hosts[0]||'').replace(/^https?:\/\//,'').split(':')[0];
+  if(!s.configured){el.innerHTML=`<span class="b bad">No test environment</span><span class="note"><a href="#sources" data-tab-link="sources">Connect it in Sources</a></span>`;return}
+  const host=(s.hosts[0]||'').replace(/^https?:\/\//,'').split('/')[0];
   el.innerHTML=[
-    `<span class="b ok">env ${esc(s.environment||'?')}</span>`,
-    host?`<span class="b">${esc(host)}</span>`:'',
-    `<span class="note">Reads and writes are sent to the real environment.</span>`,
+    `<span class="b ok">${esc(host||'test environment')}</span>`,
+    `<span class="b">${s.endpoints} endpoints</span>`,
+    `<span class="note">${s.readOnly?'Read only. Only GET requests are sent.':'Reads and writes are sent to this environment.'}</span>`,
   ].join('');
 }
 $('#qGo').onclick=async()=>{

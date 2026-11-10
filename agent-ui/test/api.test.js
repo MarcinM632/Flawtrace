@@ -72,7 +72,7 @@ test('/api/agents lists every app with its fields', async () => {
 
 test('/api/plat-status and /api/autotest-meta describe the environment and the repo', async () => {
   const s = await j('/api/plat-status');
-  assert.equal(s.status, 200); assert.ok('environment' in s.body && Array.isArray(s.body.hosts));
+  assert.equal(s.status, 200); assert.ok('environment' in s.body && Array.isArray(s.body.hosts) && 'endpoints' in s.body);
   const m = await j('/api/autotest-meta');
   assert.equal(m.body.available, true); assert.ok(m.body.folders.includes('smoke')); assert.ok(m.body.tests >= 1);
 });

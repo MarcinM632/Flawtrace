@@ -1555,3 +1555,31 @@ input,textarea,select{border-color:var(--line2)}
 .composer .dz-empty{display:flex;align-items:center;gap:6px;text-align:left;font-size:12.5px;color:var(--ink2)}
 .composer .dz-or{color:var(--ink4)}
 .composer .dz-list{gap:5px}
+
+/* ================= sources ================= */
+.src-st{display:flex;flex-wrap:wrap;gap:8px}
+.src-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border:1px solid var(--line2);border-radius:999px;font-size:12.5px;color:var(--ink2);background:var(--surface)}
+.src-chip::before{content:"";width:7px;height:7px;border-radius:99px;background:var(--ink4)}
+.src-chip.on{color:var(--ink)}
+.src-chip.on::before{background:var(--ok)}
+.src-chip b{font-weight:600}
+.src-auth{display:grid;grid-template-columns:140px 1fr;gap:8px}
+.src-rows{display:flex;flex-direction:column;gap:8px}
+.src-row{display:grid;grid-template-columns:160px 1fr 34px;gap:8px;align-items:center}
+.src-row.repo{grid-template-columns:150px 1fr 120px 34px}
+.src-row .st{font-size:12px;color:var(--ink3);grid-column:1/-1;margin:-2px 0 2px}
+.src-row .st.ok{color:var(--ok)}
+.src-row .st.bad{color:var(--bad)}
+.src-acts{display:flex;gap:8px;margin-top:10px}
+.src-save{display:flex;align-items:center;gap:12px;margin-top:16px}
+.src-save .go{width:auto}
+.src-res{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.src-res .chk.ok{color:var(--ok);background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.src-files{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.src-files span{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface2);color:var(--ink2)}
+#view-sources .tl-chk{margin-top:14px}
+#view-sources .row2>.field+.field{margin-top:0}
+#view-sources .row2+.row2,#view-sources .row2+.field{margin-top:16px}
+#view-sources .row2{align-items:start}
+#view-sources .panel-h .jbtns{margin-left:auto}
+@media (max-width:760px){.src-row,.src-row.repo{grid-template-columns:1fr 34px}.src-row input:first-child{grid-column:1/-1}.src-auth{grid-template-columns:1fr}}
