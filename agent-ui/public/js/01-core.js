@@ -291,7 +291,7 @@ async function loadEnv(){
 $('#envBtn').onclick=async()=>{
   const next=ENV_STATE.profiles.find(p=>p.key!==ENV_STATE.current);
   if(!next)return;
-  if(next.confirm&&!confirm(`Switch the test environment to ${next.label}?\n\nFrom this point on, every run — QA MCP, Autotests, Test suite — executes against ${next.label} instead of test-env, until you switch back.`))return;
+  if(next.confirm&&!confirm(`Switch the test environment to ${next.label}?\n\nFrom this point on, every run of QA MCP, Autotests and the test suite uses ${next.label} until you switch back.`))return;
   try{
     ENV_STATE=await post('/api/environment',{key:next.key});
     renderEnvBtn();
@@ -338,7 +338,7 @@ function wireFileField(key,ids){
   const render=()=>{
     const fl=FILES[key];
     empty.hidden=!!fl.length; list.hidden=!fl.length;
-    list.innerHTML=fl.map((f,i)=>`<div class="dz-file"><span class="dz-name" title="${esc(f.name)}">${esc(f.name)}</span>${f.binary?'<span class="dz-bin" title="Binary file — only usable where the agent has a Read tool">bin</span>':''}<span class="dz-size">${Math.max(1,Math.round(f.size/1024))} KB</span><button type="button" class="btn icon sm" data-rm="${i}" title="Remove ${esc(f.name)}"><svg width="13" height="13"><use href="#i-x"/></svg></button></div>`).join('');
+    list.innerHTML=fl.map((f,i)=>`<div class="dz-file"><span class="dz-name" title="${esc(f.name)}">${esc(f.name)}</span>${f.binary?'<span class="dz-bin" title="Binary file. Only agents that can read files will use it.">bin</span>':''}<span class="dz-size">${Math.max(1,Math.round(f.size/1024))} KB</span><button type="button" class="btn icon sm" data-rm="${i}" title="Remove ${esc(f.name)}"><svg width="13" height="13"><use href="#i-x"/></svg></button></div>`).join('');
   };
   const take=async(fileList)=>{
     err.textContent='';
@@ -367,7 +367,7 @@ function wireFileField(key,ids){
 }
 wireFileField('runs',{drop:'#fileDrop',input:'#fileInput',empty:'#fileEmpty',list:'#fileList',err:'#fileErr'});
 wireFileField('qamcp',{drop:'#qFileDrop',input:'#qFileInput',empty:'#qFileEmpty',list:'#qFileList',err:'#qFileErr',
-  warnBinary:'QA MCP has no file-reading tool, so its content won’t reach the agent — attach a text/CSV export instead, or use Analyses/Autotests.'});
+  warnBinary:'QA MCP cannot read binary files. Attach a text or CSV export instead.'});
 wireFileField('autotest',{drop:'#aFileDrop',input:'#aFileInput',empty:'#aFileEmpty',list:'#aFileList',err:'#aFileErr'});
 wireFileField('planning',{drop:'#pfFileDrop',input:'#pfFileInput',empty:'#pfFileEmpty',list:'#pfFileList',err:'#pfFileErr'});
 wireFileField('design',{drop:'#dsFileDrop',input:'#dsFileInput',empty:'#dsFileEmpty',list:'#dsFileList',err:'#dsFileErr'});
@@ -384,33 +384,33 @@ try{localStorage.removeItem('theme')}catch(e){}
 /* ---------- navigation ---------- */
 const VIEWS=['workspace','runs','qamcp','autotest','planning','tfmonitor','analysis','design','implementation','execution','completion','runsummary','bugs','risk','metricsgen','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
-  workspace:['Workspace','Workspace','What to test next: your assigned Jira tasks, ranked by priority and service risk, with a concrete testing checklist.'],
-  runs:['Agents','Ticket analyses','Run a QA agent against a ticket and review its findings.'],
-  qamcp:['Agents','QA MCP','Execute a test process in plain words against the configured PLAT environment.'],
-  autotest:['Agents','Autotests','Write new tests, run the Smoke and System packs, or pick anything in the suite and run it — one ISTQB-aligned flow, from writing a case to executing it on the test environment.'],
-  planning:['Test Flow','1. Planning','Risk, entry/exit criteria and a static/white-box feasibility check before a backlog task is implemented.'],
-  tfmonitor:['Test Flow','2. Monitoring & control','Iteration-by-iteration releases per project: progress, status mix and priority, read from Jira.'],
-  analysis:['Test Flow','3. Analysis','Picks a test strategy, measures the coverage gap, and checks blast radius across repos before Design.'],
-  design:['Test Flow','4. Design','Turns test conditions into concrete ISTQB test cases, grounded in the repo and the bug registry.'],
-  implementation:['Test Flow','5. Implementation','Merges Phase 4’s test designs into one procedure, prioritised, time-estimated and traced back to its source.'],
-  execution:['Test Flow','6. Execution','Runs a Phase 5 procedure for real, verifies the result, and reports any defect with retest evidence.'],
-  completion:['Test Flow','7. Completion','A short, plain-English explanation of how a finished task works, archived into the knowledge base.'],
-  runsummary:['Test Flow','8. Run Summary','The whole chain for one ticket on a single page: every phase, its verdict and its report check — built fresh every time, nothing to go stale.'],
-  bugs:['Metrics','Bug registry','Log findings and see where defects concentrate.'],
-  risk:['Metrics','Risk','Defect density by service, computed from the bug registry.'],
-  metricsgen:['Metrics','Metrics generation','Build a chart from the bug registry, run history or a Jira release — pick a statistic, a period and a scope, and save it.'],
-  fix:['FIX Sessions','FIX client','Connect to fixcon, fixagent or an LP as a FIX client: one click to log on and trade or stream prices, any message from the dictionary, every message logged.'],
-  tools:['Reference','Tools','Every endpoint the QA agents can call through mcp-server, grouped by service.'],
+  workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
+  runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
+  qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
+  autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
+  planning:['Test Flow','1. Planning','Risk, entry and exit criteria and a feasibility check before a task is implemented.'],
+  tfmonitor:['Test Flow','2. Monitoring & control','Release progress, status and priority for each project, read from Jira.'],
+  analysis:['Test Flow','3. Analysis','Test strategy, coverage gap and impact on other repositories.'],
+  design:['Test Flow','4. Design','Concrete test cases based on the code and the bug registry.'],
+  implementation:['Test Flow','5. Implementation','One prioritised and estimated procedure built from the test designs.'],
+  execution:['Test Flow','6. Execution','Runs the procedure on the test environment and reports confirmed defects.'],
+  completion:['Test Flow','7. Completion','A short explanation of a finished task, saved to the knowledge base.'],
+  runsummary:['Test Flow','8. Run Summary','All phases of one ticket on a single page, built from the latest runs.'],
+  bugs:['Metrics','Bug registry','Record findings and see where defects concentrate.'],
+  risk:['Metrics','Risk','Defect density by service, calculated from the bug registry.'],
+  metricsgen:['Metrics','Metrics generation','Build and save charts from the bug registry, run history and Jira releases.'],
+  fix:['FIX Sessions','FIX client','Connect as a FIX client, send messages and review the message log.'],
+  tools:['Reference','Tools','All endpoints the QA agents can call, grouped by service.'],
   doc:['Reference','Manual testing','Test levels, design techniques and how to choose between them.'],
-  ai:['Reference','AI testing','Testing systems that contain AI, and testing with generative AI.'],
-  autodoc:['Reference','Automated testing','How a test automation suite is structured: strategy, layers, one test, state, reliability.'],
-  testproc:['Reference','Tests procedure','The fundamental test process: seven activities, from planning to completion, and the strategy behind them.'],
+  ai:['Reference','AI testing','Testing AI systems and testing with generative AI.'],
+  autodoc:['Reference','Automated testing','How a test automation suite is structured.'],
+  testproc:['Reference','Tests procedure','The seven activities of the test process and the strategy behind them.'],
 };
 /* The registry can change outside this page, so coming back to the window re-reads it. */
 /* Wyszukiwarki przebudowują duże listy, więc reagują po chwili ciszy, a nie na każdy klawisz. */
 const debounce=(fn,ms=150)=>{let h;return(...a)=>{clearTimeout(h);h=setTimeout(()=>fn(...a),ms)}};
 $('#jiraGo').onclick=async()=>{try{await api('/api/bugs/jira-sync',{method:'POST'});await loadBugs()}catch(e){toast(e.message,'err')}};
-$('#jiraFull').onclick=async()=>{if(!confirm('Reinitializing fetches every bug and every task comment from Jira again, ignoring the last sync date. It adds missing entries and never deletes or duplicates, but it takes longer and costs more than a normal sync. Continue?'))return;try{await api('/api/bugs/jira-sync?full=1',{method:'POST'});await loadBugs()}catch(e){toast(e.message,'err')}};
+$('#jiraFull').onclick=async()=>{if(!confirm('This fetches all bugs and task comments from Jira again. Nothing is deleted or duplicated, but it takes longer than a normal sync. Continue?'))return;try{await api('/api/bugs/jira-sync?full=1',{method:'POST'});await loadBugs()}catch(e){toast(e.message,'err')}};
 addEventListener('focus',()=>{if(!$('#view-bugs').hidden)loadBugs().catch(()=>{});else if(!$('#view-risk').hidden)loadBugs().then(renderRisk).catch(()=>{})});
 function showTab(t){
   document.querySelectorAll('.nav [data-tab]').forEach(x=>{

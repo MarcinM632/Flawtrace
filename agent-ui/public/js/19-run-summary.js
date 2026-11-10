@@ -18,7 +18,7 @@ async function loadRunSummary(){
     const{tickets}=await api('/api/run-summary/recent');
     $('#rsRecent').innerHTML=tickets.length
       ?'<span class="hint">Recent:</span> '+tickets.map(t=>`<button class="chip" data-rs-t="${esc(t)}">${esc(t.length>40?t.slice(0,39)+'…':t)}</button>`).join(' ')
-      :'<span class="hint">No Completion run yet — finish phase 7 for a ticket first.</span>';
+      :'<span class="hint">No Completion run yet.</span>';
   }catch(e){$('#rsRecent').innerHTML='';}
   const pending=sessionStorage.getItem('rs.open');
   if(pending){sessionStorage.removeItem('rs.open');$('#rsTicket').value=pending;rsShow(pending)}
@@ -67,7 +67,7 @@ function rsPhaseCard(p){
       <p class="rs-verdict">${esc(p.verdict)}</p>
       ${p.excerpt?`<p class="rs-excerpt">${esc(p.excerpt)}${p.excerpt.length>=220?'…':''}</p>`:''}
       ${p.auditBad?`<div class="rs-audit-bad">${ico('x',12)} Report check found ${p.auditIssues} unresolved problem${p.auditIssues>1?'s':''}.</div>`:(p.status==='done'?`<div class="rs-audit-ok">${ico('check',12)} Report check passed.</div>`:'')}
-      ${p.stale?'<p class="hint">Showing the most recent attempt — it did not finish as "done".</p>':''}
+      ${p.stale?'<p class="hint">This is the latest attempt, which did not finish.</p>':''}
       <button class="linkbtn" data-rs-open="${esc(p.key)}" data-rs-id="${esc(p.id)}">Open full report →</button>`}
     </div>
   </li>`;

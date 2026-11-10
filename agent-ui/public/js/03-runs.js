@@ -45,7 +45,7 @@ async function autoPushCheck(list){
       if(!r.finishedAt||r.finishedAt<flowAutoSince)continue;
       flowSummarized.add(r.id);
       if(current&&current.id===r.id)rsAutoOpen(r.ticket);
-      else toast('Completion for '+String(r.ticket).slice(0,60)+' finished — Run Summary is ready.');
+      else toast('Completion for '+String(r.ticket).slice(0,60)+' has finished. The Run Summary is ready.');
       continue;
     }
     if(r.status!=='done'||r.pushedTo||!FLOW_NEXT[r.agent]||flowPushing.has(r.id)||flowFailed.has(r.id))continue;
@@ -79,50 +79,50 @@ const LIST_EMPTY={
 };
 const GUIDE={
   runs:[
-    ['Pick the agent','Each agent covers one product area and reads its own repositories.'],
-    ['Enter the ticket','A Jira key such as PRJ-297 — or just say what to check. Without a key the agent verifies your text against Jira, Confluence and the code.'],
-    ['Review the report','Follow the activity log live. When the run completes, log confirmed defects straight to the registry — or press Replicate in QA MCP to have the prompt engineer turn the result into a process QA MCP runs to reproduce it.'],
+    ['Select the agent','Each agent covers one product area and reads its own repositories.'],
+    ['Enter the ticket','Enter a Jira key or describe what to check. Without a key, the agent checks your description against Jira, Confluence and the code.'],
+    ['Review the report','Follow the activity log while the run is in progress. Confirmed defects can be added to the registry or replicated in QA MCP.'],
   ],
   qamcp:[
-    ['Describe the process','Write the steps in plain words, the way you would brief a colleague.'],
-    ['It runs for real','Every read and write goes through mcp-server to the environment shown in the form.'],
-    ['Check the evidence','The log lists each endpoint called and the values read; the answer is a short verdict with replication steps.'],
-    ['Turn it into autotests','When the run is done, Create autotests asks for the test type: pytest (API) or Playwright (UI, on the CORE screens that call the same endpoints). The Autotests agent then saves small, plainly named tests in autotests/.'],
+    ['Describe the process','Write the steps in plain words.'],
+    ['The agent runs it','Every read and write is sent to the environment shown in the form.'],
+    ['Check the evidence','The log lists every endpoint called and every value read. The result is a short verdict with replication steps.'],
+    ['Create autotests','A finished run can be turned into API tests with pytest or UI tests with Playwright.'],
   ],
   autotest:[
-    ['Describe the case','One behaviour, written the way it would appear in a test plan.'],
-    ['Choose an area','Optional — leave it blank and the folder under tests/ is picked by topic.'],
-    ['Review the tests','Each test checks one thing, has a short plain-language scenario and a name that says what is tested. Files are saved locally and checked with pytest.'],
+    ['Describe the case','Describe one behaviour as you would in a test plan.'],
+    ['Choose a folder','If left empty, the folder is chosen by topic.'],
+    ['Review the tests','Each test checks one thing and has a short scenario and a descriptive name.'],
   ],
   planning:[
-    ['Enter the backlog task','A Jira key, or the task’s description/story if it has no key yet — it should already be well specified for this iteration.'],
-    ['It checks feasibility first','A static/white-box pass reads the relevant repo before anything else, to catch impossible, illogical or conflicting assumptions.'],
-    ['Review risk, entry and exit criteria','Product and project risk, each with a source — past bugs on similar tasks, a code location, or the ISTQB risk category — plus concrete entry/exit criteria and a verdict on whether the plan is ready for the next phase.'],
+    ['Enter the task','Enter a Jira key or the task description.'],
+    ['Feasibility check','The agent reads the relevant code first to find impossible or conflicting assumptions.'],
+    ['Review the plan','Product and project risks with their sources, entry and exit criteria and a verdict on readiness.'],
   ],
   analysis:[
-    ['Enter the backlog task','A Jira key, or its description — ideally already checked by Phase 1 Planning.'],
-    ['It picks one strategy, not seven','Justified against this task’s own history and risk — never a checklist of every ISTQB strategy type.'],
-    ['Review coverage, blast radius and scope','What’s covered today, what repos actually depend on the changed component (checked for real, not assumed), and a prioritised scope ready for Phase 4.'],
+    ['Enter the task','Enter a Jira key or the task description.'],
+    ['Test strategy','The agent selects one strategy and justifies it with the history and risk of the task.'],
+    ['Review the analysis','Current coverage, dependent repositories and a prioritised scope for Design.'],
   ],
   design:[
-    ['Enter the scope','A Jira key, or the requirement itself — ideally the scope and priorities handed off from Phase 3 Analysis.'],
-    ['It designs from evidence','Pulls the repo, the latest spec and the bug registry’s failure patterns before writing a single check.'],
-    ['Review the test design','A short, pointed report: one numbered point per test design, each check traceable to a source, ready to hand to Phase 5.'],
+    ['Enter the scope','Enter a Jira key or the requirement.'],
+    ['Evidence first','The agent reads the code, the latest specification and the bug registry before writing any check.'],
+    ['Review the design','Numbered test cases, each traceable to its source.'],
   ],
   implementation:[
-    ['Paste the Phase 4 test design','A ticket key, or the test design report itself — every point gets merged into one procedure, nothing dropped.'],
-    ['It prioritises and estimates time','Each point gets a priority from real risk (Phase 1/3, or the bug registry) and a time estimate — never a guess.'],
-    ['Review the ready-to-run procedure','Traced back to every Phase 4 point, written the way QA MCP/Execution expects it — paste it straight into Phase 6.'],
+    ['Enter the test design','Enter a ticket key or paste the test design report.'],
+    ['Priorities and estimates','Each point receives a priority based on risk and a time estimate.'],
+    ['Review the procedure','A ready procedure traced back to every test design point.'],
   ],
   execution:[
-    ['Paste the Phase 5 procedure','The merged, prioritised procedure — executed step by step in the order given.'],
-    ['It runs for real, and retests failures','Every read and write goes through mcp-server to the live environment; a failure is repeated once before it’s reported, to rule out a blip.'],
-    ['Review the defect report','The same evidence-based report format as QA MCP — confirmed defects, retest evidence, and a short verdict.'],
+    ['Enter the procedure','Paste the procedure from Implementation.'],
+    ['The agent runs it','Every failure is repeated once before it is reported.'],
+    ['Review the report','Confirmed defects with retest evidence and a short verdict.'],
   ],
   completion:[
-    ['Enter a finished task','A Jira key for a completed ticket — its description, comments and linked discussion.'],
-    ['It explains, it doesn’t just summarise','A short, plain-English answer to “what does this do and why” — grounded in the ticket, not reworded boilerplate.'],
-    ['Builds the knowledge base','Stays in history as a searchable record — the next tester asking the same question finds the answer here.'],
+    ['Enter a finished task','Enter the Jira key of a completed ticket.'],
+    ['The agent explains it','A short explanation of what the change does and why, based on the ticket.'],
+    ['Knowledge base','The explanation is kept in the history and can be searched later.'],
   ],
 };
 
@@ -144,7 +144,7 @@ Notifications: filtering by a rule name shows only that rule's
 notifications, and the count under the table matches what the
 backend returns for the same filter.`,
     folder:'Picked by menu section if left blank',notes:'e.g. extend the existing page object for this screen',
-    hint:'Playwright drives the web app in a browser; the backend supplies the expected values, setup and cleanup. Tests go to tests/ui/, selectors to page objects in utils/pages/.'},
+    hint:''},
 };
 let AT_META=null, AT_API_HINT='';
 
@@ -224,21 +224,21 @@ async function init(){
     return setTimeout(init,4000);
   }
   const q=agents.find(a=>a.mode==='qamcp');
-  if(q){$('#qHint').textContent=q.hint; if(!q.available)$('#qGo').disabled=true}
+  if(q){$('#qHint').textContent=''; if(!q.available)$('#qGo').disabled=true}
   const at=agents.find(a=>a.mode==='autotest');
   if(at){AT_API_HINT=at.hint||''; if(!at.available)$('#aGo').disabled=true}
   const pf=agents.find(a=>a.mode==='planning');
-  if(pf){$('#pfHint').textContent=pf.hint||''; if(!pf.available)$('#pfGo').disabled=true}
+  if(pf){$('#pfHint').textContent=''; if(!pf.available)$('#pfGo').disabled=true}
   const an=agents.find(a=>a.mode==='analysis');
-  if(an){$('#anHint').textContent=an.hint||''; if(!an.available)$('#anGo').disabled=true}
+  if(an){$('#anHint').textContent=''; if(!an.available)$('#anGo').disabled=true}
   const ds=agents.find(a=>a.mode==='design');
-  if(ds){$('#dsHint').textContent=ds.hint||''; if(!ds.available)$('#dsGo').disabled=true}
+  if(ds){$('#dsHint').textContent=''; if(!ds.available)$('#dsGo').disabled=true}
   const im=agents.find(a=>a.mode==='implementation');
-  if(im){$('#imHint').textContent=im.hint||''; if(!im.available)$('#imGo').disabled=true}
+  if(im){$('#imHint').textContent=''; if(!im.available)$('#imGo').disabled=true}
   const ex=agents.find(a=>a.mode==='execution');
-  if(ex){$('#exHint').textContent=ex.hint||''; if(!ex.available)$('#exGo').disabled=true}
+  if(ex){$('#exHint').textContent=''; if(!ex.available)$('#exGo').disabled=true}
   const cp=agents.find(a=>a.mode==='completion');
-  if(cp){$('#cpHint').textContent=cp.hint||''; if(!cp.available)$('#cpGo').disabled=true}
+  if(cp){$('#cpHint').textContent=''; if(!cp.available)$('#cpGo').disabled=true}
   setALayer(aLayer);
   /* Preferuj agenta, który faktycznie ma czym wystartować; gdy żaden nie ma, renderAgents()
      wyjaśni dlaczego, zamiast zostawić pierwszego z listy wyglądającego na wybranego. */
@@ -261,10 +261,10 @@ function renderAgents(){
   $('#agents').innerHTML=list.map(a=>`<button data-k="${a.key}" class="${a.key===sel?'on':''}${a.available?'':' muted'}"${a.available?'':` title="No CLAUDE.md in ${esc(a.dir||'')}"`}>${esc(a.label)}</button>`).join('');
   const a=agents.find(x=>x.key===sel)||{};
   showAgentWarning(a,list);
-  $('#hint').textContent=a.hint||'';
+  $('#hint').textContent='';
   $('#ticketLabel').textContent=a.freeform?'Ticket or requirement':'Ticket key';
   const t=$('#ticket');
-  t.placeholder=a.freeform?'e.g. SVC-318 — or the requirement itself: markup update must reject values outside 0–100':'e.g. OPS-170';
+  t.placeholder=a.freeform?'Ticket key or task description':'Ticket key';
   t.style.height=a.freeform?'96px':'38px';
   $('#goKbd').parentNode.innerHTML=a.freeform?'or press <kbd>Ctrl</kbd> + <kbd id="goKbd">Enter</kbd>':'or press <kbd id="goKbd">Enter</kbd>';
 }
@@ -279,7 +279,7 @@ function showAgentWarning(a,list){
   const allGone=list.length&&list.every(x=>!x.available);
   w.hidden=false;
   w.textContent=allGone
-    ? `No analysis agent found in ${a.agentsRoot||'?'} — expected claudeAgent/, claudeAgentB/, claudeAgentMcp/ and claudeAgentTestDesign/, each with a CLAUDE.md. Set QA_AGENTS_ROOT to the folder that holds them and restart the server.`
+    ? `No analysis agent found in ${a.agentsRoot||'?'} . Set QA_AGENTS_ROOT to the folder with the agent directories and restart the server.`
     : `${a.label} cannot run: no CLAUDE.md in ${a.dir||'?'}.`;
   go.disabled=true;
 }
@@ -301,7 +301,7 @@ async function loadPlatStatus(sel='#qEnv'){
   el.innerHTML=[
     `<span class="b ok">env ${esc(s.environment||'?')}</span>`,
     host?`<span class="b">${esc(host)}</span>`:'',
-    `<span class="note">Reads and writes both go through — this hits the real environment.</span>`,
+    `<span class="note">Reads and writes are sent to the real environment.</span>`,
   ].join('');
 }
 $('#qGo').onclick=async()=>{
@@ -422,7 +422,7 @@ function renderAutotestMeta(){
   $('#aEnv').innerHTML=[
     `<span class="b ok">autotests/${ui?'tests/ui/':''}</span>`,
     `<span class="b">${part.tests} test file${part.tests===1?'':'s'} · ${part.folders.length} area${part.folders.length===1?'':'s'}</span>`,
-    `<span class="note">${ui?'Playwright, logged in to the web app. Style comes from tests/ui/ and utils/pages/.':'Style comes from the tests already in this folder.'}</span>`,
+    `<span class="note">${ui?'Playwright tests in the UI folder.':'Follows the style of the existing tests.'}</span>`,
   ].join('');
 }
 function setALayer(l){
@@ -434,7 +434,7 @@ function setALayer(l){
   $('#aCase').placeholder=L.placeholder;
   $('#aFolder').placeholder=L.folder;
   $('#aNotes').placeholder=L.notes;
-  $('#aHint').textContent=aLayer==='ui'?L.hint:AT_API_HINT;
+  $('#aHint').textContent='';
   renderAutotestMeta();
   /* A run of the other layer stays in its own tab's history, so its detail closes with the switch. */
   if(current&&TAB_OF(current.agent)==='autotest'&&runLayer(current)!==aLayer){if(es){es.close();es=null}current=null}
@@ -506,7 +506,7 @@ async function open(id){
         <h3 id="title"></h3>
         <div class="metarow" id="meta"></div>
       </div>
-      <div class="dh-actions"><span id="actions"></span><button class="btn icon" id="closeRun" title="Close — back to overview" aria-label="Close run">${ico('x')}</button></div>
+      <div class="dh-actions"><span id="actions"></span><button class="btn icon" id="closeRun" title="Close" aria-label="Close run">${ico('x')}</button></div>
     </div>
     <div class="body">
       ${req.length?`<div class="section"><div class="sec-head"><h4>Request</h4></div><dl class="reqkv">${req.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></div>`:''}

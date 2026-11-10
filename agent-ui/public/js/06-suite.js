@@ -38,10 +38,10 @@ async function loadSuite(){
    picker behind both, and behind any ad-hoc regression run. */
 let AT_SUB='write';
 const AT_SUB_DESC={
-  write:'Test implementation (ISTQB): turning a case into an executable script. The writing agent tags it with one level marker — SMOKE, INTEGRATION or SYSTEM — from pytest.ini, so it shows up in the right pack below.',
-  smoke:'ISTQB build-verification testing: a short, safe-to-run-often subset that answers one question — is the environment alive enough to test at all? In Scrum: run it against every new build/deploy, and again at the start of a sprint’s test execution — a failing pack blocks further testing, the way a real entry criterion would.',
-  system:'ISTQB system level: the complete integrated system, end to end, through the real UI where it has one — a full business scenario, not an isolated API call. In Scrum: the regression pack to run before Sprint Review / as part of Definition of Done, saying the increment still works as a whole.',
-  suite:'Every test in the repo, any level, picked and run by hand — the general runner behind the Smoke and System packs above, and behind any ad-hoc regression run.',
+  write:'Describe a test case and the agent writes it as an automated test with the correct level marker.',
+  smoke:'A short set of checks that confirms the environment is ready for testing. Run it after every new build.',
+  system:'End to end tests of the complete system. Run them before a release to confirm that everything still works together.',
+  suite:'Select and run any test from the repository.',
 };
 const PACKS={
   SMOKE:{listId:'#smList',goId:'#smGo',countId:'#smCount',detailId:'#smDetail',nbId:'#nb-smoke',label:'smoke'},
@@ -77,7 +77,7 @@ function renderPack(marker){
   $(p.countId).textContent=tests.length?tests.length+' test'+(tests.length===1?'':'s'):'';
   const box=$(p.listId);
   if(!tests.length){
-    box.innerHTML=`<div class="muted-note">No test is tagged <span class="mono">@pytest.mark.${marker}</span> yet. ${marker==='SMOKE'?'Smoke tests live in tests/smoke/.':'Every UI/Playwright test is SYSTEM by default — write one from the Write tab.'}</div>`;
+    box.innerHTML=`<div class="muted-note">No test is tagged <span class="mono">@pytest.mark.${marker}</span> yet. ${marker==='SMOKE'?'Smoke tests are stored in the smoke folder.':'UI tests are system tests by default. Write one in the Write tab.'}</div>`;
   }else{
     const byFile=new Map();
     tests.forEach(t=>{if(!byFile.has(t.file))byFile.set(t.file,[]);byFile.get(t.file).push(t)});

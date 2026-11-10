@@ -47,7 +47,7 @@ function caseCard(c){
 function bindStaging(m){
   const go=(url,msg)=>api(url,{method:'POST'}).then(j=>{toast(msg(j));return reload(m.id)}).catch(e=>toast(e.message,'bad'));
   if($('#stSave'))$('#stSave').onclick=()=>{$('#stSave').disabled=true;go('/api/runs/'+m.id+'/autotests/save',j=>j.files.length+' file'+(j.files.length===1?'':'s')+' saved to autotests/')};
-  if($('#stDiscard'))$('#stDiscard').onclick=()=>{if(confirm('Discard these tests? They were never added to autotests/ and will be deleted.'))go('/api/runs/'+m.id+'/autotests/discard',()=>'Discarded')};
+  if($('#stDiscard'))$('#stDiscard').onclick=()=>{if(confirm('Discard these tests? They have not been saved and will be deleted.'))go('/api/runs/'+m.id+'/autotests/discard',()=>'Discarded')};
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-open-run]');

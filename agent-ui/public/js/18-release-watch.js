@@ -19,7 +19,7 @@ function renderReleaseWatch(){
   if(!RW_UNREAD||!RW_ITEMS.length){el.hidden=true;return}
   const unread=RW_ITEMS.filter(n=>!n.read).slice(0,8);
   el.hidden=false;
-  el.innerHTML=`<div class="rw-h">${ico('inbox',14)} <b>${RW_UNREAD} new task${RW_UNREAD===1?'':'s'}</b> in the current release — static test ${RW_UNREAD===1?'has':'have'} already started <button class="linkbtn" id="rwDismiss" style="float:right">Dismiss</button></div>`+
+  el.innerHTML=`<div class="rw-h">${ico('inbox',14)} <b>${RW_UNREAD} new task${RW_UNREAD===1?'':'s'}</b> in the current release. Static testing has started. <button class="linkbtn" id="rwDismiss" style="float:right">Dismiss</button></div>`+
     unread.map(n=>`<button class="rw-row" data-rwopen="${esc(n.runId||'')}" data-rwagent="${esc(n.agent||'')}">
       <span class="pill">${esc(n.project)}</span>
       <span class="mono">${esc(n.key)}</span>

@@ -80,7 +80,7 @@ function chatQualitySection(m){
   // A lone battery of one tool with no scored singles: its matrix is the whole-run matrix, so it is shown once.
   const wholeOnly=parts.length===1&&!chat.some(s=>s.evaluation);
   let h='';
-  if(m.quality)h+='<div class="sec-head" style="margin-top:20px"><h4>MCP chat quality — whole run</h4></div>'+qualityBlock(m.quality)
+  if(m.quality)h+='<div class="sec-head" style="margin-top:20px"><h4>MCP chat quality for the whole run</h4></div>'+qualityBlock(m.quality)
     +qErrors(wholeOnly?parts[0].rows:singles,wholeOnly?'Errors from MCP prompts':'Errors from single messages');
   if(unscored)h+=`<div class="muted-note">${unscored} message${unscored>1?'s were':' was'} sent without expect and not scored.</div>`;
   if(!wholeOnly&&parts.length)h+='<div class="sec-head" style="margin-top:20px"><h4>MCP chat batteries</h4><span class="tag-s">'+parts.length+'</span></div>'
@@ -89,8 +89,8 @@ function chatQualitySection(m){
 }
 /* Chat quality: confusion matrix, metrics against the acceptance criteria (agent-ui/kryteria/kryteria_akceptacji_mcp.json)
    and response time. Computed by mcp-server's scorer, never by the agent. */
-const Q_METRICS=[['accuracy','Accuracy','(TP+TN) / all'],['precision','Precision','TP / (TP+FP+WRONG) — when it states data, how often it is right'],
-  ['recall','Recall (sensitivity)','TP / (TP+FN+WRONG) — answerable questions answered correctly'],['specificity','Specificity','TN / (TN+FP) — unanswerable questions correctly refused'],['f1','F1','2·P·R / (P+R)']];
+const Q_METRICS=[['accuracy','Accuracy','Correct answers out of all questions'],['precision','Precision','How often stated data is correct'],
+  ['recall','Recall','Answerable questions answered correctly'],['specificity','Specificity','Unanswerable questions correctly refused'],['f1','F1','Balance of precision and recall']];
 const fmtPct=v=>v==null?'—':(v*100).toFixed(1)+'%';
 const fmtMs=v=>v==null?'—':v>=1000?(v/1000).toFixed(1)+' s':v+' ms';
 function qualityBlock(q,title){

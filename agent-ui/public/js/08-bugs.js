@@ -116,7 +116,7 @@ function renderBugs(){
     <div class="acts">
       <span class="lbl">Correct:</span>
       <select data-f="severity" aria-label="Severity">${severities.map(s=>`<option value="${s}"${s===b.severity?' selected':''}>${SEVL[s]}</option>`).join('')}</select>
-      <input data-f="service" value="${esc(b.service)}" list="serviceList" aria-label="Service" title="Service — change it if it was assigned wrongly">
+      <input data-f="service" value="${esc(b.service)}" list="serviceList" aria-label="Service" title="Service">
     </div></article>`}).join('')
     :emptyBox('bug','No reports','Nothing matches these filters. Adjust them, or log the first bug using the form on the left.');
   const lmore=$('#listMore');

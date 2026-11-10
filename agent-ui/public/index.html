@@ -53,7 +53,7 @@
     <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
     <button data-tab="autotest"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">Autotests</span><span class="live" id="nb-autotest" hidden></span><span class="live" id="nb-suiterun" hidden></span></button>
     <div class="nav-group">Test Flow</div>
-    <div class="seg flow-mode" id="flowMode" role="radiogroup" aria-label="Test Flow mode" title="Manual: push each finished phase to the next one yourself. Auto: a finished phase starts the next one on its own, all the way to Completion.">
+    <div class="seg flow-mode" id="flowMode" role="radiogroup" aria-label="Test Flow mode" title="Manual mode waits for you to start each phase. Auto mode starts the next phase as soon as the previous one finishes.">
       <button type="button" role="radio" data-m="manual" aria-checked="true"><svg width="12" height="12"><use href="#i-check"/></svg>Manual</button>
       <button type="button" role="radio" data-m="auto" aria-checked="false"><svg width="12" height="12"><use href="#i-bolt"/></svg>Auto</button>
     </div>
@@ -78,11 +78,11 @@
   </nav>
   <button class="env-switch" id="envBtn" title="Switch the test environment">
     <span class="env-lbl">Environment</span>
-    <span class="env-val"><span class="d"></span><span id="envBtnTxt">test-env</span></span>
+    <span class="env-val"><span class="d"></span><span id="envBtnTxt">Test environment</span></span>
   </button>
   <div class="side-foot">
     <div class="conn wait" id="conn"><span class="d"></span><span id="connTxt">Connecting…</span></div>
-    <button class="icon-btn" id="restartBtn" title="Restart the server (picks up code changes on disk)" aria-label="Restart server"><svg width="15" height="15"><use href="#i-restart"/></svg></button>
+    <button class="icon-btn" id="restartBtn" title="Restart the server to load code changes" aria-label="Restart server"><svg width="15" height="15"><use href="#i-restart"/></svg></button>
   </div>
 </aside>
 
@@ -102,12 +102,12 @@
     <p class="hint" id="cmtSub"></p>
     <label>Test type</label>
     <div class="seg at-tabs" id="cmtLayer" role="radiogroup" aria-label="Test type">
-      <button type="button" role="radio" data-l="api" class="on" aria-checked="true"><b>pytest</b><small>Backend · API</small></button>
-      <button type="button" role="radio" data-l="ui" aria-checked="false"><b>Playwright</b><small>Frontend · UI</small></button>
+      <button type="button" role="radio" data-l="api" class="on" aria-checked="true"><b>pytest</b><small>Backend API</small></button>
+      <button type="button" role="radio" data-l="ui" aria-checked="false"><b>Playwright</b><small>Frontend UI</small></button>
     </div>
     <p class="hint" id="cmtLayerHint"></p>
     <label for="cmtText">Comment for the agent <span class="opt">Optional</span></label>
-    <textarea id="cmtText" maxlength="2000" placeholder="e.g. the second finding is not a real bug, do not assert on it; cover only the long side; use account group AUTOTEST"></textarea>
+    <textarea id="cmtText" maxlength="2000" placeholder="Anything the agent should know before writing the tests"></textarea>
     <div class="cnt" id="cmtCnt" style="margin-top:6px;text-align:right"></div>
     <div class="modal-act"><button class="btn" id="cmtCancel">Cancel</button><button class="go" id="cmtGo" style="width:auto"><svg width="13" height="13"><use href="#i-code"/></svg> Create autotests</button></div>
     <div class="kbd-hint" style="text-align:right">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
@@ -135,14 +135,14 @@
 <main id="view-workspace" hidden>
   <section class="panel">
     <div class="panel-h">
-      <div><h2>What to test now</h2><div class="sub" id="wsSub">Your open tasks in PRJ / SVC / OPS, ranked by Jira priority, then by service risk from the bug registry.</div></div>
+      <div><h2>What to test now</h2><div class="sub" id="wsSub">Your open tasks in PRJ, SVC and OPS, ranked by Jira priority and service risk.</div></div>
       <button class="btn sm" id="wsSync">Refresh from Jira</button>
     </div>
     <div class="panel-b"><div class="err" id="wsErr"></div></div>
   </section>
   <section class="panel">
     <div class="panel-h"><h2>What should I do now?</h2><button class="btn sm" id="wsAdviseBtn">Build report</button></div>
-    <div class="panel-b"><div id="wsAdviseOut" class="muted-note">One short checklist per open task, ranked: stage reached, static test, test design, coverage, autotests.</div></div>
+    <div class="panel-b"><div id="wsAdviseOut" class="muted-note">A short checklist for each open task.</div></div>
   </section>
   <section class="panel" id="wsNextBox"></section>
   <section class="panel">
@@ -163,18 +163,18 @@
         </div>
         <div class="field">
           <label for="ticket" id="ticketLabel">Ticket key</label>
-          <textarea id="ticket" placeholder="e.g. OPS-170" autocomplete="off" style="min-height:0;height:38px"></textarea>
+          <textarea id="ticket" placeholder="Ticket key or task description" autocomplete="off" style="min-height:0;height:38px"></textarea>
           <div class="hint" id="hint"></div>
         </div>
         <div class="field">
           <label for="notes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="notes" placeholder="e.g. focus on the admin tools"></textarea>
+          <textarea id="notes" placeholder="Anything the agent should focus on"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="fileDrop" tabindex="0">
             <input type="file" id="fileInput" hidden>
-            <div class="dz-empty" id="fileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="fileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="fileList" hidden></div>
           </div>
           <div class="err" id="fileErr"></div>
@@ -200,38 +200,34 @@
         <div class="qenv" id="qEnv"></div>
         <div class="field">
           <label for="qProcess">Test process</label>
-          <textarea id="qProcess" style="min-height:120px" placeholder="Write it the way you would tell a colleague, e.g.
-
-Create 10 items in group 1001,
-then edit 2 of them. Check the totals add up and
-nothing was deleted instead of edited."></textarea>
+          <textarea id="qProcess" style="min-height:120px" placeholder="Test process to run"></textarea>
           <div class="hint" id="qHint"></div>
           <div class="cnt" id="qCnt" style="margin-top:6px;text-align:right"></div>
           <div id="qBrief"></div>
         </div>
         <div class="field">
           <label for="qNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="qNotes" placeholder="e.g. the account must stay net long"></textarea>
+          <textarea id="qNotes" placeholder="Anything the agent should keep in mind"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="qFileDrop" tabindex="0">
             <input type="file" id="qFileInput" hidden>
-            <div class="dz-empty" id="qFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="qFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="qFileList" hidden></div>
           </div>
           <div class="err" id="qFileErr"></div>
         </div>
         <div class="field">
-          <label for="qScope">Tools loaded <span class="opt">Affects cost and speed</span></label>
+          <label for="qScope">Tools <span class="opt">Affects cost and speed</span></label>
           <select id="qScope">
-            <option value="auto">Auto: only the tool groups this process needs (cheaper, faster)</option>
-            <option value="all">All 628 tools (about 12k more tokens on every turn)</option>
+            <option value="auto">Only the tools this process needs</option>
+            <option value="all">All tools</option>
           </select>
-          <div class="hint">If a step needs a tool that was not loaded, the run marks it NOT VERIFIABLE VIA MCP and names the group. Run it again with All tools.</div>
+          <div class="hint"></div>
         </div>
         <button class="go" id="qGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test process</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="qErr"></div>
       </div>
     </section>
@@ -245,31 +241,31 @@ nothing was deleted instead of edited."></textarea>
 
 <main id="view-planning" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-flask"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>1</em> · Planning</b><span>Risk, entry/exit criteria and a static/white-box feasibility check before a backlog task is implemented.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>1</em>  Planning</b><span>Assesses risk, entry and exit criteria and feasibility before a task is implemented.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 1 — Planning</h2></div>
+      <div class="panel-h"><h2>Phase 1. Planning</h2></div>
       <div class="panel-b">
         <div class="field">
           <label for="pfTask">Backlog task</label>
-          <textarea id="pfTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or paste the task's description/story if it has no key yet"></textarea>
+          <textarea id="pfTask" style="min-height:96px" placeholder="Ticket key or task description"></textarea>
           <div class="hint" id="pfHint"></div>
         </div>
         <div class="field">
           <label for="pfNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="pfNotes" placeholder="e.g. this iteration also touches the pricing rules, check for conflicts there"></textarea>
+          <textarea id="pfNotes" placeholder="Anything the agent should check as well"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="pfFileDrop" tabindex="0">
             <input type="file" id="pfFileInput" hidden>
-            <div class="dz-empty" id="pfFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="pfFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="pfFileList" hidden></div>
           </div>
           <div class="err" id="pfFileErr"></div>
         </div>
         <button class="go" id="pfGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run planning check</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="pfErr"></div>
       </div>
     </section>
@@ -283,31 +279,31 @@ nothing was deleted instead of edited."></textarea>
 
 <main id="view-analysis" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-term"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>3</em> · Analysis</b><span>Picks a test strategy, measures the coverage gap, and checks blast radius across repos before Design.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>3</em>  Analysis</b><span>Selects a test strategy, measures the coverage gap and checks the impact on other repositories.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 3 — Analysis</h2></div>
+      <div class="panel-h"><h2>Phase 3. Analysis</h2></div>
       <div class="panel-b">
         <div class="field">
           <label for="anTask">Backlog task</label>
-          <textarea id="anTask" style="min-height:96px" placeholder="e.g. PRJ-900 — ideally already checked by Phase 1 Planning"></textarea>
+          <textarea id="anTask" style="min-height:96px" placeholder="Ticket key or task description"></textarea>
           <div class="hint" id="anHint"></div>
         </div>
         <div class="field">
           <label for="anNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="anNotes" placeholder="e.g. Phase 1 flagged risk on the rule interaction"></textarea>
+          <textarea id="anNotes" placeholder="Findings from Planning or other notes"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="anFileDrop" tabindex="0">
             <input type="file" id="anFileInput" hidden>
-            <div class="dz-empty" id="anFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="anFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="anFileList" hidden></div>
           </div>
           <div class="err" id="anFileErr"></div>
         </div>
         <button class="go" id="anGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis check</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="anErr"></div>
       </div>
     </section>
@@ -321,46 +317,41 @@ nothing was deleted instead of edited."></textarea>
 
 <main id="view-execution" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-play"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>6</em> · Execution</b><span>Runs a Phase 5 procedure for real, verifies the result, and reports any defect with retest evidence.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>6</em>  Execution</b><span>Runs the procedure from Implementation, verifies the results and retests every defect before reporting it.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 6 — Execution</h2></div>
+      <div class="panel-h"><h2>Phase 6. Execution</h2></div>
       <div class="panel-b">
         <div class="qenv" id="exEnv"></div>
         <div class="field">
           <label for="exProcess">Procedure from Phase 5</label>
-          <textarea id="exProcess" style="min-height:120px" placeholder="Paste the step-by-step procedure from Phase 5 Test Implementation, e.g.
-
-1. Create 10 items in group 1001,
-then edit 2 of them. Check the totals add up and
-nothing was deleted instead of edited.
-2. ..."></textarea>
+          <textarea id="exProcess" style="min-height:120px" placeholder="Procedure to run"></textarea>
           <div class="hint" id="exHint"></div>
           <div class="cnt" id="exCnt" style="margin-top:6px;text-align:right"></div>
         </div>
         <div class="field">
           <label for="exNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="exNotes" placeholder="e.g. this is a retest of the defect found last run"></textarea>
+          <textarea id="exNotes" placeholder="For example, a retest of a defect from the last run"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="exFileDrop" tabindex="0">
             <input type="file" id="exFileInput" hidden>
-            <div class="dz-empty" id="exFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="exFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="exFileList" hidden></div>
           </div>
           <div class="err" id="exFileErr"></div>
         </div>
         <div class="field">
-          <label for="exScope">Tools loaded <span class="opt">Affects cost and speed</span></label>
+          <label for="exScope">Tools <span class="opt">Affects cost and speed</span></label>
           <select id="exScope">
-            <option value="auto">Auto: only the tool groups this process needs (cheaper, faster)</option>
-            <option value="all">All tools (more tokens on every turn)</option>
+            <option value="auto">Only the tools this process needs</option>
+            <option value="all">All tools</option>
           </select>
-          <div class="hint">If a step needs a tool that was not loaded, the run marks it NOT VERIFIABLE VIA MCP and names the group. Run it again with All tools.</div>
+          <div class="hint"></div>
         </div>
         <button class="go" id="exGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run execution</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="exErr"></div>
       </div>
     </section>
@@ -374,31 +365,31 @@ nothing was deleted instead of edited.
 
 <main id="view-completion" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-check"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>7</em> · Completion</b><span>A short, plain-English explanation of how a finished task works, archived into the knowledge base.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>7</em>  Completion</b><span>A short explanation of how a finished task works, saved to the knowledge base.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 7 — Completion</h2></div>
+      <div class="panel-h"><h2>Phase 7. Completion</h2></div>
       <div class="panel-b">
         <div class="field">
           <label for="cpTask">Completed task</label>
-          <textarea id="cpTask" style="min-height:96px" placeholder="e.g. PRJ-900 — a finished ticket to explain and archive into the knowledge base"></textarea>
+          <textarea id="cpTask" style="min-height:96px" placeholder="Ticket key of a finished task"></textarea>
           <div class="hint" id="cpHint"></div>
         </div>
         <div class="field">
           <label for="cpNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="cpNotes" placeholder="e.g. focus on why the retry logic was added, not just what it does"></textarea>
+          <textarea id="cpNotes" placeholder="Anything the explanation should focus on"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="cpFileDrop" tabindex="0">
             <input type="file" id="cpFileInput" hidden>
-            <div class="dz-empty" id="cpFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="cpFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="cpFileList" hidden></div>
           </div>
           <div class="err" id="cpFileErr"></div>
         </div>
         <button class="go" id="cpGo"><svg width="13" height="13"><use href="#i-play"/></svg> Explain this task</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="cpErr"></div>
       </div>
     </section>
@@ -412,17 +403,17 @@ nothing was deleted instead of edited.
 
 <main id="view-runsummary" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-chart"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>8</em> · Run Summary</b><span>Every Test Flow phase for one ticket, on one page — compiled fresh from the latest run of each phase, so it is never a stale snapshot.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>8</em>  Run Summary</b><span>All Test Flow phases for one ticket on a single page, built from the latest run of each phase.</span></div></div>
   <section class="panel">
     <div class="panel-h"><h2>Pick a ticket</h2></div>
     <div class="panel-b">
       <div class="field">
         <label for="rsTicket">Ticket</label>
         <div style="display:flex;gap:8px">
-          <input type="text" id="rsTicket" style="flex:1;min-width:0" placeholder="The exact text the Test Flow was started with, e.g. PRJ-900">
+          <input type="text" id="rsTicket" style="flex:1;min-width:0" placeholder="Ticket key">
           <button class="go" id="rsGo" style="width:auto;height:40px;margin-top:0;padding:0 20px;flex:none;white-space:nowrap"><svg width="13" height="13"><use href="#i-chart"/></svg> Show summary</button>
         </div>
-        <div class="hint">For auto mode, this opens on its own once Completion finishes. For manual mode, run Completion first, then pick its ticket here.</div>
+        <div class="hint"></div>
       </div>
       <div class="rs-recent" id="rsRecent"></div>
     </div>
@@ -432,31 +423,31 @@ nothing was deleted instead of edited.
 
 <main id="view-design" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-code"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>4</em> · Design</b><span>Turns test conditions into concrete ISTQB test cases, grounded in the repo and the bug registry.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>4</em>  Design</b><span>Turns test conditions into concrete test cases based on the code and the bug registry.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 4 — Design</h2></div>
+      <div class="panel-h"><h2>Phase 4. Design</h2></div>
       <div class="panel-b">
         <div class="field">
           <label for="dsTask">Scope to design</label>
-          <textarea id="dsTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or the requirement/area to design tests for (ideally the scope handed off from Phase 3 Analysis)"></textarea>
+          <textarea id="dsTask" style="min-height:96px" placeholder="Ticket key or the requirement to design tests for"></textarea>
           <div class="hint" id="dsHint"></div>
         </div>
         <div class="field">
           <label for="dsNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="dsNotes" placeholder="e.g. focus on the areas flagged highest-priority by Analysis"></textarea>
+          <textarea id="dsNotes" placeholder="Areas to focus on"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="dsFileDrop" tabindex="0">
             <input type="file" id="dsFileInput" hidden>
-            <div class="dz-empty" id="dsFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="dsFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="dsFileList" hidden></div>
           </div>
           <div class="err" id="dsFileErr"></div>
         </div>
         <button class="go" id="dsGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test design</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="dsErr"></div>
       </div>
     </section>
@@ -470,31 +461,31 @@ nothing was deleted instead of edited.
 
 <main id="view-implementation" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-layers"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>5</em> · Implementation</b><span>Merges Phase 4's test designs into one procedure, prioritised, time-estimated and traced back to its source.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>5</em>  Implementation</b><span>Combines the test designs into one prioritised and estimated procedure.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 5 — Implementation</h2></div>
+      <div class="panel-h"><h2>Phase 5. Implementation</h2></div>
       <div class="panel-b">
         <div class="field">
           <label for="imTask">Test design from Phase 4</label>
-          <textarea id="imTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or paste the Phase 4 test design report directly"></textarea>
+          <textarea id="imTask" style="min-height:96px" placeholder="Ticket key or the test design report"></textarea>
           <div class="hint" id="imHint"></div>
         </div>
         <div class="field">
           <label for="imNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="imNotes" placeholder="e.g. paste the Phase 1 risk list and/or Phase 3 scope-and-priority here too"></textarea>
+          <textarea id="imNotes" placeholder="Risk list or scope from earlier phases"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="imFileDrop" tabindex="0">
             <input type="file" id="imFileInput" hidden>
-            <div class="dz-empty" id="imFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="imFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="imFileList" hidden></div>
           </div>
           <div class="err" id="imFileErr"></div>
         </div>
         <button class="go" id="imGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run implementation</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="imErr"></div>
       </div>
     </section>
@@ -508,7 +499,7 @@ nothing was deleted instead of edited.
 
 <main id="view-tfmonitor" hidden class="wide viz">
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-gauge"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>2</em> · Monitoring &amp; control</b><span>Iteration-by-iteration releases per project: progress, status mix and priority, read from Jira.</span></div></div>
+    <div class="ph-tx"><b>Phase <em>2</em>  Monitoring &amp; control</b><span>Releases per project with progress, status and priority from Jira.</span></div></div>
   <div id="tfmProjects" class="seg"></div>
   <div id="tfmBody"></div>
 </main>
@@ -524,8 +515,8 @@ nothing was deleted instead of edited.
 
   <div class="col at-pane" data-pane="write">
     <div class="seg at-tabs" id="aLayer" role="tablist" aria-label="Test type">
-      <button role="tab" data-l="api" class="on" aria-selected="true"><b>pytest</b><small>Backend · API</small></button>
-      <button role="tab" data-l="ui" aria-selected="false"><b>Playwright</b><small>Frontend · UI</small></button>
+      <button role="tab" data-l="api" class="on" aria-selected="true"><b>pytest</b><small>Backend API</small></button>
+      <button role="tab" data-l="ui" aria-selected="false"><b>Playwright</b><small>Frontend UI</small></button>
     </div>
     <section class="panel">
       <div class="panel-h"><h2 id="aTitle">Write an API test</h2></div>
@@ -533,33 +524,30 @@ nothing was deleted instead of edited.
         <div class="qenv" id="aEnv"></div>
         <div class="field">
           <label for="aCase">Test case</label>
-          <textarea id="aCase" style="min-height:120px" placeholder="Describe it the way you would write it in a test plan, e.g.
-
-Changing a group's default setting must not change the
-setting of an account that already has its own value."></textarea>
+          <textarea id="aCase" style="min-height:120px" placeholder="Test case to automate"></textarea>
           <div class="hint" id="aHint"></div>
           <div class="cnt" id="aCnt" style="margin-top:6px;text-align:right"></div>
         </div>
         <div class="field">
-          <label for="aFolder">Area under tests/ <span class="opt">Optional</span></label>
+          <label for="aFolder">Folder in tests <span class="opt">Optional</span></label>
           <input id="aFolder" list="folderList" placeholder="Picked by topic if left blank" autocomplete="off">
           <datalist id="folderList"></datalist>
         </div>
         <div class="field">
           <label for="aNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="aNotes" placeholder="e.g. add it to the existing test_create_item.py"></textarea>
+          <textarea id="aNotes" placeholder="For example, extend an existing test file"></textarea>
         </div>
         <div class="field">
-          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <label>Data files <span class="opt">Optional</span></label>
           <div class="dropzone" id="aFileDrop" tabindex="0">
             <input type="file" id="aFileInput" hidden>
-            <div class="dz-empty" id="aFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-empty" id="aFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
             <div class="dz-list" id="aFileList" hidden></div>
           </div>
           <div class="err" id="aFileErr"></div>
         </div>
         <button class="go" id="aGo"><svg width="13" height="13"><use href="#i-code"/></svg> Write the test</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="aErr"></div>
         <div id="aBrief"></div>
       </div>
@@ -577,7 +565,7 @@ setting of an account that already has its own value."></textarea>
       <div class="panel-b">
         <div id="smList"></div>
         <button class="go" id="smGo" disabled><svg width="13" height="13"><use href="#i-play"/></svg> Run smoke pack</button>
-        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SMOKE</span> test as one pytest invocation, on the test environment.</div>
+        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SMOKE</span> test in a single pytest run on the test environment.</div>
       </div>
     </section>
   </div>
@@ -589,7 +577,7 @@ setting of an account that already has its own value."></textarea>
       <div class="panel-b">
         <div id="sysList"></div>
         <button class="go" id="sysGo" disabled><svg width="13" height="13"><use href="#i-play"/></svg> Run system pack</button>
-        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SYSTEM</span> test (incl. UI/Playwright) as one pytest invocation.</div>
+        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SYSTEM</span> test, including UI tests, in a single pytest run.</div>
       </div>
     </section>
   </div>
@@ -599,7 +587,7 @@ setting of an account that already has its own value."></textarea>
     <section class="panel">
       <div class="panel-h"><h2>Tests in the repo</h2><span class="meta-r" id="suCount"></span></div>
       <div class="panel-b" style="padding-bottom:8px">
-        <input id="suQ" placeholder="Search tests…" autocomplete="off" aria-label="Search tests">
+        <input id="suQ" placeholder="Search tests" autocomplete="off" aria-label="Search tests">
         <div class="su-filters">
           <select id="suMarker" aria-label="Marker"></select>
           <select id="suStatus" aria-label="Status"><option value="">Any result</option><option value="passed">Passed last run</option><option value="failed">Failed last run</option><option value="notrun">Never run</option></select>
@@ -608,7 +596,7 @@ setting of an account that already has its own value."></textarea>
       </div>
       <div class="su-tree" id="suTree"></div>
       <div class="panel-b" style="padding-top:0"><button class="go" id="suGo" style="margin-top:12px" disabled>Run selected</button>
-        <div class="kbd-hint">Runs on the test environment, one run at a time. Trading tests open real positions on the AUTOTEST accounts.</div></div>
+        <div class="kbd-hint">Tests run on the test environment one at a time.</div></div>
     </section>
   </div>
   <section class="panel detail at-pane" data-pane="suite" id="sDetail" hidden></section>
@@ -617,14 +605,14 @@ setting of an account that already has its own value."></textarea>
 <main id="view-tools" class="wide" hidden>
   <div class="col">
     <section class="panel jirapanel">
-      <div class="jirabar"><span id="tlSt">Loading…</span><span class="jbtns"><button type="button" id="tlFull" title="Refresh the specifications from the services, then go through every endpoint looking for newly added ones and changed parameters. Services that cannot be reached keep their cached specification.">Reinitialize all endpoints</button></span></div>
+      <div class="jirabar"><span id="tlSt">Loading</span><span class="jbtns"><button type="button" id="tlFull" title="Refresh the specifications and look for new or changed endpoints. Services that cannot be reached keep their cached specification.">Reinitialize all endpoints</button></span></div>
       <div id="tlReport"></div>
     </section>
     <section class="panel">
       <div class="panel-h"><h2>Endpoints by service</h2><span class="meta-r" id="tlCount"></span></div>
       <div class="panel-b" style="padding-bottom:8px">
-        <input id="tlQ" placeholder="Search by tool name, path or description…" autocomplete="off" aria-label="Search endpoints">
-        <label class="tl-chk"><input type="checkbox" id="tlChanged" class="su-cb"> Only new or changed (last 2 weeks)</label>
+        <input id="tlQ" placeholder="Search by tool name, path or description" autocomplete="off" aria-label="Search endpoints">
+        <label class="tl-chk"><input type="checkbox" id="tlChanged" class="su-cb"> Only new or changed in the last 2 weeks</label>
       </div>
       <div class="panel-b" id="tlList"></div>
     </section>
@@ -639,20 +627,20 @@ setting of an account that already has its own value."></textarea>
         <div class="field"><label>Application</label><div class="seg" id="bAgents"></div></div>
         <div class="field">
           <label for="bService">Service</label>
-          <input id="bService" list="serviceList" placeholder="Pick one or type it" autocomplete="off">
+          <input id="bService" list="serviceList" placeholder="Select or type a service" autocomplete="off">
           <datalist id="serviceList"></datalist>
         </div>
         <div class="field">
           <label for="bTitle">What is broken</label>
-          <textarea id="bTitle" placeholder="e.g. saving a group resets the commission when the field was never edited"></textarea>
+          <textarea id="bTitle" placeholder="Short description of the defect"></textarea>
         </div>
         <div class="field row2">
-          <div><label for="bTicket">Ticket</label><input id="bTicket" placeholder="SVC-318" autocomplete="off"></div>
+          <div><label for="bTicket">Ticket</label><input id="bTicket" placeholder="Ticket key" autocomplete="off"></div>
           <div><label for="bSeverity">Severity</label><select id="bSeverity"></select></div>
         </div>
         <div class="field">
-          <label for="bNotes">Evidence / notes</label>
-          <textarea id="bNotes" placeholder="file:line, steps to reproduce" style="min-height:96px"></textarea>
+          <label for="bNotes">Evidence and notes</label>
+          <textarea id="bNotes" placeholder="Steps to reproduce and affected file" style="min-height:96px"></textarea>
         </div>
         <button class="go" id="bGo"><svg width="14" height="14"><use href="#i-bug"/></svg> Add to registry</button>
         <div class="err" id="bErr"></div>
@@ -661,10 +649,10 @@ setting of an account that already has its own value."></textarea>
   </div>
   <div class="col">
     <section class="panel jirapanel">
-      <div class="jirabar"><span id="jiraSt">Jira sync: checking…</span><span class="jbtns"><button type="button" class="go" id="jiraGo" title="Fetch new bugs and bug-like task comments from the PRJ, SVC and AD Jira projects now">Sync Jira now</button><button type="button" id="jiraFull" title="Reinitialize everything: re-fetch ALL bugs and task comments from the PRJ, SVC and AD Jira projects, ignoring the last sync date. Adds what is missing, never deletes or duplicates. Slower and costs more than a normal sync.">Reinitialize all tasks</button></span></div>
+      <div class="jirabar"><span id="jiraSt">Jira sync: checking</span><span class="jbtns"><button type="button" class="go" id="jiraGo" title="Fetch new bugs and task comments from Jira now">Sync Jira now</button><button type="button" id="jiraFull" title="Fetch all bugs and task comments from Jira again. Nothing is deleted or duplicated. This takes longer than a normal sync.">Reinitialize all tasks</button></span></div>
     </section>
     <section class="panel">
-      <div class="panel-h"><div><h2>Defects by service</h2><div class="sub">Click a service to filter below.</div></div><span class="total" id="bTotal"></span></div>
+      <div class="panel-h"><div><h2>Defects by service</h2><div class="sub">Select a service to filter the list.</div></div><span class="total" id="bTotal"></span></div>
       <div class="utabs" id="appTabs"></div>
       <div class="panel-b">
         <div class="sevleg"><span><i class="sv-k"></i>Critical</span><span><i class="sv-w"></i>Major</span><span><i class="sv-d"></i>Minor</span></div>
@@ -689,8 +677,8 @@ setting of an account that already has its own value."></textarea>
  <div class="doc viz">
   <div class="doc-hero">
     <h3>Where to expect more bugs</h3>
-    <p>Computed live from the bug registry. <b>Which service breaks the most per change</b> — so test effort goes where the next ticket is most likely to fail, not just where bugs piled up historically.</p>
-    <div class="src">Weights: critical 5 · major 3 · minor 1. Every logged finding counts, fixed or not.</div>
+    <p>Calculated from the bug registry. <b>It shows which service breaks most often per change,</b>  so testing can focus where the next ticket is most likely to fail.</p>
+    <div class="src">Weights: critical 5, major 3, minor 1. Every finding counts, whether fixed or not.</div>
   </div>
 
   <section class="panel" id="rTopBox" hidden>
@@ -706,23 +694,23 @@ setting of an account that already has its own value."></textarea>
     <section class="panel">
       <div class="panel-h"><h2>Findings by severity</h2></div>
       <div class="panel-b">
-        <p class="rlede">Mostly criticals = bugs caught late, after they already hurt.</p>
+        <p class="rlede">A high share of critical bugs means defects are found late.</p>
         <div class="chartbox" id="rSev"></div>
       </div>
     </section>
     <section class="panel">
       <div class="panel-h"><h2>Damage share by application</h2></div>
       <div class="panel-b">
-        <p class="rlede">Damage, not finding count — three minors never outweigh one critical.</p>
+        <p class="rlede">Weighted by severity, so three minor bugs never outweigh one critical bug.</p>
         <div class="chartbox" id="rApp"></div>
       </div>
     </section>
   </section>
 
   <section class="panel">
-    <div class="panel-h"><h2>Risk density — defects per change touched</h2></div>
+    <div class="panel-h"><h2>Risk density per change</h2></div>
     <div class="panel-b">
-      <p class="rlede">A service that breaks on most of its changes will keep doing so. <b>Past the dashed line = test it first.</b></p>
+      <p class="rlede">A service that breaks on most of its changes is likely to keep doing so. <b>Services above the dashed line should be tested first.</b></p>
       <div class="chartbox" id="rWatch"></div>
       <div class="vizleg" id="rWatchLeg"></div>
       <button class="rmore" id="rMore" hidden></button>
@@ -732,7 +720,7 @@ setting of an account that already has its own value."></textarea>
   <section class="panel">
     <div class="panel-h"><h2>Total damage by application</h2></div>
     <div class="panel-b">
-      <p class="rlede">All-time totals, by app and its top services — a service can rank high simply from having had many changes, not from being dangerous per change.</p>
+      <p class="rlede">All-time totals per application and its main services. A high total can simply reflect many changes.</p>
       <div id="rStack"></div>
     </div>
   </section>
@@ -741,7 +729,7 @@ setting of an account that already has its own value."></textarea>
     <section class="panel">
       <div class="panel-h"><h2>Expected testing time</h2></div>
       <div class="panel-b">
-        <p class="rlede">Median run time from this app's finished runs, with the middle-50% range as "±". ISTQB calls this <b>extrapolation</b>: estimate the next similar task from recent actuals, not a guess.</p>
+        <p class="rlede">Median run time of finished runs, with the middle half of runs as the range. ISTQB calls this <b>extrapolation</b>, which estimates the next task from recent actual values.</p>
         <div class="chartbox" id="rTime"></div>
         <div class="vizleg" id="rTimeLeg"></div>
       </div>
@@ -749,7 +737,7 @@ setting of an account that already has its own value."></textarea>
     <section class="panel">
       <div class="panel-h"><h2>Average bugs per task, by service</h2></div>
       <div class="panel-b">
-        <p class="rlede">Plain average — findings ÷ tickets touched, unweighted by severity. What to expect, not how bad it is when it happens.</p>
+        <p class="rlede">Number of findings divided by the number of tickets, without severity weighting.</p>
         <div class="chartbox" id="rBugsAvg"></div>
         <div class="vizleg" id="rBugsAvgLeg"></div>
       </div>
@@ -759,7 +747,7 @@ setting of an account that already has its own value."></textarea>
   <section class="panel">
     <div class="panel-h"><h2>Suggested test priority</h2></div>
     <div class="panel-b">
-      <p class="rlede">Priority = risk level = <b>likelihood × impact</b> (ISTQB CTFL §5.2): services with more findings per ticket, weighted by how severe they tend to be. <b>A high-risk service should be tested earlier and more rigorously — not faster or shorter</b> (ISTQB CTAL-TM §1.3.4); use the time estimate above only to plan capacity, not to cut scope on these.</p>
+      <p class="rlede">Priority is the risk level, calculated as <b>likelihood times impact</b>  according to ISTQB CTFL 5.2. Services with more and more severe findings per ticket rank higher. <b>A high-risk service should be tested earlier and more thoroughly, not faster.</b>  The time estimate is meant for capacity planning only. ISTQB CTAL-TM 1.3.4.</p>
       <div id="rPriority"></div>
     </div>
   </section>
@@ -770,8 +758,8 @@ setting of an account that already has its own value."></textarea>
  <div class="doc viz">
   <div class="doc-hero">
     <h3>Build a metric</h3>
-    <p>Pick a statistic, a period, and the apps, services or Jira release to scope it to — from the same bug registry, run history and cached releases the rest of the app already reads. <b>Generating freezes the result</b> as a saved chart: it keeps showing what it showed on the day you made it, even if the registry changes afterwards.</p>
-    <div class="src" id="mgDlSt">Jira defect history (opened/closed, resolution time): checking…</div>
+    <p>Select a statistic, a period and the applications, services or Jira release to include. <b>A generated chart is saved</b>  and keeps showing the data from the day it was created.</p>
+    <div class="src" id="mgDlSt">Jira defect history: checking</div>
     <button type="button" class="btn sm" id="mgDlSync" style="margin-top:8px">Sync Jira defect history</button>
   </div>
 
@@ -788,9 +776,9 @@ setting of an account that already has its own value."></textarea>
           <label>Period</label>
           <div class="seg" id="mgPeriod">
             <button data-p="all" class="on">All time</button>
-            <button data-p="30">Last 30d</button>
-            <button data-p="90">Last 90d</button>
-            <button data-p="180">Last 6mo</button>
+            <button data-p="30">Last 30 days</button>
+            <button data-p="90">Last 90 days</button>
+            <button data-p="180">Last 6 months</button>
             <button data-p="365">Last year</button>
             <button data-p="custom">Custom</button>
           </div>
@@ -799,11 +787,11 @@ setting of an account that already has its own value."></textarea>
           </div>
         </div>
         <div class="mgen-field" id="mgAppsField">
-          <label>Apps <span class="opt">Leave all unchecked for every app</span></label>
+          <label>Apps <span class="opt">Leave empty to include all applications</span></label>
           <div class="mgen-check" id="mgApps"></div>
         </div>
         <div class="mgen-field" id="mgServicesField" hidden>
-          <label>Services <span class="opt">Leave empty for every service</span></label>
+          <label>Services <span class="opt">Leave empty to include all services</span></label>
           <div class="mgen-check mgen-scroll" id="mgServices"></div>
         </div>
         <div class="mgen-field" id="mgReleaseField" hidden>
@@ -824,34 +812,34 @@ setting of an account that already has its own value."></textarea>
   </section>
 
   <section class="panel">
-    <div class="panel-h"><div><h2>Econometric analysis</h2><div class="sub">Pick what you want explained (Y) and what might explain it (X) from real, already-collected metrics; the app fits an OLS regression and reports it the correct way — significance, multicollinearity, fit, and the caveats that go with a small sample.</div></div></div>
+    <div class="panel-h"><div><h2>Econometric analysis</h2><div class="sub">Select the metric to explain and the metrics that may explain it. The app fits a regression and reports significance, fit and the limits of a small sample.</div></div></div>
     <div class="panel-b">
       <div class="econ-builder">
         <div class="mgen-field econ-gran">
-          <label for="ecGran">Granularity (what one row is)</label>
+          <label for="ecGran">Granularity</label>
           <select id="ecGran"></select>
           <p class="hint" id="ecGranDesc"></p>
         </div>
         <div class="mgen-field" id="ecPeriodField">
-          <label>Period <span class="opt">Only matters for the "over time" granularity</span></label>
+          <label>Period <span class="opt">Applies only when the granularity is over time</span></label>
           <div class="seg" id="ecPeriod">
-            <button data-p="90" class="on">Last 90d</button>
-            <button data-p="180">Last 6mo</button>
+            <button data-p="90" class="on">Last 90 days</button>
+            <button data-p="180">Last 6 months</button>
             <button data-p="365">Last year</button>
             <button data-p="all">All time</button>
           </div>
         </div>
         <div class="mgen-field">
-          <label for="ecY">Dependent variable (Y) — what you want explained</label>
+          <label for="ecY">Dependent variable</label>
           <select id="ecY"></select>
         </div>
         <div class="mgen-field econ-vars">
-          <label>Explanatory variables (X) — pick one or more</label>
+          <label>Explanatory variables</label>
           <div class="econ-xcheck" id="ecX"></div>
         </div>
         <div class="mgen-field">
           <label for="ecTitle">Title <span class="opt">Optional</span></label>
-          <input type="text" id="ecTitle" maxlength="120" placeholder="Defaults to Y vs X">
+          <input type="text" id="ecTitle" maxlength="120" placeholder="Defaults to the variable names">
         </div>
       </div>
       <button class="go" id="ecGo"><svg width="13" height="13"><use href="#i-spark"/></svg> Build model</button>

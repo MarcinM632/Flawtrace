@@ -40,12 +40,12 @@ function jobDone(j){
     if(loadReplicate(j,false)){
       if(here){showTab('qamcp');$('#qProcess').focus()}
       else toast('The QA MCP process for '+j.runId+' is ready in the QA MCP tab.');
-    }else toast('The process for '+j.runId+' is ready, but QA MCP holds your own text — it was kept. Open that run and press “Load process into QA MCP”.');
+    }else toast('The process for '+j.runId+' is ready. Your text in QA MCP was kept. Open the run and select Load process into QA MCP.');
   }else{
     const id=j.result&&j.result.runId; if(!id)return;
     refreshAll();
     if(viewingRun(j.runId)||!$('#view-autotest').hidden){showTab('autotest');atSetSub('write');open(id)}
-    else toast('The Autotests run was started — it is in the Autotests tab.');
+    else toast('The Autotests run has started.');
   }
 }
 /* Button labels come from the job state, so they survive every repaint of the run panel. */
@@ -54,13 +54,13 @@ function syncJobButtons(m){
   if(q){
     const j=jobOf('replicate',m.id), run=j&&j.state==='running';
     q.disabled=!!run;
-    q.innerHTML=ico('term')+(run?' Preparing the process… (in the background)':repReady(m.id)?' Load process into QA MCP':' Replicate in QA MCP');
+    q.innerHTML=ico('term')+(run?' Preparing the process':repReady(m.id)?' Load process into QA MCP':' Replicate in QA MCP');
   }
   const t=$('#toTests');
   if(t){
     const j=jobOf('autotests',m.id), run=j&&j.state==='running';
     t.disabled=!!run;
-    t.innerHTML=ico('code')+(run?' Preparing the prompt… (in the background)':' Create autotests');
+    t.innerHTML=ico('code')+(run?' Preparing the prompt':' Create autotests');
   }
 }
 async function startJobFor(kind,m,what,comment,layer){
@@ -82,7 +82,7 @@ async function autoRunReplicate(j,here){
     $('#qProcess').value=r.prompt;$('#qProcess').dispatchEvent(new Event('input'));lastAutoProcess=r.prompt;
     qBriefShow(r,m,true);
     if(here){showTab('qamcp');await open(run.id)}
-    else toast('The QA MCP test for '+j.runId+' is running — see the QA MCP tab.');
+    else toast('The QA MCP test for '+j.runId+' is running in QA MCP.');
     refreshAll();
   }catch(e){
     loadReplicate(j,true);
@@ -126,9 +126,9 @@ function paint(m){
   $('#actions').innerHTML=(m.status==='running'?`<button class="btn danger" id="cancel">${ico('x')} Cancel run</button>`:'')
     +(FLOW_NEXT[m.agent]&&m.status==='done'&&!m.pushedTo?`<button class="btn" id="pushNext" title="Starts ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]])} with this report as its input">${ico('play')} Push to ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]])}</button>`:'')
     +(m.pushedTo?`<button class="btn" id="pushedTag" title="Open the run this was pushed to">${ico('check')} Pushed to ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]]||'the next phase')}</button>`:'')
-    +(m.agent==='completion'&&m.status==='done'?`<button class="btn" id="toSummary" title="Compiles every Test Flow phase for this ticket into one page">${ico('chart',13)} Open Run Summary</button>`:'')
-    +(canReplicate(m)?`<button class="btn" id="toQa" title="The prompt engineer rewrites this result into a step-by-step process that QA MCP then runs automatically to reproduce and check it">${ico('term')} Replicate in QA MCP</button>`:'')
-    +((m.agent==='qamcp'||m.agent==='execution')&&m.status==='done'&&m.eps?`<button class="btn" id="toTests" title="The app hands this run (every call and what it returned) to the Autotests agent, which writes tests that replicate it in autotests/">${ico('code')} Create autotests</button>`:'')
+    +(m.agent==='completion'&&m.status==='done'?`<button class="btn" id="toSummary" title="All Test Flow phases of this ticket on one page">${ico('chart',13)} Open Run Summary</button>`:'')
+    +(canReplicate(m)?`<button class="btn" id="toQa" title="Turn this result into a process and run it in QA MCP">${ico('term')} Replicate in QA MCP</button>`:'')
+    +((m.agent==='qamcp'||m.agent==='execution')&&m.status==='done'&&m.eps?`<button class="btn" id="toTests" title="Write automated tests that replicate this run">${ico('code')} Create autotests</button>`:'')
     +(m.status==='done'?`<button class="btn" id="toBug">${ico('bug')} Report a bug</button>`:'');
   if($('#pushNext'))$('#pushNext').onclick=async()=>{
     $('#pushNext').disabled=true;
@@ -175,14 +175,14 @@ function canReplicate(m){
 /* What the prompt engineer assumed or could not confirm, shown under the process field. Nothing was run. */
 function qBriefShow(r,m,started){
   const warn=[];
-  if(r.unknownTools&&r.unknownTools.length)warn.push('These tool names are not in the endpoint catalogue — check them before running: <span class="mono">'+r.unknownTools.map(esc).join(', ')+'</span>');
+  if(r.unknownTools&&r.unknownTools.length)warn.push('These tools are not in the endpoint catalogue: <span class="mono">'+r.unknownTools.map(esc).join(', ')+'</span>');
   if(r.tooLong)warn.push('The process is longer than the 8000-character limit of this field. Shorten it before running.');
   const notes=(r.notes||[]).map(n=>{
     const k=n.match(/^(CHANGED|ADDED|ASSUMED|TO CONFIRM):\s*(.*)$/i);
     return k?'<li><span class="tg'+(/confirm/i.test(k[1])?' q':'')+'">'+esc(k[1].toUpperCase())+'</span><span>'+esc(k[2])+'</span></li>'
             :'<li><span class="tg">NOTE</span><span>'+esc(n)+'</span></li>';
   }).join('');
-  $('#qBrief').innerHTML='<div class="pe-hint"><b>Written by the prompt engineer</b> from the '+esc(m.label)+' result of <span class="mono">'+esc(m.id)+'</span>.'+(started?' The test was started from it automatically.':' Nothing was run — read it, then press Run test process.')+'</div>'
+  $('#qBrief').innerHTML='<div class="pe-hint"><b>Written by the prompt engineer</b> from the '+esc(m.label)+' result of <span class="mono">'+esc(m.id)+'</span>.'+(started?' The test was started automatically.':' Review it and select Run test process.')+'</div>'
     +warn.map(w=>'<div class="pe-warn" style="margin:10px 0 0">'+w+'</div>').join('')
     +(notes?'<ul class="pe-notes" style="margin-top:10px">'+notes+'</ul>':'');
 }

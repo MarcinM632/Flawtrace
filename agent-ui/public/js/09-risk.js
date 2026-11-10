@@ -124,7 +124,7 @@ function drawDensity(){
     label:s.name,value:s.per,vlabel:num(s.per,1),dot:s.color,
     sub:s.tick<=2?'low n':'',tip:tipRows(s)}));
   hbars('#rWatch',rows,{rgt:150,ref:med,refLabel:'median '+num(med,1),
-    aria:'Risk density by service — damage per ticket touched'});
+    aria:'Risk density by service'});
   $('#rWatchLeg').innerHTML=densityLegend();
   const more=$('#rMore');
   if(pool.length>DENSITY_CAP){
@@ -177,7 +177,7 @@ function renderTopRisk(m){
       <div class="name">${esc(top.name)}${top.app&&top.app!==top.name?` <span style="color:var(--ink3);font-weight:500;font-size:14px">· ${esc(top.app)}</span>`:''}</div>
     </div>
     <div class="stat"><div class="v">${num(top.per,1)}</div><div class="u">damage per ticket touched</div></div>
-    <div class="note2">${top.k?`${top.k} critical finding${top.k===1?'':'s'} · `:''}${top.n} finding${top.n===1?'':'s'} across ${top.tick} ticket${top.tick===1?'':'s'} — give this service the first look before its next change.</div>`;
+    <div class="note2">${top.k?`${top.k} critical finding${top.k===1?'':'s'} · `:''}${top.n} finding${top.n===1?'':'s'} across ${top.tick} ticket${top.tick===1?'':'s'}. Test this service first before its next change.</div>`;
 }
 
 /* ---------- test effort & priority forecast ---------- */

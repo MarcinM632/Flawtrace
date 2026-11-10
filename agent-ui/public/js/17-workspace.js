@@ -93,18 +93,18 @@ function wsDetailPanel(t){
 function wsStageBody(act){
   if(act.error)return`<div class="err">${esc(act.error)}</div>`;
   if(!act.runs.length)return'<div class="muted-note">No agent runs yet for this ticket.</div>';
-  const stageLine=act.stage?`<div class="muted-note">Furthest Test Flow phase reached: <b>${esc(WS_FLOW_LABEL[act.stage]||act.stage)}</b></div>`:'<div class="muted-note">No Test Flow phase run yet — only ad-hoc/quick checks below.</div>';
+  const stageLine=act.stage?`<div class="muted-note">Furthest Test Flow phase reached: <b>${esc(WS_FLOW_LABEL[act.stage]||act.stage)}</b></div>`:'<div class="muted-note">No Test Flow phase has been run yet.</div>';
   return stageLine+`<ul class="ws-checklist">${act.runs.map(r=>`<li><button class="linkbtn" data-wsrunopen="${esc(r.id)}" data-wsrunagent="${esc(r.agent)}">${esc(r.label)}</button> — ${esc(r.status)}${r.reportStatus?' · '+esc(r.reportStatus):''}${r.staging?' · autotest '+esc(r.staging):''} <span class="ws-ago">${wsAgo(r.finishedAt||r.startedAt)}</span></li>`).join('')}</ul>`;
 }
 
 function wsCovBody(c,key){
   const btn=`<div style="margin-top:8px"><button class="btn sm" data-wsrecheck="${esc(key)}">${c&&c.ok!=null&&!c.checking?'Re-check':'Check now'}</button></div>`;
-  if(!c||c.ok==null)return`<div class="muted-note">Not checked yet — runs automatically on the next new Jira comment.</div>${btn}`;
+  if(!c||c.ok==null)return`<div class="muted-note">Not checked yet. The check runs after the next Jira comment.</div>${btn}`;
   if(c.checking)return'<div class="muted-note">Checking…</div>';
   if(c.error)return`<div class="err">${esc(c.error)}</div>${btn}`;
   if(c.percent==null)return`<div class="muted-note">${esc(c.note||'No commits to compare yet.')}</div>${btn}`;
   return `<div class="muted-note">${esc(c.repo||'')} · ${esc(c.note||'')}</div>
-    <ul class="ws-checklist">${(c.rules||[]).map(r=>`<li>${r.covered?'✓':'✗'} ${esc(r.rule)}${r.covered&&r.evidence?' — <span class="muted-note">'+esc(r.evidence)+'</span>':''}</li>`).join('')||'<li>No business-logic changes found in the diff.</li>'}</ul>${btn}`;
+    <ul class="ws-checklist">${(c.rules||[]).map(r=>`<li>${r.covered?'✓':'✗'} ${esc(r.rule)}${r.covered&&r.evidence?': <span class="muted-note">'+esc(r.evidence)+'</span>':''}</li>`).join('')||'<li>No business-logic changes found in the diff.</li>'}</ul>${btn}`;
 }
 
 function wsChecklistBody(g){
@@ -162,10 +162,10 @@ $('#wsSync').onclick=async()=>{
    zero oceny modelu. Kolejność = ranked() (priorytet Jiry, potem ryzyko serwisu) — #1 to "zrób to pierwsze". */
 function wsAdviseLine(ok,text){return`<li class="${ok?'adv-ok':'adv-bad'}">${ok?'✓':'✗'} ${esc(text)}</li>`}
 function wsAdviseCovLine(c){
-  if(!c||c.ok==null)return wsAdviseLine(false,'Coverage — not checked yet');
-  if(c.checking)return wsAdviseLine(false,'Coverage — checking…');
+  if(!c||c.ok==null)return wsAdviseLine(false,'Coverage not checked yet');
+  if(c.checking)return wsAdviseLine(false,'Checking coverage');
   if(c.error)return wsAdviseLine(false,'Coverage — '+c.error);
-  if(c.percent==null)return wsAdviseLine(false,c.note||'Coverage — no diff yet');
+  if(c.percent==null)return wsAdviseLine(false,c.note||'No changes to check yet');
   return wsAdviseLine(c.percent>=80&&!(c.gaps||[]).length,`Coverage — ${c.percent}%`+((c.gaps||[]).length?` (${c.gaps.length} gap${c.gaps.length===1?'':'s'})`:''));
 }
 function wsAdviseCard(t,rank){

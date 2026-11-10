@@ -31,12 +31,12 @@ function tlReport(){
   const f=(h.fetched||[]);const bad=f.filter(x=>!x.ok);
   if(h.rolledBack)return '<div class="tl-rep bad"><b>Last scan · '+esc(tlAgo(h.at))+' · the new specification was NOT applied.</b> It adds services that mcp-server does not map to a group yet, so the previous specification was put back and nothing was lost. '
     +(h.unmapped&&h.unmapped.length?'New and unmapped: <span class="mono">'+h.unmapped.map(esc).join(', ')+'</span>. Assign them in <span class="mono">mcp-server/src/mcp/groups.js</span>, then reinitialize again.':esc(h.error||''))+'</div>'
-    +(bad.length?'<div class="tl-rep warn"><b>Not refreshed from the service:</b><ul>'+bad.map(x=>`<li>${esc(x.label)}${x.message?' — '+esc(x.message):''}</li>`).join('')+'</ul></div>':'');
+    +(bad.length?'<div class="tl-rep warn"><b>Not refreshed from the service:</b><ul>'+bad.map(x=>`<li>${esc(x.label)}${x.message?': '+esc(x.message):''}</li>`).join('')+'</ul></div>':'');
   let s='<div class="tl-rep"><b>Last scan · '+esc(tlAgo(h.at))+'</b> · '+h.total+' endpoints · ';
   s+=h.baseline?'first scan, this is now the reference state':`${h.added.length} new · ${h.changed.length} with changed parameters · ${h.removed.length} removed`;
   s+='</div>';
   if(!h.baseline&&(h.removed.length))s+='<div class="tl-rep bad">Removed: <span class="mono">'+h.removed.map(esc).join(', ')+'</span></div>';
-  if(bad.length)s+='<div class="tl-rep warn"><b>Not refreshed from the service (cached copy kept):</b><ul>'+bad.map(x=>`<li>${esc(x.label)}${x.message?' — '+esc(x.message):''}</li>`).join('')+'</ul></div>';
+  if(bad.length)s+='<div class="tl-rep warn"><b>Not refreshed, the cached copy was kept:</b><ul>'+bad.map(x=>`<li>${esc(x.label)}${x.message?': '+esc(x.message):''}</li>`).join('')+'</ul></div>';
   return s;
 }
 function renderTools(){

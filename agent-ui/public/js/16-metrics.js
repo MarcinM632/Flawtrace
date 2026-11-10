@@ -23,7 +23,7 @@ function renderChartInto(sel,rec){
     multiTrendCard(sel,d.series,{aria:rec.title,areaBetween:d.areaBetween});
     const note=mgJiraNote(d); if(note)$(sel).insertAdjacentHTML('beforeend',note);
   }else if(d.chartType==='boxplot'){
-    if(!d.rows.length){$(sel).innerHTML=mgJiraNote(d)||'<div class="hint">No data for this selection — sync Jira first (Bug registry tab) or try again shortly.</div>';return}
+    if(!d.rows.length){$(sel).innerHTML=mgJiraNote(d)||'<div class="hint">No data for this selection. Sync Jira in the Bug registry or try again later.</div>';return}
     boxplotCard(sel,d.rows,{aria:rec.title});
   }else if(d.chartType==='econometric'){
     renderEconCompact(sel,rec);
@@ -35,7 +35,7 @@ function renderChartInto(sel,rec){
  * show a plain status line instead of silently looking broken while that first fetch runs. */
 function mgJiraNote(d){
   if(!d||!d.jira)return'';
-  if(d.jira.busy)return'<div class="hint">Fetching from Jira for the first time — this can take a minute or two. Reopen this chart shortly.</div>';
+  if(d.jira.busy)return'<div class="hint">Fetching data from Jira for the first time. This may take a few minutes.</div>';
   if(d.jira.ok===false&&d.jira.error)return`<div class="hint">Jira sync failed: ${esc(d.jira.error)}</div>`;
   return'';
 }
@@ -74,8 +74,8 @@ async function loadMetricsGen(){
 function renderDlStatus(){
   const dl=MG_CATALOG&&MG_CATALOG.defectLifecycle;
   if(!dl){$('#mgDlSt').textContent='';return}
-  if(dl.busy){$('#mgDlSt').textContent='Jira defect history: fetching now — this can take a minute or two.';return}
-  if(!dl.fetchedAt){$('#mgDlSt').textContent='Jira defect history: not fetched yet. Needed for "Defects opened vs closed" and "Defect resolution time".';return}
+  if(dl.busy){$('#mgDlSt').textContent='Jira defect history is being fetched. This may take a few minutes.';return}
+  if(!dl.fetchedAt){$('#mgDlSt').textContent='Jira defect history has not been fetched yet.';return}
   const ago=Math.max(0,Math.round((Date.now()-dl.fetchedAt)/60000));
   $('#mgDlSt').textContent=dl.ok===false?`Jira defect history: last sync failed (${dl.error}).`:`Jira defect history: last synced ${ago} min ago.`;
 }
@@ -216,7 +216,7 @@ $('#mgGo').onclick=async()=>{
 
 function renderGallery(){
   $('#mgCount').textContent=MG_ITEMS.length?MG_ITEMS.length+' saved':'';
-  if(!MG_ITEMS.length){$('#mgGallery').innerHTML='<div class="hint">No charts yet — build one above.</div>';return}
+  if(!MG_ITEMS.length){$('#mgGallery').innerHTML='<div class="hint">No charts yet.</div>';return}
   $('#mgGallery').innerHTML=`<div class="mgen-gallery">${MG_ITEMS.map(m=>`
     <div class="mg-card" data-id="${m.id}">
       <div class="mg-card-h"><b title="${esc(m.title)}">${esc(m.title)}</b><button class="btn icon sm" data-del="${m.id}" title="Delete">${ico('x',13)}</button></div>

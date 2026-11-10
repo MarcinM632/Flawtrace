@@ -2,8 +2,8 @@
 /* ---------- comment dialog: asked before the Autotests agent is briefed ---------- */
 let cmtRun=null, cmtLayer='api';
 const CMT_LAYER_HINT={
-  api:'pytest: the flow becomes backend tests that call the same endpoints (tests/<area>/).',
-  ui:'Playwright: the steps are replayed on the CORE web app screens that call those endpoints; setup, expected values and cleanup stay on the API (tests/ui/<area>/).',
+  api:'Backend tests that call the same endpoints.',
+  ui:'UI tests that repeat the steps on the related screens.',
 };
 function setCmtLayer(l){
   cmtLayer=l==='ui'?'ui':'api';
