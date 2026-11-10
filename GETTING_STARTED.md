@@ -43,7 +43,16 @@ Click **Save and import endpoints**. The endpoints appear in **Tools**. Tick **R
 | Address | The address of your Jira, for example `https://your-org.atlassian.net`. |
 | Email | The email you use to sign in to Jira. |
 | API token | Create it at https://id.atlassian.com/manage-profile/security/api-tokens, then **Create API token**. For Jira Data Center leave the email empty and paste a personal access token. |
-| Projects | The project keys the team works in, for example `PRJ, SVC`. |
+| Projects | The project keys the team works in, for example `PRJ, SVC`. The first key feeds the first product, the second key the second product. Releases, the bug registry and the defect charts need these keys. |
+
+Click **Save**. The app then loads Workspace, Releases, the bug registry and the defect charts from Jira. Workspace shows the open tasks assigned to the account of the token.
+
+**Check that the data is right.** Under **Check what the app reads**, click **Check Jira data**. The table shows, for each search the app uses:
+
+- the number of issues Jira returns, with the JQL and an **Open in Jira** link that runs the same search in Jira, so you can compare the count with the one Jira shows;
+- what the app has loaded so far, with **matches** or **differs by N** next to it.
+
+Type a name or email in **Person** to see the open tasks of that person. Type a ticket key in **Ticket** to see the exact text the agents receive. **Load into the app now** reloads every Jira page at once instead of waiting for the next scheduled refresh.
 
 ### 3.3 Confluence
 
@@ -72,6 +81,9 @@ When this works, run a real task through Test Flow: open **1. Planning**, paste 
 | QA MCP button is disabled | No endpoints imported or no base address. Finish step 3.1. |
 | "No OpenAPI or Swagger JSON found" | Use the address of the JSON document itself, or upload the file. |
 | Jira test says HTTP 401 | Wrong email or token. Tokens are tied to the account that created them. |
+| "Jira has no project X" | The key in Projects is wrong, or the account of the token cannot see that project. |
+| Releases or bugs are empty | Projects is empty, or the project has no unreleased version. Run **Check Jira data** to see which. |
+| A count "differs" | The page was loaded before the latest change in Jira. Click **Load into the app now**. |
 | Repository sync fails | `git clone` does not work from this computer. Fix git access first. |
 | Agents do not start at all | Claude Code is not installed or not signed in. Run `claude` in a terminal. |
 

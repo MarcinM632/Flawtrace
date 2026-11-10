@@ -29,6 +29,23 @@ const releaseWatch = require('./lib/release-watch');
 releaseWatch.start(); // co godzinę: nowe taski w bieżącym wydaniu -> auto static test + powiadomienie w UI
 const coverage = require('./lib/coverage');
 coverage.start(); // nowy komentarz na tasku z Workspace -> diff z GitLaba serwisu vs wykonane testy -> % pokrycia
+const defectLifecycle = require('./lib/defect-lifecycle');
+
+/** What the app has loaded from Jira so far, per page, for the Jira data check in Sources. */
+function jiraLoaded() {
+  const ws = workspace.state;
+  const bugsFromJira = bugsLib.bugs.filter((b) => String(b.source || '').startsWith('jira:')).length;
+  return {
+    rest: sources.status().jira,
+    workspace: { count: ws.tasks.length, fetchedAt: ws.fetchedAt, ok: ws.ok, error: ws.error, busy: ws.busy },
+    releases: testMonitor.all().map((p) => ({
+      jiraKey: p.jiraKey, product: p.label, fetchedAt: p.releaseFetchedAt, ok: p.releaseOk, error: p.releaseError, busy: p.releaseRefreshing,
+      versions: p.releases.map((r) => ({ name: r.name, count: r.metrics.total })), current: p.currentReleaseName,
+    })),
+    bugs: { count: bugsFromJira, fetchedAt: jira.lastOk, ok: !jira.error, error: jira.error, busy: jira.state === 'running' },
+    defects: { count: defectLifecycle.state.issues.length, fetchedAt: defectLifecycle.state.fetchedAt, ok: defectLifecycle.state.ok, error: defectLifecycle.state.error, busy: defectLifecycle.state.busy },
+  };
+}
 
 // "Co robić teraz" dla jednego tasku — bez LLM, tylko z już policzonych danych (activityFor/coverage/
 // guidanceFor). Współdzielone między /api/workspace/advise (cała lista) i /api/workspace/report/:key (jeden task na klik).
@@ -263,6 +280,21 @@ const server = http.createServer(async (req, res) => {
       try { const r = sources.uploadSpec(b.name, b.text); await toolsLib.refresh(); return json(res, 200, r); } catch (e) { return json(res, 400, { error: e.message }); }
     }
     if (req.method === 'GET' && p === '/api/sources/knowledge') return json(res, 200, sources.knowledgeFiles());
+    // Jira data check: what Jira returns for each search the app uses, next to what the app has loaded so far.
+    if (req.method === 'POST' && p === '/api/sources/jira/check') {
+      const b = (await body(req, 1e4)) || {};
+      try { return json(res, 200, { jira: await sources.jiraCheck({ person: b.person, key: b.key }), app: jiraLoaded() }); } catch (e) { return json(res, 400, { error: e.message }); }
+    }
+    if (req.method === 'GET' && p === '/api/sources/jira/loaded') return json(res, 200, jiraLoaded());
+    // Loads every Jira dataset of the app now instead of waiting for the next scheduled refresh.
+    if (req.method === 'POST' && p === '/api/sources/jira/load') {
+      if (!sources.status().jira) return json(res, 400, { error: 'Connect Jira first (step 2).' });
+      workspace.refresh(true).catch(() => {});
+      for (const k of Object.keys(testMonitor.PROJECTS)) testMonitor.refreshRelease(k).catch(() => {});
+      jiraSync(true, false);
+      defectLifecycle.refresh(true).catch(() => {});
+      return json(res, 202, jiraLoaded());
+    }
     // Zakładka Tools: katalog endpointów mcp-server po serwisach; rescan odświeża specyfikacje i porównuje wszystkie endpointy.
     if (req.method === 'GET' && p === '/api/tools') {
       try { return json(res, 200, await toolsLib.getTools()); } catch (e) { return json(res, 500, { error: e.message }); }

@@ -10,7 +10,17 @@ const { DATA_DIR } = require('./config');
 const { AGENTS } = require('./agents');
 const { jiraAsk, jiraRetry } = require('./bugs');
 
-const PROJECTS = { PRJ: 'core', SVC: 'svc', OPS: 'mcp' };
+const src = () => require('./sources');
+const PROJECTS = src().liveMap(() => src().jiraProjectMap());
+
+/** Created and resolved dates of every Bug issue, straight from the REST API. */
+async function restIssues() {
+  const s = src();
+  const keys = Object.keys(PROJECTS);
+  if (!keys.length) return [];
+  const issues = await s.jiraSearchAll(s.jql(s.projectClause(keys), 'issuetype = Bug', 'ORDER BY created ASC'), ['created', 'resolutiondate', 'status', 'priority'], 10000);
+  return issues.map((i) => { const f = i.fields || {}; return { key: i.key, created: f.created, resolved: f.resolutiondate || '', status: (f.status && f.status.name) || '', priority: (f.priority && f.priority.name) || '' }; });
+}
 const STATE_FILE = path.join(DATA_DIR, 'defect-lifecycle.json');
 const state = { issues: [], fetchedAt: 0, ok: null, error: '', busy: false };
 try { Object.assign(state, JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')), { busy: false }); } catch (_) { /* pierwszy start */ }
@@ -34,9 +44,9 @@ async function refresh(force) {
   if (!force && state.fetchedAt && Date.now() - state.fetchedAt < REFRESH_EVERY) return;
   state.busy = true;
   try {
-    const list = await jiraRetry(() => jiraAsk(prompt(), 240000));
+    const list = src().jiraRest() ? await restIssues() : await jiraRetry(() => jiraAsk(prompt(), 240000));
     const issues = (Array.isArray(list) ? list : [])
-      .filter((it) => it && /^[A-Z]+-\d+$/.test(String(it.key || '').toUpperCase()))
+      .filter((it) => it && /^[A-Z][A-Z0-9_]*-\d+$/.test(String(it.key || '').toUpperCase()))
       .map((it) => {
         const key = String(it.key).toUpperCase();
         const proj = key.split('-')[0];

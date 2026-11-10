@@ -1620,3 +1620,22 @@ input,textarea,select{border-color:var(--line2)}
 .guide-body pre code{border:0;padding:0;background:none}
 @media (max-width:1100px){.src-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.src-steps{grid-template-columns:1fr 1fr}.setup-banner{margin:12px 16px 0}.src-intro-row{flex-direction:column}}
+/* Sources, step 2: Jira data check */
+.src-jc{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.src-jc h3{margin:0 0 4px;font-size:14px;font-weight:600}
+.src-jt{width:100%;margin-top:14px;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+.src-jt th,.src-jt td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.src-jt thead th{font-size:11.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.src-jt thead th:first-child,.src-jt tbody th{width:24%}
+.src-jt tbody th{font-weight:500;color:var(--ink2)}
+.src-jt tr.src-jp th{padding-top:16px;font-weight:600;color:var(--ink);background:var(--surface2)}
+.src-jt tr.src-jp th span,.src-sub{font-weight:400;color:var(--ink3);font-size:12px}
+.src-jt a{color:var(--acc);font-weight:500;margin-left:6px}
+.src-jql{display:block;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.src-sample{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px}
+.src-sample li span{color:var(--ink3)}
+.src-eq{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;color:var(--ok);background:var(--ok-soft)}
+.src-eq.off,.src-bad{color:var(--bad)}
+.src-eq.off{background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.src-ticket{margin:0;max-height:260px;overflow:auto;white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;background:var(--surface2);border:1px solid var(--line);border-radius:4px;padding:8px}
+@media (max-width:720px){.src-jt thead th:first-child,.src-jt tbody th{width:32%}}

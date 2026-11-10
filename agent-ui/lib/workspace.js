@@ -10,7 +10,33 @@ const { AGENTS, servicesFor } = require('./agents');
 const bugsLib = require('./bugs');
 const { jiraAsk, jiraRetry } = bugsLib;
 
-const PROJECTS = { PRJ: 'core', SVC: 'svc', OPS: 'mcp', OPS2: 'mcp' }; // projekt Jiry -> aplikacja w rejestrze
+const src = () => require('./sources');
+// Jira project -> product. With Jira connected in Sources these are the keys from its Projects field.
+const PROJECTS = src().liveMap(() => src().jiraProjectMap());
+
+/** The service a task belongs to, by its name appearing in the components, title or description. */
+function guessService(agent, text) {
+  let list = []; try { list = agent ? servicesFor(agent) : []; } catch (_) { /* no catalogue */ }
+  const t = String(text || '').toLowerCase();
+  const hit = list.find((s) => { const n = s.toLowerCase(); const short = n.replace(/^[a-z]+-/, '').replace(/-/g, ' '); return t.includes(n) || (short.length >= 4 && t.includes(short)); });
+  return hit || 'nieustalony';
+}
+
+/** Open tasks assigned to the account of the Jira token, straight from the REST API. */
+async function restTasks() {
+  const s = src();
+  const q = s.jql(s.projectClause(Object.keys(PROJECTS)), 'assignee = currentUser()', 'statusCategory != Done', 'ORDER BY priority DESC, updated DESC');
+  const issues = await s.jiraSearchAll(q, ['summary', 'status', 'priority', 'issuetype', 'components', 'parent', 'created', 'comment', 'description'], 500);
+  return issues.map((i) => {
+    const f = i.fields || {};
+    const comps = (f.components || []).map((c) => c.name);
+    return {
+      key: i.key, summary: f.summary || '', status: (f.status && f.status.name) || '', priority: (f.priority && f.priority.name) || '',
+      type: (f.issuetype && f.issuetype.name) || '', parent: f.parent ? f.parent.key : '', comments: (f.comment && f.comment.total) || 0, created: f.created || '',
+      service: guessService(PROJECTS[i.key.split('-')[0]], [comps.join(' '), f.summary, s.adfText(f.description)].join(' ')),
+    };
+  });
+}
 
 const STATE_FILE = path.join(DATA_DIR, 'workspace.json');
 const state = { tasks: [], fetchedAt: 0, ok: null, error: '', busy: false };
@@ -53,7 +79,7 @@ async function refresh(force) {
   if (!force && state.fetchedAt && Date.now() - state.fetchedAt < SYNC_EVERY) return;
   state.busy = true;
   try {
-    const list = await jiraRetry(() => jiraAsk(prompt(), 180000));
+    const list = src().jiraRest() ? await restTasks() : await jiraRetry(() => jiraAsk(prompt(), 180000));
     const tasks = (Array.isArray(list) ? list : [])
       .filter((it) => it && /^[A-Z][A-Z0-9]*-\d+$/.test(String(it.key || '').toUpperCase()))
       .map((it) => {

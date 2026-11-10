@@ -153,6 +153,149 @@ async function jiraIssueText(keys) {
   return parts.join('\n\n');
 }
 
+/* Jira data for the app itself (Workspace, releases, bug registry, defect history) and the "Check Jira data" panel. */
+
+const enc = encodeURIComponent;
+const jiraRest = () => status().jira;
+
+/** Project keys from the Projects field, in the order the user typed them. */
+function jiraProjectKeys() {
+  return String(read().jira.projects || '').toUpperCase().split(/[\s,;]+/).filter((k) => /^[A-Z][A-Z0-9_]*$/.test(k));
+}
+
+// Without Jira in Sources the app falls back to the Atlassian connector of Claude Code and these example keys.
+const DEFAULT_PROJECTS = { PRJ: 'core', SVC: 'svc', OPS: 'mcp' };
+const PRODUCT_AGENTS = ['core', 'svc', 'mcp'];
+
+/** Jira project key -> product agent. The first project in the Projects field feeds the first product, and so on. */
+function jiraProjectMap() {
+  if (!jiraRest()) return { ...DEFAULT_PROJECTS };
+  const out = {};
+  jiraProjectKeys().forEach((k, i) => { out[k] = PRODUCT_AGENTS[i] || null; });
+  return out;
+}
+
+/** An object whose keys and values are computed on every access, so a saved Sources change applies without a restart. */
+function liveMap(fn) {
+  return new Proxy({}, {
+    get: (_, k) => fn()[k],
+    has: (_, k) => k in fn(),
+    ownKeys: () => Reflect.ownKeys(fn()),
+    getOwnPropertyDescriptor: (_, k) => { const o = fn(); return k in o ? { value: o[k], enumerable: true, configurable: true, writable: false } : undefined; },
+  });
+}
+
+async function jiraPost(c, p, payload) {
+  const res = await fetch(c.jira.url + p, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...authHeader(c.jira.email, c.jira.token) }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
+  const text = await res.text();
+  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} from ${new URL(c.jira.url).host}: ${text.replace(/\s+/g, ' ').slice(0, 200)}`), { status: res.status });
+  return JSON.parse(text);
+}
+
+const projectClause = (keys) => (keys.length ? `project in (${keys.map((k) => `"${k}"`).join(', ')})` : '');
+const jql = (...parts) => {
+  const order = parts.find((x) => /^ORDER BY/i.test(x || '')) || '';
+  return parts.filter((x) => x && x !== order).join(' AND ') + (order ? ' ' + order : '');
+};
+
+/** Every issue matching the JQL (raw REST objects), following pages. Jira Cloud uses /search/jql, Data Center /api/2/search. */
+async function jiraSearchAll(q, fields, limit = 1000) {
+  const c = jiraCfg();
+  const out = [];
+  const f = enc(fields.join(','));
+  try {
+    let token = '';
+    do {
+      const r = await jiraGet(c, `/rest/api/3/search/jql?jql=${enc(q)}&fields=${f}&maxResults=100${token ? '&nextPageToken=' + enc(token) : ''}`);
+      out.push(...(r.issues || []));
+      token = r.isLast === true ? '' : (r.nextPageToken || '');
+    } while (token && out.length < limit);
+    return out.slice(0, limit);
+  } catch (e) { if (![404, 405, 410].includes(e.status) || out.length) throw e; }
+  for (let start = 0; ;) {
+    const r = await jiraGet(c, `/rest/api/2/search?jql=${enc(q)}&fields=${f}&maxResults=100&startAt=${start}`);
+    const is = r.issues || [];
+    out.push(...is); start += is.length;
+    if (!is.length || start >= (r.total || 0) || out.length >= limit) break;
+  }
+  return out.slice(0, limit);
+}
+
+/** Number of issues matching the JQL, the same number Jira shows for this search. */
+async function jiraCount(q) {
+  const c = jiraCfg();
+  try { return (await jiraPost(c, '/rest/api/3/search/approximate-count', { jql: q })).count; }
+  catch (e) { if (![404, 405, 410].includes(e.status)) throw e; }
+  return (await jiraGet(c, `/rest/api/2/search?jql=${enc(q)}&maxResults=0`)).total;
+}
+
+const jiraLink = (q) => read().jira.url + '/issues/?jql=' + enc(q);
+
+/** Release versions of a project as Jira lists them under Releases. */
+async function jiraVersions(key) {
+  const c = jiraCfg();
+  const v = await jiraGet(c, `/rest/api/2/project/${enc(key)}/versions`);
+  return (v || []).map((x) => ({ id: String(x.id), name: x.name, released: !!x.released, archived: !!x.archived, releaseDate: x.releaseDate || '' }));
+}
+
+/** People matching a name or email. Jira Cloud identifies them by accountId, Data Center by user name. */
+async function jiraUsers(q) {
+  const c = jiraCfg();
+  let r;
+  try { r = await jiraGet(c, `/rest/api/2/user/search?query=${enc(q)}&maxResults=10`); }
+  catch (e) { if (e.status !== 400 && e.status !== 404) throw e; r = []; }
+  if (!r.length) { try { r = await jiraGet(c, `/rest/api/2/user/search?username=${enc(q)}&maxResults=10`); } catch (_) { r = []; } }
+  return (r || []).filter((u) => u.active !== false).map((u) => ({ id: u.accountId || u.name || u.key, name: u.displayName || u.name, email: u.emailAddress || '' }));
+}
+
+const shortIssue = (i) => ({ key: i.key, summary: (i.fields && i.fields.summary) || '', status: (i.fields && i.fields.status && i.fields.status.name) || '' });
+const OPEN = 'statusCategory != Done';
+
+/** What the app can read from Jira right now, with the JQL behind every number and a link that opens the same search in Jira. */
+async function jiraCheck(opts = {}) {
+  const c = jiraCfg();
+  const part = async (fn) => { try { return await fn(); } catch (e) { return { error: e.message }; } };
+  const search = async (q, max = 10) => ({ jql: q, link: jiraLink(q), count: await jiraCount(q), sample: (await jiraSearchAll(q, ['summary', 'status'], max)).map(shortIssue) });
+  const out = { url: c.jira.url, keys: jiraProjectKeys() };
+  out.account = await part(async () => { const me = await jiraGet(c, '/rest/api/2/myself'); return { name: me.displayName || me.name, email: me.emailAddress || '' }; });
+  if (out.account.error) return out;
+  const map = jiraProjectMap();
+  const { AGENTS } = require('./agents');
+  out.projects = [];
+  for (const k of out.keys) {
+    out.projects.push(await part(async () => {
+      const p = await jiraGet(c, `/rest/api/2/project/${enc(k)}`);
+      const versions = (await jiraVersions(k)).filter((v) => !v.released && !v.archived);
+      const releases = [];
+      for (const v of versions.slice(0, 8)) {
+        const q = jql(`project = "${k}"`, `fixVersion = ${v.id}`);
+        releases.push({ name: v.name, releaseDate: v.releaseDate, jql: q, link: jiraLink(q), count: await jiraCount(q) });
+      }
+      const open = jql(`project = "${k}"`, OPEN);
+      const bugs = jql(`project = "${k}"`, 'issuetype = Bug');
+      return {
+        key: k, name: p.name, product: map[k] && AGENTS[map[k]] ? AGENTS[map[k]].label : '',
+        releases, moreReleases: Math.max(0, versions.length - releases.length),
+        open: { jql: open, link: jiraLink(open), count: await jiraCount(open) },
+        bugs: { jql: bugs, link: jiraLink(bugs), count: await jiraCount(bugs) },
+      };
+    }).then((r) => (r.error ? { key: k, error: /HTTP 404/.test(r.error) ? `Jira has no project ${k}, or this account cannot see it. Check the key in Projects.` : r.error } : r)));
+  }
+  out.mine = await part(() => search(jql(projectClause(out.keys), 'assignee = currentUser()', OPEN, 'ORDER BY priority DESC, updated DESC')));
+  const person = String(opts.person || '').trim();
+  if (person) {
+    out.person = await part(async () => {
+      const users = await jiraUsers(person);
+      if (!users.length) return { query: person, users: [] };
+      const u = users[0];
+      return { query: person, users, user: u, tasks: await search(jql(projectClause(out.keys), `assignee = "${u.id}"`, OPEN, 'ORDER BY priority DESC, updated DESC')) };
+    });
+  }
+  const key = String(opts.key || '').trim().toUpperCase();
+  if (key) out.ticket = await part(async () => ({ key, text: await jiraIssueText([key]) }));
+  return out;
+}
+
 const htmlText = (h) => String(h || '')
   .replace(/<(br|\/p|\/h\d|\/li|\/tr)[^>]*>/gi, '\n').replace(/<li[^>]*>/gi, '- ').replace(/<\/t[dh]>/gi, ' | ')
   .replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
@@ -369,6 +512,7 @@ function brief(mode) {
 
 module.exports = {
   apiReady, brief, catalogue, confluencePage, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
+  adfText, jiraCheck, jiraCount, jiraLink, jiraProjectKeys, jiraProjectMap, jiraRest, jiraSearchAll, jiraUsers, jiraVersions, liveMap, projectClause, jql,
   knowledgeDir, knowledgeFiles, mcpServers, read, repoList, save, status, syncRepos, test, uploadSpec, view,
   SPECS_DIR, FILE,
 };

@@ -39,7 +39,9 @@ syncBugs();
 // poświadczeń do Jiry — korzysta z konektora Atlassian, który ma `claude`, więc import to krótki,
 // tylko-odczytowy przebieg `claude -p` z jednym narzędziem (JQL). Działa w tle: odpowiedź /api/bugs
 // nie czeka na Jirę, a nowe wpisy pojawiają się po zakończeniu (UI dopytuje o status).
-const JIRA_PROJECTS = { PRJ: 'core', SVC: 'svc', OPS: 'mcp' }; // projekt Jiry -> aplikacja w rejestrze
+const src = () => require('./sources');
+// Jira project -> product in the registry. With Jira connected in Sources these are the keys from its Projects field.
+const JIRA_PROJECTS = src().liveMap(() => src().jiraProjectMap());
 // Każde odświeżenie to płatna sesja modelu, a odpala je już samo otwarcie aplikacji albo zakładki z rejestrem. Dlatego
 // automat jest rzadki: zgłoszenia typu Bug co godzinę, skan komentarzy (najdroższy: czyta HTML każdego zadania) co 12 godzin.
 // Przycisk "Sync Jira now" odświeża oba od razu.
@@ -111,7 +113,23 @@ async function jiraRetry(fn) {
     return fn();
   }
 }
-const jiraFetchBugs = (sinceDay) => jiraRetry(() => jiraAsk(jiraBugsPrompt(sinceDay), 180000, JIRA_BUG_MODEL));
+const jiraFetchBugs = (sinceDay) => (src().jiraRest() ? restBugs(sinceDay) : jiraRetry(() => jiraAsk(jiraBugsPrompt(sinceDay), 180000, JIRA_BUG_MODEL)));
+
+/** Bug issues straight from the Jira REST API, in the shape the prompt above returns. */
+async function restBugs(sinceDay) {
+  const s = src();
+  const keys = Object.keys(JIRA_PROJECTS);
+  if (!keys.length) return [];
+  const q = s.jql(s.projectClause(keys), 'issuetype = Bug', sinceDay ? `created >= "${sinceDay}"` : '', 'ORDER BY created DESC');
+  const issues = await s.jiraSearchAll(q, ['summary', 'status', 'priority', 'parent', 'created'], 5000);
+  return issues.map((i) => {
+    const f = i.fields || {};
+    return {
+      key: i.key, summary: f.summary || '', priority: (f.priority && f.priority.name) || '', status: (f.status && f.status.name) || '',
+      parent: f.parent ? f.parent.key : '', parentSummary: (f.parent && f.parent.fields && f.parent.fields.summary) || '', created: f.created || '',
+    };
+  });
+}
 
 // Treść ticketów dla QA MCP. Agent QA MCP działa z --strict-mcp-config (tylko serwer `qa`), a to odcina konektor
 // Atlassian, więc sam Jiry nie przeczyta. Dlatego aplikacja pobiera opis i komentarze przed startem i wkleja je do
@@ -195,7 +213,7 @@ function mergeJiraBugs(list) {
   for (const it of list) {
     const key = String((it && it.key) || '').toUpperCase();
     const proj = key.split('-')[0];
-    if (!/^[A-Z]+-\d+$/.test(key) || !JIRA_PROJECTS[proj] || !AGENTS[JIRA_PROJECTS[proj]]) continue;
+    if (!/^[A-Z][A-Z0-9_]*-\d+$/.test(key) || !JIRA_PROJECTS[proj] || !AGENTS[JIRA_PROJECTS[proj]]) continue;
     const source = 'jira:' + key;
     if (have.has(source)) {
       // Wpis zaimportowany wcześniej bez serwisu (parent nie był jeszcze znany) — uzupełnij, nie dubluj.
@@ -241,7 +259,7 @@ function mergeJiraCommentBugs(list) {
     const cid = String((it && it.commentId) || '').trim();
     const num = String((it && it.num) || '').trim();
     const title = String((it && it.title) || '').trim();
-    if (!/^[A-Z]+-\d+$/.test(task) || !JIRA_PROJECTS[proj] || !AGENTS[JIRA_PROJECTS[proj]]) continue;
+    if (!/^[A-Z][A-Z0-9_]*-\d+$/.test(task) || !JIRA_PROJECTS[proj] || !AGENTS[JIRA_PROJECTS[proj]]) continue;
     if (!/^\d+$/.test(cid) || !/^[\w.]{1,12}$/.test(num) || title.length < 5) continue;
     const source = `jira:${task}#${cid}-${num}`;
     if (have.has(source)) continue;
@@ -253,7 +271,7 @@ function mergeJiraCommentBugs(list) {
     const known = (() => { try { return servicesFor(agent); } catch (_) { return []; } })();
     const svc = known.includes(it.service) ? it.service : 'nieustalony';
     const created = Date.parse(it.created);
-    const link = `https://your-org.atlassian.net/browse/${task}?focusedCommentId=${cid}`;
+    const link = `${src().read().jira.url || 'https://your-org.atlassian.net'}/browse/${task}?focusedCommentId=${cid}`;
     const head = `Reported in ${task}${it.taskSummary ? ' (' + String(it.taskSummary).slice(0, 120) + ')' : ''}, item #${num}. ${link}\n\n`;
     fresh.push({
       id: crypto.randomBytes(6).toString('hex'),
@@ -284,7 +302,9 @@ function jiraSync(force, full) {
     let added = 0, found = 0; const errs = [];
     try { const l = await jiraFetchBugs(since); found += l.length; added += mergeJiraBugs(l); } catch (e) { errs.push('Bug issues: ' + (e.message || e)); }
     // Komentarze: tylko zadania zmienione od ostatniego udanego skanu (z dobą zapasu); wpisy już znane odsiewa deduplikacja.
-    if (force || Date.now() - jira.lastComments >= JIRA_COMMENTS_EVERY) {
+    // Bugs written as red panels in task comments are read through the Atlassian connector of Claude Code only,
+    // because the panel colour is not part of the REST answer. With Jira connected in Sources this scan is skipped.
+    if (!src().jiraRest() && (force || Date.now() - jira.lastComments >= JIRA_COMMENTS_EVERY)) {
       const sinceC = jira.lastComments && !full ? new Date(jira.lastComments - 86400000).toISOString().slice(0, 10) : '';
       const startedC = Date.now();
       try { const l = await jiraFetchCommentBugs(sinceC); found += l.length; added += mergeJiraCommentBugs(l); jira.lastComments = startedC; } catch (e) { errs.push('Task comments: ' + (e.message || e)); }

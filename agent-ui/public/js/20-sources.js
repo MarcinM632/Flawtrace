@@ -98,8 +98,90 @@ $('#srcSpecInput').onchange=async e=>{
   catch(err){$('#srcApiErr').textContent=err.message}
 };
 for(const [id,label] of [['#srcJiraSave','Jira'],['#srcConfSave','Confluence'],['#srcKbSave','Knowledge base']]){
-  $(id).onclick=async()=>{try{await srcSave();toast(label+' saved');if(id==='#srcKbSave')loadSources()}catch(e){toast(e.message,'bad')}};
+  $(id).onclick=async()=>{
+    try{
+      await srcSave();toast(label+' saved');if(id==='#srcKbSave')loadSources();
+      // Saving Jira starts loading every Jira page of the app and checks the connection, so the result is visible at once.
+      if(id==='#srcJiraSave'&&SRC.data.status.jira){srcJiraCheck();srcJiraLoad(true)}
+    }catch(e){toast(e.message,'bad')}
+  };
 }
+
+/* Step 2: check what the app reads from Jira and compare it with what each page has loaded. */
+const jWhen=t=>t?new Date(t).toLocaleString():'';
+const jLink=x=>x&&x.link?` <a href="${esc(x.link)}" target="_blank" rel="noopener">Open in Jira</a>`:'';
+const jJql=x=>x&&x.jql?`<code class="src-jql">${esc(x.jql)}</code>`:'';
+const jErr=x=>`<span class="src-bad">${esc(x.error)}</span>`;
+const jSample=x=>x&&x.sample&&x.sample.length?'<ul class="src-sample">'+x.sample.map(i=>`<li><b>${esc(i.key)}</b> ${esc(i.summary)} <span>${esc(i.status)}</span></li>`).join('')+'</ul>':'';
+const jState=s=>s.busy?'loading now':s.ok===false?jErr({error:s.error||'failed'}):s.fetchedAt?'loaded '+jWhen(s.fetchedAt):'not loaded yet';
+const jSame=(jira,app,s)=>jira==null||!s||!s.fetchedAt||s.busy?'':jira===app?' <span class="src-eq">matches</span>':` <span class="src-eq off">differs by ${Math.abs(jira-app)}</span>`;
+const jRow=(what,jira,app)=>`<tr><th>${what}</th><td>${jira}</td><td>${app}</td></tr>`;
+
+function renderJiraCheck(){
+  const j=SRC.jiraLast,a=SRC.jiraApp;if(!a)return;
+  const rows=[];
+  if(j){
+    if(j.account.error){$('#srcJiraOut').innerHTML=`<div class="src-res"><div class="chk bad"><b>Jira</b>: ${esc(j.account.error)}</div></div>`;return}
+    rows.push(jRow('Account',`Signed in as <b>${esc(j.account.name||'')}</b>${j.account.email?' ('+esc(j.account.email)+')':''}`,'Workspace shows the tasks of this account'));
+    rows.push(j.mine.error?jRow('My open tasks',jErr(j.mine),''):jRow('My open tasks',`<b>${j.mine.count}</b>${jLink(j.mine)}${jJql(j.mine)}${jSample(j.mine)}`,`Workspace: <b>${a.workspace.count}</b>, ${jState(a.workspace)}${jSame(Math.min(j.mine.count,500),a.workspace.count,a.workspace)}`));
+    if(!j.keys.length)rows.push(jRow('Projects','<span class="src-bad">No project keys. Releases, the bug registry and the defect charts stay empty until you add them in Projects above.</span>',''));
+    let bugsJira=0,bugsKnown=true;
+    for(const p of j.projects||[]){
+      if(p.error){rows.push(jRow(esc(p.key),jErr(p),''));bugsKnown=false;continue}
+      bugsJira+=p.bugs.count;
+      const rel=(a.releases||[]).find(r=>r.jiraKey===p.key);
+      rows.push(`<tr class="src-jp"><th colspan="3">${esc(p.key)} · ${esc(p.name)}${p.product?' <span>feeds product '+esc(p.product)+'</span>':' <span>not linked to a product, only the first three projects are</span>'}</th></tr>`);
+      rows.push(jRow('Open tasks',`<b>${p.open.count}</b>${jLink(p.open)}`,''));
+      rows.push(jRow('Bugs',`<b>${p.bugs.count}</b>${jLink(p.bugs)}`,''));
+      if(!p.releases.length)rows.push(jRow('Releases','No unreleased versions in this project.',rel?jState(rel):''));
+      for(const v of p.releases){
+        const av=rel&&rel.versions.find(x=>x.name===v.name);
+        rows.push(jRow('Release '+esc(v.name)+(v.releaseDate?' <span class="src-sub">'+esc(v.releaseDate)+'</span>':''),`<b>${v.count}</b> issues${jLink(v)}`,
+          !rel?'':av?`Releases: <b>${av.count}</b>${rel.current===v.name?' (current)':''}${jSame(v.count,av.count,rel)}`:rel.busy?'loading now':!v.count?'Not listed, the version has no issues yet':rel.fetchedAt?'<span class="src-bad">Not loaded yet. Click Load into the app now.</span>':jState(rel)));
+      }
+      if(p.moreReleases)rows.push(jRow('',`${p.moreReleases} more unreleased versions are not listed here.`,''));
+    }
+    if((j.projects||[]).length){
+      rows.push(jRow('Bugs in all projects',`<b>${bugsJira}</b>${bugsKnown?'':' <span class="src-sub">projects with an error are not counted</span>'}`,`Bug registry: <b>${a.bugs.count}</b> from Jira, ${jState(a.bugs)}<br>Defect charts: <b>${a.defects.count}</b>, ${jState(a.defects)}${bugsKnown?jSame(bugsJira,a.defects.count,a.defects):''}`));
+    }
+    if(j.person){
+      const x=j.person;
+      if(x.error)rows.push(jRow('Person',jErr(x),''));
+      else if(!x.users.length)rows.push(jRow('Person',`<span class="src-bad">Nobody in Jira matches "${esc(x.query)}".</span>`,''));
+      else rows.push(jRow('Tasks of '+esc(x.user.name),`<b>${x.tasks.count}</b> open${jLink(x.tasks)}${jJql(x.tasks)}${jSample(x.tasks)}${x.users.length>1?'<div class="src-sub">Also matches: '+x.users.slice(1).map(u=>esc(u.name)).join(', ')+'. Type a fuller name or the email to pick another person.</div>':''}`,''));
+    }
+    if(j.ticket)rows.push(j.ticket.error?jRow('Ticket',jErr(j.ticket),''):jRow('Ticket '+esc(j.ticket.key),`<pre class="src-ticket">${esc(j.ticket.text)}</pre>`,'This is the text the agents receive'));
+  }else{
+    rows.push(jRow('Workspace','',`<b>${a.workspace.count}</b> tasks, ${jState(a.workspace)}`));
+    for(const r of a.releases)rows.push(jRow('Releases '+esc(r.product),'',`${r.versions.map(v=>esc(v.name)+': '+v.count).join(', ')||'none'}, ${jState(r)}`));
+    rows.push(jRow('Bug registry','',`<b>${a.bugs.count}</b> from Jira, ${jState(a.bugs)}`));
+    rows.push(jRow('Defect charts','',`<b>${a.defects.count}</b>, ${jState(a.defects)}`));
+  }
+  $('#srcJiraOut').innerHTML=`<table class="src-jt"><thead><tr><th></th><th>In Jira</th><th>In the app</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+async function srcJiraCheck(){
+  const b=$('#srcJiraCheck');$('#srcJiraErr').textContent='';srcBusy(b,true,'Checking…');
+  try{const r=await post('/api/sources/jira/check',{person:$('#srcJiraPerson').value,key:$('#srcJiraKey').value});SRC.jiraLast=r.jira;SRC.jiraApp=r.app;renderJiraCheck()}
+  catch(e){$('#srcJiraErr').textContent=e.message}
+  srcBusy(b,false,'Check Jira data');
+}
+const jBusy=a=>a.workspace.busy||a.bugs.busy||a.defects.busy||a.releases.some(r=>r.busy);
+async function srcJiraLoad(quiet){
+  const b=$('#srcJiraLoad');$('#srcJiraErr').textContent='';srcBusy(b,true,'Loading…');
+  try{
+    SRC.jiraApp=await post('/api/sources/jira/load',{});renderJiraCheck();
+    for(let i=0;i<100;i++){
+      await new Promise(r=>setTimeout(r,3000));
+      SRC.jiraApp=await api('/api/sources/jira/loaded');renderJiraCheck();
+      if(!jBusy(SRC.jiraApp))break;
+    }
+    if(!quiet)toast('Jira data loaded into the app');
+  }catch(e){$('#srcJiraErr').textContent=e.message}
+  srcBusy(b,false,'Load into the app now');
+}
+$('#srcJiraCheck').onclick=()=>srcJiraCheck();
+$('#srcJiraLoad').onclick=()=>srcJiraLoad(false);
 $('#srcRepoSave').onclick=async()=>{
   const b=$('#srcRepoSave');$('#srcRepoErr').textContent='';srcBusy(b,true,'Syncing…');
   try{await srcSave();const r=await api('/api/sources/repos/sync',{method:'POST'});$('#srcRepoOut').innerHTML=srcResult(r.results);SRC.data=r.view;renderSources()}

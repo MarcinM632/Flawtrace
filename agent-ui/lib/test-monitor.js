@@ -11,11 +11,30 @@ const { AGENTS } = require('./agents');
 const { jiraAsk, jiraRetry } = require('./bugs');
 
 // Ten sam zestaw projektów co rejestr błędów (PRJ→core, SVC→svc, AD→mcp) — spójność w całej aplikacji.
-const PROJECTS = {
-  core: { jiraKey: 'PRJ', label: AGENTS.core.label },
-  svc: { jiraKey: 'SVC', label: AGENTS.svc.label },
-  mcp: { jiraKey: 'OPS', label: AGENTS.mcp.label },
-};
+const src = () => require('./sources');
+// product -> its Jira project. With Jira connected in Sources: the first project of the Projects field is the first product.
+const PROJECTS = src().liveMap(() => {
+  const out = {};
+  for (const [jiraKey, agent] of Object.entries(src().jiraProjectMap())) if (agent && AGENTS[agent] && !out[agent]) out[agent] = { jiraKey, label: AGENTS[agent].label };
+  return out;
+});
+
+/** Issues of the unreleased versions of a project, straight from the REST API, in the shape releasePrompt returns. */
+async function restRelease(jiraKey) {
+  const s = src();
+  const issues = await s.jiraSearchAll(`project = "${jiraKey}" AND fixVersion in unreleasedVersions() ORDER BY key ASC`, ['summary', 'status', 'issuetype', 'priority', 'fixVersions'], 3000);
+  return issues.map((i) => {
+    const f = i.fields || {};
+    const v = (f.fixVersions || []).find((x) => !x.released) || (f.fixVersions || [])[0];
+    if (!v) return null;
+    return {
+      key: i.key, summary: f.summary || '', status: (f.status && f.status.name) || '',
+      statusCategory: (f.status && f.status.statusCategory && f.status.statusCategory.name) || '',
+      type: (f.issuetype && f.issuetype.name) || '', priority: (f.priority && f.priority.name) || '',
+      version: v.name, versionId: String(v.id || ''), releaseDate: v.releaseDate || '',
+    };
+  }).filter(Boolean);
+}
 
 const STATE_FILE = path.join(DATA_DIR, 'test-monitor.json');
 
@@ -52,7 +71,8 @@ const versionNums = (v) => (v.name.match(/\d+(\.\d+)*/) || [''])[0].split('.').f
 function versionsForLabel(versions, label) {
   const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp('^' + esc, 'i');
-  return versions.filter((v) => re.test(v.name.trim()));
+  const named = versions.filter((v) => re.test(v.name.trim()));
+  return named.length ? named : versions;
 }
 
 /** Spośród kandydackich wersji wybiera "bieżącą": nie-backlogową, z najniższym numerem wersji —
@@ -94,8 +114,8 @@ async function refreshRelease(key) {
   if (!proj || releaseBusy.has(key)) return (state.byProject[key] || {}).releases || null;
   releaseBusy.add(key);
   try {
-    const list = await jiraRetry(() => jiraAsk(releasePrompt(proj.jiraKey), 240000));
-    const issues = Array.isArray(list) ? list.filter((it) => it && /^[A-Z]+-\d+$/.test(String(it.key || '').toUpperCase()) && it.version) : [];
+    const list = src().jiraRest() ? await restRelease(proj.jiraKey) : await jiraRetry(() => jiraAsk(releasePrompt(proj.jiraKey), 240000));
+    const issues = Array.isArray(list) ? list.filter((it) => it && /^[A-Z][A-Z0-9_]*-\d+$/.test(String(it.key || '').toUpperCase()) && it.version) : [];
     const byVer = new Map();
     for (const it of issues) {
       // "Backlog" to też realna wersja na stronie wydań Jiry (np. "CORE Backlog") — zostaje jako jedna z zakładek,

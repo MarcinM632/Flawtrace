@@ -520,17 +520,27 @@
     <section class="panel">
       <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="2">2</span>Jira</h2></div>
       <div class="panel-b">
-        <p class="src-why">The agents read the ticket, its subtasks and every comment.</p>
-        <p class="src-help">Where to find this: create a token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">Atlassian API tokens</a> and use the email you sign in with. For Jira Data Center leave the email empty and paste a personal access token.</p>
+        <p class="src-why">The agents read the ticket, its subtasks and every comment. Workspace, Releases, the bug registry and the defect charts load their data from here.</p>
+        <p class="src-help">Where to find this: create a token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">Atlassian API tokens</a> and use the email you sign in with. For Jira Data Center leave the email empty and paste a personal access token. Workspace shows the tasks assigned to the account of this token. Projects are read in order: the first key feeds the first product, the second key the second product.</p>
         <div class="row2">
           <div class="field"><label for="srcJiraUrl">Address</label><input id="srcJiraUrl" placeholder="https://your-org.atlassian.net" autocomplete="off"></div>
-          <div class="field"><label for="srcJiraProj">Projects <span class="opt">optional</span></label><input id="srcJiraProj" placeholder="PRJ, SVC" autocomplete="off"></div>
+          <div class="field"><label for="srcJiraProj">Projects <span class="opt">needed for releases and bugs</span></label><input id="srcJiraProj" placeholder="PRJ, SVC" autocomplete="off"></div>
         </div>
         <div class="row2">
           <div class="field"><label for="srcJiraEmail">Email</label><input id="srcJiraEmail" autocomplete="off"></div>
           <div class="field"><label for="srcJiraToken">API token</label><input id="srcJiraToken" type="password" autocomplete="new-password"></div>
         </div>
         <div class="src-save"><button type="button" class="btn" id="srcJiraSave">Save</button></div>
+        <div class="src-jc">
+          <h3>Check what the app reads</h3>
+          <p class="src-help">Every number comes from the same search the app uses. Click <b>Open in Jira</b> next to it and compare the count with the one Jira shows. The right column shows what the app has loaded so far.</p>
+          <div class="row2">
+            <div class="field"><label for="srcJiraPerson">Person <span class="opt">optional, name or email</span></label><input id="srcJiraPerson" placeholder="Jane Doe" autocomplete="off"></div>
+            <div class="field"><label for="srcJiraKey">Ticket <span class="opt">optional, shows the text the agents get</span></label><input id="srcJiraKey" placeholder="PRJ-123" autocomplete="off"></div>
+          </div>
+          <div class="src-save"><button type="button" class="go" id="srcJiraCheck">Check Jira data</button><button type="button" class="btn" id="srcJiraLoad" title="Load Workspace, releases, bugs and defect history from Jira now instead of waiting for the next scheduled refresh">Load into the app now</button><span class="err" id="srcJiraErr"></span></div>
+          <div id="srcJiraOut"></div>
+        </div>
       </div>
     </section>
 
