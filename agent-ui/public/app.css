@@ -1540,3 +1540,6 @@ input,textarea,select{border-color:var(--line2)}
 .dtbl tbody tr:hover td{background:var(--surface2)}
 .nav{border-bottom:1px solid var(--line);margin-bottom:10px}
 .steps{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.dcard h4 .tag{display:none}
+.ex{font-family:var(--sans);font-size:13px;background:var(--surface2)}
+.ex b{color:var(--ink);font-weight:500}
