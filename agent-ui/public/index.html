@@ -1,0 +1,2915 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6.5L4.6 18A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 15h9"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6a4 4 0 0 1 8 0"/><rect x="7" y="6" width="10" height="13" rx="5"/><path d="M3 11h4M17 11h4M3.5 17h3.5M17 17h3.5M4.5 6.5 7 8M19.5 6.5 17 8"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10Z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 5h13l2.5 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5V4.5Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v4H6.5A2.5 2.5 0 0 1 4 20.5Z"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2"/><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="M9 1.8v1.7M15 1.8v1.7M9 20.5v1.7M15 20.5v1.7M1.8 9h1.7M1.8 15h1.7M20.5 9h1.7M20.5 15h1.7"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m8.5 8-4.5 4 4.5 4M15.5 8l4.5 4-4.5 4M13.5 4.5l-3 15"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 18a9 9 0 1 1 17 0"/><path d="M12 18l4.2-5.4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M3 20h18"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7ZM12 17v5"/></symbol>
+  <symbol id="i-term"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9 3 3-3 3M12.5 15H17"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.12"/><path d="M20.5 3.5v5h-5"/></symbol>
+  <defs>
+    <marker id="tpArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="context-stroke"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark"><svg width="16" height="16"><use href="#i-bolt"/></svg></div>
+    <div><div class="b-name">QA Agents</div><div class="b-sub">Quality engineering console</div></div>
+  </div>
+  <nav class="nav" aria-label="Main">
+    <div class="nav-group">Workspace</div>
+    <button data-tab="workspace"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Workspace</span><span class="live" id="nb-workspace" hidden></span></button>
+    <div class="nav-group">Agents</div>
+    <button data-tab="runs" class="on"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">Analyses</span><span class="live" id="nb-runs" hidden></span></button>
+    <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
+    <button data-tab="autotest"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">Autotests</span><span class="live" id="nb-autotest" hidden></span><span class="live" id="nb-suiterun" hidden></span></button>
+    <div class="nav-group">Test Flow</div>
+    <div class="seg flow-mode" id="flowMode" role="radiogroup" aria-label="Test Flow mode" title="Manual: push each finished phase to the next one yourself. Auto: a finished phase starts the next one on its own, all the way to Completion.">
+      <button type="button" role="radio" data-m="manual" aria-checked="true"><svg width="12" height="12"><use href="#i-check"/></svg>Manual</button>
+      <button type="button" role="radio" data-m="auto" aria-checked="false"><svg width="12" height="12"><use href="#i-bolt"/></svg>Auto</button>
+    </div>
+    <button data-tab="planning"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">1. Planning</span><span class="live" id="nb-planning" hidden></span></button>
+    <button data-tab="tfmonitor"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">2. Monitoring &amp; control</span></button>
+    <button data-tab="analysis"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">3. Analysis</span><span class="live" id="nb-analysis" hidden></span></button>
+    <button data-tab="design"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">4. Design</span><span class="live" id="nb-design" hidden></span></button>
+    <button data-tab="implementation"><svg width="16" height="16"><use href="#i-layers"/></svg><span class="lbl">5. Implementation</span><span class="live" id="nb-implementation" hidden></span></button>
+    <button data-tab="execution"><svg width="16" height="16"><use href="#i-play"/></svg><span class="lbl">6. Execution</span><span class="live" id="nb-execution" hidden></span></button>
+    <button data-tab="completion"><svg width="16" height="16"><use href="#i-check"/></svg><span class="lbl">7. Completion</span><span class="live" id="nb-completion" hidden></span></button>
+    <button data-tab="runsummary"><svg width="16" height="16"><use href="#i-chart"/></svg><span class="lbl">8. Run Summary</span></button>
+    <div class="nav-group">Metrics</div>
+    <button data-tab="bugs"><svg width="16" height="16"><use href="#i-bug"/></svg><span class="lbl">Bug registry</span><span class="count" id="bugCount">0</span></button>
+    <button data-tab="risk"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Risk</span></button>
+    <button data-tab="metricsgen"><svg width="16" height="16"><use href="#i-chart"/></svg><span class="lbl">Metrics generation</span></button>
+    <div class="nav-group">Reference</div>
+    <button data-tab="tools"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">Tools</span></button>
+    <button data-tab="doc"><svg width="16" height="16"><use href="#i-book"/></svg><span class="lbl">Manual testing</span></button>
+    <button data-tab="ai"><svg width="16" height="16"><use href="#i-chip"/></svg><span class="lbl">AI testing</span></button>
+    <button data-tab="autodoc"><svg width="16" height="16"><use href="#i-layers"/></svg><span class="lbl">Automated testing</span></button>
+    <button data-tab="testproc"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Tests procedure</span></button>
+  </nav>
+  <button class="env-switch" id="envBtn" title="Switch the test environment">
+    <span class="env-lbl">Environment</span>
+    <span class="env-val"><span class="d"></span><span id="envBtnTxt">test-env</span></span>
+  </button>
+  <div class="side-foot">
+    <div class="conn wait" id="conn"><span class="d"></span><span id="connTxt">Connecting…</span></div>
+    <button class="icon-btn" id="restartBtn" title="Restart the server (picks up code changes on disk)" aria-label="Restart server"><svg width="15" height="15"><use href="#i-restart"/></svg></button>
+    <button class="icon-btn" id="theme" title="Toggle light / dark theme" aria-label="Toggle theme"><svg width="15" height="15"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </div>
+</aside>
+
+<div class="shell">
+<header class="topbar">
+  <div class="tb-title"><div class="crumb" id="crumb">Agents</div><h1 id="pageTitle">Ticket analyses</h1></div>
+  <p class="tb-desc" id="pageDesc"></p>
+</header>
+
+<div class="relwatch" id="relwatch" hidden></div>
+
+<div class="pipe" id="pipe" hidden></div>
+
+<div class="modal" id="cmtModal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="cmtTitle">
+    <h3 id="cmtTitle">Create autotests</h3>
+    <p class="hint" id="cmtSub"></p>
+    <label>Test type</label>
+    <div class="seg at-tabs" id="cmtLayer" role="radiogroup" aria-label="Test type">
+      <button type="button" role="radio" data-l="api" class="on" aria-checked="true"><b>pytest</b><small>Backend · API</small></button>
+      <button type="button" role="radio" data-l="ui" aria-checked="false"><b>Playwright</b><small>Frontend · UI</small></button>
+    </div>
+    <p class="hint" id="cmtLayerHint"></p>
+    <label for="cmtText">Comment for the agent <span class="opt">Optional</span></label>
+    <textarea id="cmtText" maxlength="2000" placeholder="e.g. the second finding is not a real bug, do not assert on it; cover only the long side; use account group AUTOTEST"></textarea>
+    <div class="cnt" id="cmtCnt" style="margin-top:6px;text-align:right"></div>
+    <div class="modal-act"><button class="btn" id="cmtCancel">Cancel</button><button class="go" id="cmtGo" style="width:auto"><svg width="13" height="13"><use href="#i-code"/></svg> Create autotests</button></div>
+    <div class="kbd-hint" style="text-align:right">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
+  </div>
+</div>
+
+<div class="modal" id="jiraPrevModal" hidden>
+  <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="jiraPrevTitle">
+    <h3 id="jiraPrevTitle">&nbsp;</h3>
+    <p class="hint" id="jiraPrevSub"></p>
+    <div id="jiraPrevBody" class="jira-prev-body"></div>
+    <div class="modal-act"><button class="btn" id="jiraPrevClose">Close</button></div>
+  </div>
+</div>
+
+<div class="modal" id="metricViewModal" hidden>
+  <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="mvTitle">
+    <h3 id="mvTitle">&nbsp;</h3>
+    <p class="hint" id="mvCaption"></p>
+    <div id="mvBody" class="mv-body"></div>
+    <div class="modal-act"><button class="btn danger" id="mvDelete">Delete</button><button class="btn" id="mvClose">Close</button></div>
+  </div>
+</div>
+
+<main id="view-workspace" hidden>
+  <section class="panel">
+    <div class="panel-h">
+      <div><h2>What to test now</h2><div class="sub" id="wsSub">Your open tasks in PRJ / SVC / OPS, ranked by Jira priority, then by service risk from the bug registry.</div></div>
+      <button class="btn sm" id="wsSync">Refresh from Jira</button>
+    </div>
+    <div class="panel-b"><div class="err" id="wsErr"></div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-h"><h2>What should I do now?</h2><button class="btn sm" id="wsAdviseBtn">Build report</button></div>
+    <div class="panel-b"><div id="wsAdviseOut" class="muted-note">One short checklist per open task, ranked: stage reached, static test, test design, coverage, autotests.</div></div>
+  </section>
+  <section class="panel" id="wsNextBox"></section>
+  <section class="panel">
+    <div class="panel-h"><h2>All assigned tasks</h2><span class="meta-r" id="wsCount"></span></div>
+    <div class="panel-b"><div id="wsList"></div></div>
+  </section>
+</main>
+
+<main id="view-runs">
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>New analysis</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label>Agent</label>
+          <div class="seg" id="agents"></div>
+          <div class="err" id="agentWarn" hidden></div>
+        </div>
+        <div class="field">
+          <label for="ticket" id="ticketLabel">Ticket key</label>
+          <textarea id="ticket" placeholder="e.g. OPS-170" autocomplete="off" style="min-height:0;height:38px"></textarea>
+          <div class="hint" id="hint"></div>
+        </div>
+        <div class="field">
+          <label for="notes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="notes" placeholder="e.g. focus on the admin tools"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="fileDrop" tabindex="0">
+            <input type="file" id="fileInput" hidden>
+            <div class="dz-empty" id="fileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="fileList" hidden></div>
+          </div>
+          <div class="err" id="fileErr"></div>
+        </div>
+        <button class="go" id="go"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis</button>
+        <div class="kbd-hint">or press <kbd id="goKbd">Enter</kbd></div>
+        <div class="err" id="err"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="listCount"></span></div>
+      <div class="list" id="list"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="detail"></section>
+</main>
+
+<main id="view-qamcp" hidden>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Run a test process</h2></div>
+      <div class="panel-b">
+        <div class="qenv" id="qEnv"></div>
+        <div class="field">
+          <label for="qProcess">Test process</label>
+          <textarea id="qProcess" style="min-height:190px" placeholder="Write it the way you would tell a colleague, e.g.
+
+Open 10 SYMBOL1 buy positions of 1 lot each on account 1001,
+then 20 more at 0.01 lot. Check the margin adds up and
+nothing was closed instead of opened."></textarea>
+          <div class="hint" id="qHint"></div>
+          <div class="cnt" id="qCnt" style="margin-top:6px;text-align:right"></div>
+          <div id="qBrief"></div>
+        </div>
+        <div class="field">
+          <label for="qNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="qNotes" placeholder="e.g. the account must stay net long"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="qFileDrop" tabindex="0">
+            <input type="file" id="qFileInput" hidden>
+            <div class="dz-empty" id="qFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="qFileList" hidden></div>
+          </div>
+          <div class="err" id="qFileErr"></div>
+        </div>
+        <div class="field">
+          <label for="qScope">Tools loaded <span class="opt">Affects cost and speed</span></label>
+          <select id="qScope">
+            <option value="auto">Auto: only the tool groups this process needs (cheaper, faster)</option>
+            <option value="all">All 628 tools (about 12k more tokens on every turn)</option>
+          </select>
+          <div class="hint">If a step needs a tool that was not loaded, the run marks it NOT VERIFIABLE VIA MCP and names the group. Run it again with All tools.</div>
+        </div>
+        <button class="go" id="qGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test process</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="qErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="qListCount"></span></div>
+      <div class="list" id="qList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="qDetail"></section>
+</main>
+
+<main id="view-planning" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-flask"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>1</em> · Planning</b><span>Risk, entry/exit criteria and a static/white-box feasibility check before a backlog task is implemented.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 1 — Planning</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="pfTask">Backlog task</label>
+          <textarea id="pfTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or paste the task's description/story if it has no key yet"></textarea>
+          <div class="hint" id="pfHint"></div>
+        </div>
+        <div class="field">
+          <label for="pfNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="pfNotes" placeholder="e.g. this iteration also touches the hedger rule, check for conflicts there"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="pfFileDrop" tabindex="0">
+            <input type="file" id="pfFileInput" hidden>
+            <div class="dz-empty" id="pfFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="pfFileList" hidden></div>
+          </div>
+          <div class="err" id="pfFileErr"></div>
+        </div>
+        <button class="go" id="pfGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run planning check</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="pfErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="pfListCount"></span></div>
+      <div class="list" id="pfList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="pfDetail"></section>
+</main>
+
+<main id="view-analysis" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-term"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>3</em> · Analysis</b><span>Picks a test strategy, measures the coverage gap, and checks blast radius across repos before Design.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 3 — Analysis</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="anTask">Backlog task</label>
+          <textarea id="anTask" style="min-height:96px" placeholder="e.g. PRJ-900 — ideally already checked by Phase 1 Planning"></textarea>
+          <div class="hint" id="anHint"></div>
+        </div>
+        <div class="field">
+          <label for="anNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="anNotes" placeholder="e.g. Phase 1 flagged risk on the hedger rule interaction"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="anFileDrop" tabindex="0">
+            <input type="file" id="anFileInput" hidden>
+            <div class="dz-empty" id="anFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="anFileList" hidden></div>
+          </div>
+          <div class="err" id="anFileErr"></div>
+        </div>
+        <button class="go" id="anGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis check</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="anErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="anListCount"></span></div>
+      <div class="list" id="anList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="anDetail"></section>
+</main>
+
+<main id="view-execution" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-play"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>6</em> · Execution</b><span>Runs a Phase 5 procedure for real, verifies the result, and reports any defect with retest evidence.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 6 — Execution</h2></div>
+      <div class="panel-b">
+        <div class="qenv" id="exEnv"></div>
+        <div class="field">
+          <label for="exProcess">Procedure from Phase 5</label>
+          <textarea id="exProcess" style="min-height:190px" placeholder="Paste the step-by-step procedure from Phase 5 Test Implementation, e.g.
+
+1. Open 10 SYMBOL1 buy positions of 1 lot each on account 1001,
+then 20 more at 0.01 lot. Check the margin adds up and
+nothing was closed instead of opened.
+2. ..."></textarea>
+          <div class="hint" id="exHint"></div>
+          <div class="cnt" id="exCnt" style="margin-top:6px;text-align:right"></div>
+        </div>
+        <div class="field">
+          <label for="exNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="exNotes" placeholder="e.g. this is a retest of the defect found last run"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="exFileDrop" tabindex="0">
+            <input type="file" id="exFileInput" hidden>
+            <div class="dz-empty" id="exFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="exFileList" hidden></div>
+          </div>
+          <div class="err" id="exFileErr"></div>
+        </div>
+        <div class="field">
+          <label for="exScope">Tools loaded <span class="opt">Affects cost and speed</span></label>
+          <select id="exScope">
+            <option value="auto">Auto: only the tool groups this process needs (cheaper, faster)</option>
+            <option value="all">All tools (more tokens on every turn)</option>
+          </select>
+          <div class="hint">If a step needs a tool that was not loaded, the run marks it NOT VERIFIABLE VIA MCP and names the group. Run it again with All tools.</div>
+        </div>
+        <button class="go" id="exGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run execution</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="exErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="exListCount"></span></div>
+      <div class="list" id="exList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="exDetail"></section>
+</main>
+
+<main id="view-completion" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-check"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>7</em> · Completion</b><span>A short, plain-English explanation of how a finished task works, archived into the knowledge base.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 7 — Completion</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="cpTask">Completed task</label>
+          <textarea id="cpTask" style="min-height:96px" placeholder="e.g. PRJ-900 — a finished ticket to explain and archive into the knowledge base"></textarea>
+          <div class="hint" id="cpHint"></div>
+        </div>
+        <div class="field">
+          <label for="cpNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="cpNotes" placeholder="e.g. focus on why the retry logic was added, not just what it does"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="cpFileDrop" tabindex="0">
+            <input type="file" id="cpFileInput" hidden>
+            <div class="dz-empty" id="cpFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="cpFileList" hidden></div>
+          </div>
+          <div class="err" id="cpFileErr"></div>
+        </div>
+        <button class="go" id="cpGo"><svg width="13" height="13"><use href="#i-play"/></svg> Explain this task</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="cpErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Knowledge base</h2><span class="meta-r" id="cpListCount"></span></div>
+      <div class="list" id="cpList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="cpDetail"></section>
+</main>
+
+<main id="view-runsummary" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-chart"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>8</em> · Run Summary</b><span>Every Test Flow phase for one ticket, on one page — compiled fresh from the latest run of each phase, so it is never a stale snapshot.</span></div></div>
+  <section class="panel">
+    <div class="panel-h"><h2>Pick a ticket</h2></div>
+    <div class="panel-b">
+      <div class="field">
+        <label for="rsTicket">Ticket</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="rsTicket" style="flex:1;min-width:0" placeholder="The exact text the Test Flow was started with, e.g. PRJ-900">
+          <button class="go" id="rsGo" style="width:auto;height:40px;margin-top:0;padding:0 20px;flex:none;white-space:nowrap"><svg width="13" height="13"><use href="#i-chart"/></svg> Show summary</button>
+        </div>
+        <div class="hint">For auto mode, this opens on its own once Completion finishes. For manual mode, run Completion first, then pick its ticket here.</div>
+      </div>
+      <div class="rs-recent" id="rsRecent"></div>
+    </div>
+  </section>
+  <section id="rsBody"></section>
+</main>
+
+<main id="view-design" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-code"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>4</em> · Design</b><span>Turns test conditions into concrete ISTQB test cases, grounded in the repo and the bug registry.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 4 — Design</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="dsTask">Scope to design</label>
+          <textarea id="dsTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or the requirement/area to design tests for (ideally the scope handed off from Phase 3 Analysis)"></textarea>
+          <div class="hint" id="dsHint"></div>
+        </div>
+        <div class="field">
+          <label for="dsNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="dsNotes" placeholder="e.g. focus on the areas flagged highest-priority by Analysis"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="dsFileDrop" tabindex="0">
+            <input type="file" id="dsFileInput" hidden>
+            <div class="dz-empty" id="dsFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="dsFileList" hidden></div>
+          </div>
+          <div class="err" id="dsFileErr"></div>
+        </div>
+        <button class="go" id="dsGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test design</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="dsErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="dsListCount"></span></div>
+      <div class="list" id="dsList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="dsDetail"></section>
+</main>
+
+<main id="view-implementation" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-layers"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>5</em> · Implementation</b><span>Merges Phase 4's test designs into one procedure, prioritised, time-estimated and traced back to its source.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Phase 5 — Implementation</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="imTask">Test design from Phase 4</label>
+          <textarea id="imTask" style="min-height:96px" placeholder="e.g. PRJ-900 — or paste the Phase 4 test design report directly"></textarea>
+          <div class="hint" id="imHint"></div>
+        </div>
+        <div class="field">
+          <label for="imNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="imNotes" placeholder="e.g. paste the Phase 1 risk list and/or Phase 3 scope-and-priority here too"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="imFileDrop" tabindex="0">
+            <input type="file" id="imFileInput" hidden>
+            <div class="dz-empty" id="imFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="imFileList" hidden></div>
+          </div>
+          <div class="err" id="imFileErr"></div>
+        </div>
+        <button class="go" id="imGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run implementation</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="imErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="imListCount"></span></div>
+      <div class="list" id="imList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="imDetail"></section>
+</main>
+
+<main id="view-tfmonitor" hidden class="wide viz">
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-gauge"/></svg></span>
+    <div class="ph-tx"><b>Phase <em>2</em> · Monitoring &amp; control</b><span>Iteration-by-iteration releases per project: progress, status mix and priority, read from Jira.</span></div></div>
+  <div id="tfmProjects" class="seg"></div>
+  <div id="tfmBody"></div>
+</main>
+
+<main id="view-autotest" hidden>
+  <div class="seg at-main-tabs" id="atSub" role="tablist" aria-label="Autotest phase">
+    <button role="tab" data-s="write" class="on" aria-selected="true"><svg width="14" height="14"><use href="#i-code"/></svg>Write</button>
+    <button role="tab" data-s="smoke" aria-selected="false"><svg width="14" height="14"><use href="#i-bolt"/></svg>Smoke<span class="live" id="nb-smoke" hidden></span></button>
+    <button role="tab" data-s="system" aria-selected="false"><svg width="14" height="14"><use href="#i-layers"/></svg>System<span class="live" id="nb-system" hidden></span></button>
+    <button role="tab" data-s="suite" aria-selected="false"><svg width="14" height="14"><use href="#i-check"/></svg>Suite runner<span class="live" id="nb-suitepane" hidden></span></button>
+  </div>
+  <p class="at-sub-desc" id="atSubDesc"></p>
+
+  <div class="col at-pane" data-pane="write">
+    <div class="seg at-tabs" id="aLayer" role="tablist" aria-label="Test type">
+      <button role="tab" data-l="api" class="on" aria-selected="true"><b>pytest</b><small>Backend · API</small></button>
+      <button role="tab" data-l="ui" aria-selected="false"><b>Playwright</b><small>Frontend · UI</small></button>
+    </div>
+    <section class="panel">
+      <div class="panel-h"><h2 id="aTitle">Write an API test</h2></div>
+      <div class="panel-b">
+        <div class="qenv" id="aEnv"></div>
+        <div class="field">
+          <label for="aCase">Test case</label>
+          <textarea id="aCase" style="min-height:190px" placeholder="Describe it the way you would write it in a test plan, e.g.
+
+Changing an account group's default leverage in PLAT Admin
+must not change the leverage of a trading account that was
+already created from an offer with its own leverage."></textarea>
+          <div class="hint" id="aHint"></div>
+          <div class="cnt" id="aCnt" style="margin-top:6px;text-align:right"></div>
+        </div>
+        <div class="field">
+          <label for="aFolder">Area under tests/ <span class="opt">Optional</span></label>
+          <input id="aFolder" list="folderList" placeholder="Picked by topic if left blank" autocomplete="off">
+          <datalist id="folderList"></datalist>
+        </div>
+        <div class="field">
+          <label for="aNotes">Additional context <span class="opt">Optional</span></label>
+          <textarea id="aNotes" placeholder="e.g. add it to the existing test_open_market_position.py"></textarea>
+        </div>
+        <div class="field">
+          <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
+          <div class="dropzone" id="aFileDrop" tabindex="0">
+            <input type="file" id="aFileInput" hidden>
+            <div class="dz-empty" id="aFileEmpty">Drop files here, click to browse, or paste (Ctrl+V)</div>
+            <div class="dz-list" id="aFileList" hidden></div>
+          </div>
+          <div class="err" id="aFileErr"></div>
+        </div>
+        <button class="go" id="aGo"><svg width="13" height="13"><use href="#i-code"/></svg> Write the test</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> in the description</div>
+        <div class="err" id="aErr"></div>
+        <div id="aBrief"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="aListCount"></span></div>
+      <div class="list" id="aList"></div>
+    </section>
+  </div>
+  <section class="panel detail at-pane" data-pane="write" id="aDetail"></section>
+
+  <div class="col at-pane" data-pane="smoke" hidden>
+    <section class="panel">
+      <div class="panel-h"><h2>Smoke pack</h2><span class="meta-r" id="smCount"></span></div>
+      <div class="panel-b">
+        <div id="smList"></div>
+        <button class="go" id="smGo" disabled><svg width="13" height="13"><use href="#i-play"/></svg> Run smoke pack</button>
+        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SMOKE</span> test as one pytest invocation, on the test environment.</div>
+      </div>
+    </section>
+  </div>
+  <section class="panel detail at-pane" data-pane="smoke" id="smDetail" hidden></section>
+
+  <div class="col at-pane" data-pane="system" hidden>
+    <section class="panel">
+      <div class="panel-h"><h2>System pack</h2><span class="meta-r" id="sysCount"></span></div>
+      <div class="panel-b">
+        <div id="sysList"></div>
+        <button class="go" id="sysGo" disabled><svg width="13" height="13"><use href="#i-play"/></svg> Run system pack</button>
+        <div class="kbd-hint">Runs every <span class="mono">@pytest.mark.SYSTEM</span> test (incl. UI/Playwright) as one pytest invocation.</div>
+      </div>
+    </section>
+  </div>
+  <section class="panel detail at-pane" data-pane="system" id="sysDetail" hidden></section>
+
+  <div class="col at-pane" data-pane="suite" hidden>
+    <section class="panel">
+      <div class="panel-h"><h2>Tests in the repo</h2><span class="meta-r" id="suCount"></span></div>
+      <div class="panel-b" style="padding-bottom:8px">
+        <input id="suQ" placeholder="Search tests…" autocomplete="off" aria-label="Search tests">
+        <div class="su-filters">
+          <select id="suMarker" aria-label="Marker"></select>
+          <select id="suStatus" aria-label="Status"><option value="">Any result</option><option value="passed">Passed last run</option><option value="failed">Failed last run</option><option value="notrun">Never run</option></select>
+        </div>
+        <div class="su-bulk"><button class="btn sm" id="suAll">Select shown</button><button class="btn sm" id="suFailed">Failed only</button><button class="btn sm" id="suNone">Clear</button></div>
+      </div>
+      <div class="su-tree" id="suTree"></div>
+      <div class="panel-b" style="padding-top:0"><button class="go" id="suGo" style="margin-top:12px" disabled>Run selected</button>
+        <div class="kbd-hint">Runs on the test environment, one run at a time. Trading tests open real positions on the AUTOTEST accounts.</div></div>
+    </section>
+  </div>
+  <section class="panel detail at-pane" data-pane="suite" id="sDetail" hidden></section>
+</main>
+
+<main id="view-tools" class="wide" hidden>
+  <div class="col">
+    <section class="panel jirapanel">
+      <div class="jirabar"><span id="tlSt">Loading…</span><span class="jbtns"><button type="button" id="tlFull" title="Refresh the specifications from the services, then go through every endpoint looking for newly added ones and changed parameters. Services that cannot be reached keep their cached specification.">Reinitialize all endpoints</button></span></div>
+      <div id="tlReport"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Endpoints by service</h2><span class="meta-r" id="tlCount"></span></div>
+      <div class="panel-b" style="padding-bottom:8px">
+        <input id="tlQ" placeholder="Search by tool name, path or description…" autocomplete="off" aria-label="Search endpoints">
+        <label class="tl-chk"><input type="checkbox" id="tlChanged" class="su-cb"> Only new or changed (last 2 weeks)</label>
+      </div>
+      <div class="panel-b" id="tlList"></div>
+    </section>
+  </div>
+</main>
+
+<main id="view-bugs" hidden>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Report a bug</h2></div>
+      <div class="panel-b">
+        <div class="field"><label>Application</label><div class="seg" id="bAgents"></div></div>
+        <div class="field">
+          <label for="bService">Service</label>
+          <input id="bService" list="serviceList" placeholder="Pick one or type it" autocomplete="off">
+          <datalist id="serviceList"></datalist>
+        </div>
+        <div class="field">
+          <label for="bTitle">What is broken</label>
+          <textarea id="bTitle" placeholder="e.g. saving a group resets the commission when the field was never edited"></textarea>
+        </div>
+        <div class="field row2">
+          <div><label for="bTicket">Ticket</label><input id="bTicket" placeholder="SVC-318" autocomplete="off"></div>
+          <div><label for="bSeverity">Severity</label><select id="bSeverity"></select></div>
+        </div>
+        <div class="field">
+          <label for="bNotes">Evidence / notes</label>
+          <textarea id="bNotes" placeholder="file:line, steps to reproduce" style="min-height:96px"></textarea>
+        </div>
+        <button class="go" id="bGo"><svg width="14" height="14"><use href="#i-bug"/></svg> Add to registry</button>
+        <div class="err" id="bErr"></div>
+      </div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="panel jirapanel">
+      <div class="jirabar"><span id="jiraSt">Jira sync: checking…</span><span class="jbtns"><button type="button" class="go" id="jiraGo" title="Fetch new bugs and bug-like task comments from the PRJ, SVC and AD Jira projects now">Sync Jira now</button><button type="button" id="jiraFull" title="Reinitialize everything: re-fetch ALL bugs and task comments from the PRJ, SVC and AD Jira projects, ignoring the last sync date. Adds what is missing, never deletes or duplicates. Slower and costs more than a normal sync.">Reinitialize all tasks</button></span></div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><div><h2>Defects by service</h2><div class="sub">Click a service to filter below.</div></div><span class="total" id="bTotal"></span></div>
+      <div class="utabs" id="appTabs"></div>
+      <div class="panel-b">
+        <div class="sevleg"><span><i class="sv-k"></i>Critical</span><span><i class="sv-w"></i>Major</span><span><i class="sv-d"></i>Minor</span></div>
+        <div class="rank" id="rank"></div>
+        <button class="rmore" id="rankMore" hidden></button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Reports</h2><span class="total" id="bShown"></span></div>
+      <div class="filters">
+        <div><label for="fService">Service</label><select id="fService"></select></div>
+        <div><label for="fSeverity">Severity</label><select id="fSeverity"></select></div>
+        <div><label for="fQuery">Search</label><input id="fQuery" type="search" placeholder="Title, notes, ticket or service" autocomplete="off"></div>
+      </div>
+      <div class="buglist" id="bugList"></div>
+      <button class="rmore" id="listMore" hidden></button>
+    </section>
+  </div>
+</main>
+
+<main id="view-risk" class="wide" hidden>
+ <div class="doc viz">
+  <div class="doc-hero">
+    <h3>Where to expect more bugs</h3>
+    <p>Computed live from the bug registry. <b>Which service breaks the most per change</b> — so test effort goes where the next ticket is most likely to fail, not just where bugs piled up historically.</p>
+    <div class="src">Weights: critical 5 · major 3 · minor 1. Every logged finding counts, fixed or not.</div>
+  </div>
+
+  <section class="panel" id="rTopBox" hidden>
+    <div class="panel-b"><div class="rtop" id="rTop"></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Per application</h2></div>
+    <div class="panel-b"><div class="tiles" id="rTiles"></div></div>
+  </section>
+
+  <section class="panel-row">
+    <section class="panel">
+      <div class="panel-h"><h2>Findings by severity</h2></div>
+      <div class="panel-b">
+        <p class="rlede">Mostly criticals = bugs caught late, after they already hurt.</p>
+        <div class="chartbox" id="rSev"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Damage share by application</h2></div>
+      <div class="panel-b">
+        <p class="rlede">Damage, not finding count — three minors never outweigh one critical.</p>
+        <div class="chartbox" id="rApp"></div>
+      </div>
+    </section>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Risk density — defects per change touched</h2></div>
+    <div class="panel-b">
+      <p class="rlede">A service that breaks on most of its changes will keep doing so. <b>Past the dashed line = test it first.</b></p>
+      <div class="chartbox" id="rWatch"></div>
+      <div class="vizleg" id="rWatchLeg"></div>
+      <button class="rmore" id="rMore" hidden></button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Total damage by application</h2></div>
+    <div class="panel-b">
+      <p class="rlede">All-time totals, by app and its top services — a service can rank high simply from having had many changes, not from being dangerous per change.</p>
+      <div id="rStack"></div>
+    </div>
+  </section>
+
+  <section class="panel-row">
+    <section class="panel">
+      <div class="panel-h"><h2>Expected testing time</h2></div>
+      <div class="panel-b">
+        <p class="rlede">Median run time from this app's finished runs, with the middle-50% range as "±". ISTQB calls this <b>extrapolation</b>: estimate the next similar task from recent actuals, not a guess.</p>
+        <div class="chartbox" id="rTime"></div>
+        <div class="vizleg" id="rTimeLeg"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Average bugs per task, by service</h2></div>
+      <div class="panel-b">
+        <p class="rlede">Plain average — findings ÷ tickets touched, unweighted by severity. What to expect, not how bad it is when it happens.</p>
+        <div class="chartbox" id="rBugsAvg"></div>
+        <div class="vizleg" id="rBugsAvgLeg"></div>
+      </div>
+    </section>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Suggested test priority</h2></div>
+    <div class="panel-b">
+      <p class="rlede">Priority = risk level = <b>likelihood × impact</b> (ISTQB CTFL §5.2): services with more findings per ticket, weighted by how severe they tend to be. <b>A high-risk service should be tested earlier and more rigorously — not faster or shorter</b> (ISTQB CTAL-TM §1.3.4); use the time estimate above only to plan capacity, not to cut scope on these.</p>
+      <div id="rPriority"></div>
+    </div>
+  </section>
+ </div>
+</main>
+
+<main id="view-metricsgen" class="wide" hidden>
+ <div class="doc viz">
+  <div class="doc-hero">
+    <h3>Build a metric</h3>
+    <p>Pick a statistic, a period, and the apps, services or Jira release to scope it to — from the same bug registry, run history and cached releases the rest of the app already reads. <b>Generating freezes the result</b> as a saved chart: it keeps showing what it showed on the day you made it, even if the registry changes afterwards.</p>
+    <div class="src" id="mgDlSt">Jira defect history (opened/closed, resolution time): checking…</div>
+    <button type="button" class="btn sm" id="mgDlSync" style="margin-top:8px">Sync Jira defect history</button>
+  </div>
+
+  <section class="panel">
+    <div class="panel-h"><h2>New chart</h2></div>
+    <div class="panel-b">
+      <div class="mgen-grid">
+        <div class="mgen-field" id="mgStatField">
+          <label for="mgStat">Statistic</label>
+          <select id="mgStat"></select>
+          <p class="hint" id="mgStatDesc"></p>
+        </div>
+        <div class="mgen-field">
+          <label>Period</label>
+          <div class="seg" id="mgPeriod">
+            <button data-p="all" class="on">All time</button>
+            <button data-p="30">Last 30d</button>
+            <button data-p="90">Last 90d</button>
+            <button data-p="180">Last 6mo</button>
+            <button data-p="365">Last year</button>
+            <button data-p="custom">Custom</button>
+          </div>
+          <div class="mgen-range" id="mgRange" hidden>
+            <input type="date" id="mgFrom"><span>→</span><input type="date" id="mgTo">
+          </div>
+        </div>
+        <div class="mgen-field" id="mgAppsField">
+          <label>Apps <span class="opt">Leave all unchecked for every app</span></label>
+          <div class="mgen-check" id="mgApps"></div>
+        </div>
+        <div class="mgen-field" id="mgServicesField" hidden>
+          <label>Services <span class="opt">Leave empty for every service</span></label>
+          <div class="mgen-check mgen-scroll" id="mgServices"></div>
+        </div>
+        <div class="mgen-field" id="mgReleaseField" hidden>
+          <label>Release</label>
+          <div class="mgen-release">
+            <select id="mgReleaseApp"></select>
+            <select id="mgReleaseName"></select>
+          </div>
+        </div>
+        <div class="mgen-field">
+          <label for="mgTitle">Title <span class="opt">Optional</span></label>
+          <input type="text" id="mgTitle" maxlength="120" placeholder="Defaults to the statistic name">
+        </div>
+      </div>
+      <button class="go" id="mgGo"><svg width="13" height="13"><use href="#i-spark"/></svg> Generate chart</button>
+      <div class="err" id="mgErr"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><div><h2>Econometric analysis</h2><div class="sub">Pick what you want explained (Y) and what might explain it (X) from real, already-collected metrics; the app fits an OLS regression and reports it the correct way — significance, multicollinearity, fit, and the caveats that go with a small sample.</div></div></div>
+    <div class="panel-b">
+      <div class="econ-builder">
+        <div class="mgen-field econ-gran">
+          <label for="ecGran">Granularity (what one row is)</label>
+          <select id="ecGran"></select>
+          <p class="hint" id="ecGranDesc"></p>
+        </div>
+        <div class="mgen-field" id="ecPeriodField">
+          <label>Period <span class="opt">Only matters for the "over time" granularity</span></label>
+          <div class="seg" id="ecPeriod">
+            <button data-p="90" class="on">Last 90d</button>
+            <button data-p="180">Last 6mo</button>
+            <button data-p="365">Last year</button>
+            <button data-p="all">All time</button>
+          </div>
+        </div>
+        <div class="mgen-field">
+          <label for="ecY">Dependent variable (Y) — what you want explained</label>
+          <select id="ecY"></select>
+        </div>
+        <div class="mgen-field econ-vars">
+          <label>Explanatory variables (X) — pick one or more</label>
+          <div class="econ-xcheck" id="ecX"></div>
+        </div>
+        <div class="mgen-field">
+          <label for="ecTitle">Title <span class="opt">Optional</span></label>
+          <input type="text" id="ecTitle" maxlength="120" placeholder="Defaults to Y vs X">
+        </div>
+      </div>
+      <button class="go" id="ecGo"><svg width="13" height="13"><use href="#i-spark"/></svg> Build model</button>
+      <div class="err" id="ecErr"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Saved charts &amp; models</h2><span class="sec-meta" id="mgCount"></span></div>
+    <div class="panel-b"><div id="mgGallery"></div></div>
+  </section>
+ </div>
+</main>
+
+<main id="view-doc" class="wide" hidden>
+ <div class="doc">
+
+  <div class="doc-hero">
+    <h3>Manual testing — the whole map on one page</h3>
+    <p>Start at the top of the tree and walk down: how much of the internals you can see, what size of thing
+    you are testing, whether you check <em>what</em> it does or <em>how well</em> it does it, and finally which
+    technique tells you which test cases to write. Every box below is clickable — it jumps to its explanation.</p>
+    <div class="src">Grounded in the ISTQB syllabuses in <span class="mono">claudeAgentTestDesign/istqb-library</span> — Foundation Level v4.0, Test Analyst v3.1.2, Performance Testing, Agile Tester.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>The map</h2>
+    <div class="tree" id="tree">
+      <ul>
+        <li>
+          <button class="node n-root" data-go="d-box">Testing</button>
+          <ul>
+            <li>
+              <button class="node n-manual" data-go="d-box">Manual Testing<small>a person runs it</small></button>
+              <ul>
+                <li><button class="node n-white" data-go="d-white">White Box<small>you see the code</small></button></li>
+                <li>
+                  <button class="node n-black" data-go="d-black">Black Box<small>spec only</small></button>
+                  <ul>
+                    <li>
+                      <button class="node n-func" data-go="d-functional">Functional<small>what it does</small></button>
+                      <ul>
+                        <li><button class="node n-level" data-go="d-unit">Unit</button></li>
+                        <li>
+                          <button class="node n-level" data-go="d-integration">Integration</button>
+                          <ul>
+                            <li>
+                              <button class="node n-func" data-go="d-incremental">Incremental</button>
+                              <ul>
+                                <li><button class="node n-dir" data-go="d-topdown">Top-down</button></li>
+                                <li><button class="node n-dir" data-go="d-bottomup">Bottom-up</button></li>
+                              </ul>
+                            </li>
+                            <li><button class="node n-func" data-go="d-bigbang">Non-Incremental</button></li>
+                          </ul>
+                        </li>
+                        <li><button class="node n-level" data-go="d-system">System</button></li>
+                      </ul>
+                    </li>
+                    <li>
+                      <button class="node n-func" data-go="d-nonfunctional">Non-Functional<small>how well it does it</small></button>
+                      <ul>
+                        <li>
+                          <button class="node n-perf" data-go="d-perf">Performance</button>
+                          <ul>
+                            <li><button class="node n-load" data-go="d-load">Load</button></li>
+                            <li><button class="node n-load" data-go="d-stress">Stress</button></li>
+                            <li><button class="node n-load" data-go="d-scalability">Scalability</button></li>
+                            <li><button class="node n-load" data-go="d-stability">Stability</button></li>
+                          </ul>
+                        </li>
+                        <li><button class="node n-perf" data-go="d-usability">Usability</button></li>
+                        <li><button class="node n-perf" data-go="d-compatibility">Compatibility</button></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+                <li><button class="node n-grey" data-go="d-grey">Grey Box<small>partly inside</small></button></li>
+              </ul>
+            </li>
+            <li><button class="node n-auto" data-go="d-auto">Automation Testing<small>a script runs it</small></button></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="legend">
+      <span><i style="background:#c2701c"></i>who runs it</span>
+      <span><i style="background:linear-gradient(90deg,#131a22 50%,#f6f8fb 50%);border:1px solid var(--ink3)"></i>how much you see inside</span>
+      <span><i style="background:#3fc4e8"></i>what kind of check</span>
+      <span><i style="background:#1b838e"></i>test level</span>
+      <span><i style="background:#7a2230"></i>quality attribute</span>
+      <span><i style="background:#2f6b33"></i>performance type</span>
+    </div>
+  </div>
+
+  <div class="navchips">
+    <a href="#d-box">1 · How much you see</a>
+    <a href="#d-levels">2 · Test levels</a>
+    <a href="#d-integ">3 · Integration order</a>
+    <a href="#d-kinds">4 · Functional vs non-functional</a>
+    <a href="#d-perf">5 · Performance types</a>
+    <a href="#d-bb">6 · Black-box techniques</a>
+    <a href="#d-exp">7 · Experience-based</a>
+    <a href="#d-wb">8 · White-box coverage</a>
+    <a href="#d-choose">9 · How to choose</a>
+  </div>
+
+  <!-- 1 -->
+  <div class="card dsec" id="d-box">
+    <h3><span class="num">1</span>How much you can see inside</h3>
+    <p class="lead">The first fork in the tree. It decides <em>when</em> you can write the test and <em>what</em> it survives.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-black">
+        <h4>Black box <span class="tag acc">spec-based</span></h4>
+        <p>Test from the outside, using only the specification. You never look at the code, so the test still
+        works after the code is rewritten — as long as the required behaviour did not change.</p>
+        <div class="ex"><b>Tiny example</b>Deposit 0 USD → expect “amount must be greater than 0”.</div>
+      </div>
+      <div class="dcard" id="d-white">
+        <h4>White box <span class="tag">structure-based</span></h4>
+        <p>Test from the inside, using the code. You can only write these <b>after</b> the thing has been
+        designed or written, and they break when the code is restructured.</p>
+        <div class="ex"><b>Tiny example</b>Pick inputs so both sides of <span class="mono">if (balance &gt; 0)</span> run at least once.</div>
+      </div>
+      <div class="dcard" id="d-grey">
+        <h4>Grey box <span class="tag">mixed</span></h4>
+        <p>You drive it from the outside, but you know some internals — the DB schema, the API contract, the log
+        format — and you use that knowledge to check the result. This is what most QA work in this team looks like.</p>
+        <div class="ex"><b>Tiny example</b>Save a group in Admin, then check the row landed in the database.</div>
+      </div>
+      <div class="dcard" id="d-auto">
+        <h4>Manual vs automation <span class="tag">who runs it</span></h4>
+        <p>Same techniques, different runner. A person exploring finds surprises a script never will; a script
+        repeats 500 checks overnight without getting bored. Design the test first, then decide who runs it.</p>
+        <div class="ex"><b>Rule of thumb</b>New and unclear → manual. Stable and repeated → automate.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Experience-based testing</b> is a third family alongside black and white box: it leans on the tester’s knowledge instead of a document or the code. See section 7.</span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card dsec" id="d-levels">
+    <h3><span class="num">2</span>Test levels — how big is the thing under test</h3>
+    <p class="lead">Same product, four zoom levels. Each level finds a different kind of defect, so skipping one leaves a gap.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-unit">
+        <h4>Unit / component <span class="tag">smallest</span></h4>
+        <p>One function or class, on its own, with everything around it faked. Fast, precise, and it points
+        straight at the broken line. ISTQB calls this <em>component testing</em>.</p>
+        <div class="ex"><b>Tiny example</b>The swap formula returns 35, not 3.5, for “35 %” at price precision 3.</div>
+      </div>
+      <div class="dcard" id="d-integration">
+        <h4>Integration <span class="tag">the seams</span></h4>
+        <p>Two or more parts talking to each other. Every part can be correct on its own and the pair still wrong —
+        mismatched units, swapped fields, a format nobody agreed on.</p>
+        <div class="ex"><b>Tiny example</b>MCP → connector → PLAT: does the value survive all three hops unchanged?</div>
+      </div>
+      <div class="dcard" id="d-system">
+        <h4>System <span class="tag">whole product</span></h4>
+        <p>The complete system end to end, in an environment close to production, doing what a real user would do.
+        This is where most manual testing happens.</p>
+        <div class="ex"><b>Tiny example</b>Open a position in the Manager and see it arrive in the LP session.</div>
+      </div>
+      <div class="dcard">
+        <h4>Acceptance <span class="tag">the customer</span></h4>
+        <p>Not in the diagram, but it is the level above system: does this actually solve the business problem?
+        Run by or with the people who asked for it.</p>
+        <div class="ex"><b>Tiny example</b>A user completes a full day of routine work on the new screen.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card dsec" id="d-integ">
+    <h3><span class="num">3</span>Integration — the order you plug things in</h3>
+    <p class="lead">Only relevant at the integration level. It is a choice about how fast you go versus how easily you can tell what broke.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-incremental">
+        <h4>Incremental <span class="tag acc">one at a time</span></h4>
+        <p>Add one part, test, add the next. Slower to set up, but when something fails you already know it was the
+        piece you just added.</p>
+        <div class="ex"><b>Tiny example</b>Add the router, test. Add the quoter, test. Add the config service, test.</div>
+      </div>
+      <div class="dcard" id="d-topdown">
+        <h4>Top-down <span class="tag">needs stubs</span></h4>
+        <p>Start at the top layer and fake everything underneath. You see the user-facing flow early, but the fakes
+        (<em>stubs</em>) cost time to write.</p>
+        <div class="ex"><b>Tiny example</b>Test the Admin screen against a fake API that always returns 3 groups.</div>
+      </div>
+      <div class="dcard" id="d-bottomup">
+        <h4>Bottom-up <span class="tag">needs drivers</span></h4>
+        <p>Start at the lowest layer and fake the callers. The engine gets solid early, but nobody sees a working
+        screen until late.</p>
+        <div class="ex"><b>Tiny example</b>Drive the connector with a script instead of the real UI.</div>
+      </div>
+      <div class="dcard" id="d-bigbang">
+        <h4>Non-incremental (“big bang”) <span class="tag">all at once</span></h4>
+        <p>Wire everything together, then start testing. Cheap to set up and tempting under deadline — but a failure
+        could be anywhere, so debugging is slow.</p>
+        <div class="ex"><b>Tiny example</b>Deploy all services, click one flow, get an error with no idea which hop failed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card dsec" id="d-kinds">
+    <h3><span class="num">4</span>Functional vs non-functional</h3>
+    <p class="lead">Functional asks “does it do the right thing?”. Non-functional asks “is it good enough?” — and it has its own quality attributes.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-functional">
+        <h4>Functional <span class="tag acc">what it does</span></h4>
+        <p>Behaviour against the rules: correct results, correct rejections, correct messages. This is where the
+        design techniques in sections 6–8 are used.</p>
+        <div class="ex"><b>Tiny example</b>A limit order fills the moment the price touches the limit — not before.</div>
+      </div>
+      <div class="dcard" id="d-nonfunctional">
+        <h4>Non-functional <span class="tag">how well</span></h4>
+        <p>Everything the feature must also be: fast, stable, usable, portable, secure. Same feature, different
+        question — and usually a different kind of defect.</p>
+        <div class="ex"><b>Tiny example</b>The same order fills in under 200 ms with 500 users online.</div>
+      </div>
+      <div class="dcard" id="d-usability">
+        <h4>Usability <span class="tag">can they use it</span></h4>
+        <p>Can a real user reach their goal without being told how? Measured by observing people, not by reading
+        the screen yourself.</p>
+        <div class="ex"><b>Tiny example</b>A new user finds the setting in under a minute, unaided.</div>
+      </div>
+      <div class="dcard" id="d-compatibility">
+        <h4>Compatibility <span class="tag">elsewhere</span></h4>
+        <p>Does it still behave in other browsers, clients, versions or operating systems? Combinations explode
+        fast — this is the classic home of pairwise testing.</p>
+        <div class="ex"><b>Tiny example</b>Same MCP answer in Claude Desktop, Claude Code and Onyx.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card dsec" id="d-perf">
+    <h3><span class="num">5</span>Performance types — four different questions</h3>
+    <p class="lead">They are not intensities of the same test. Each one answers a question the others cannot.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-load">
+        <h4>Load <span class="tag">expected</span></h4>
+        <p>Realistic, anticipated load from a controlled number of users, rising towards the target.
+        <b>Question:</b> can it cope with the traffic we actually expect?</p>
+        <div class="ex"><b>Shape</b>ramp up → hold → ramp down<br><b>Tiny example</b>500 users, one query each per minute.</div>
+      </div>
+      <div class="dcard" id="d-stress">
+        <h4>Stress <span class="tag">past the limit</span></h4>
+        <p>Peak load at and beyond the specified limit, or normal load with resources taken away.
+        <b>Question:</b> how does it fail, and does it recover?</p>
+        <div class="ex"><b>Shape</b>push past the maximum<br><b>Tiny example</b>Go to 2 000 users; then halve the container memory.</div>
+      </div>
+      <div class="dcard" id="d-scalability">
+        <h4>Scalability <span class="tag">tomorrow</span></h4>
+        <p>Ability to meet <em>future</em> requirements that exceed today’s. <b>Question:</b> how far can we grow
+        before we breach the current targets? Once you know the ceiling, you can alarm on it in production.</p>
+        <div class="ex"><b>Tiny example</b>Still under 1 s with 3× today’s accounts?</div>
+      </div>
+      <div class="dcard" id="d-stability">
+        <h4>Stability / endurance <span class="tag">over time</span></h4>
+        <p>Steady load held for an operationally realistic period. <b>Question:</b> do resources leak — memory,
+        DB connections, thread pools — and degrade it hours later?</p>
+        <div class="ex"><b>Tiny example</b>8 hours of steady load; memory flat at the end, not climbing.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Also in the family:</b> <b>spike</b> (sudden burst, then back to normal) · <b>concurrency</b> (many users doing the same thing at the same instant) · <b>capacity</b> (how many users/transactions before the targets break).</span></div>
+    <div class="formula">
+      <span class="f">throughput = virtual users ÷ (processing time + think time)</span>
+      <span class="c">Which is why “500 users” is not a load. The same 500 users querying once a minute = 30 000 queries/h; once an hour = 500 queries/h. Sixty times the difference.</span>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card dsec" id="d-bb">
+    <h3><span class="num">6</span>Black-box techniques — how to pick the test cases</h3>
+    <p class="lead">You cannot test everything. These tell you which few tests carry the most information, and they give you a number for “how much did we cover”.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Equivalence partitioning <span class="tag acc">start here</span></h4>
+        <p>Split each input into groups the system should treat identically, then test one value per group —
+        the invalid groups too. Groups must not overlap and must not be empty.</p>
+        <div class="ex"><b>Tiny example</b>Volume: &lt; 0 | 0 | 0.01–100 | &gt; 100 → 4 tests, not 400.</div>
+      </div>
+      <div class="dcard">
+        <h4>Boundary value analysis <span class="tag">the edges</span></h4>
+        <p>Mistakes cluster at the edges of those groups. Test the boundary and its neighbour (2-value), or the
+        boundary and <em>both</em> neighbours (3-value, stricter). Only works on ordered groups.</p>
+        <div class="ex"><b>Tiny example</b>Ledger limit 92 days → try 91, 92, 93.</div>
+      </div>
+      <div class="dcard">
+        <h4>Decision table <span class="tag">combined rules</span></h4>
+        <p>For business rules where several conditions combine. One column per rule; test every feasible column.
+        It also exposes rules the spec forgot to state.</p>
+        <div class="ex"><b>Tiny example</b>retail? × margin ok? × market open? → fill / reject / queue.</div>
+      </div>
+      <div class="dcard">
+        <h4>State transition <span class="tag">has states</span></h4>
+        <p>For anything with a lifecycle. Test every valid transition (the usual target), and attempt the invalid
+        ones — <b>one invalid per test case</b>, so one defect cannot hide another.</p>
+        <div class="ex"><b>Tiny example</b>Pending → Filled ✓ · Pending → Cancelled ✓ · Filled → Cancelled ✗ (attempt it).</div>
+      </div>
+      <div class="dcard">
+        <h4>Pairwise <span class="tag">too many combos</span></h4>
+        <p>When full combinations are impossible, cover every <em>pair</em> of values instead. Small set,
+        surprisingly strong: most failures come from one or two variables interacting.</p>
+        <div class="ex"><b>Tiny example</b>4 clients × 3 languages × 3 roles = 36 → about 12 tests.</div>
+      </div>
+      <div class="dcard">
+        <h4>Classification tree <span class="tag">draw it first</span></h4>
+        <p>Draw the parameters and their values as a tree before choosing combinations. It does not produce test
+        cases by itself — it feeds partitioning, boundary analysis or pairwise.</p>
+        <div class="ex"><b>Tiny example</b>client · browser · language · OS → then pick the pairs from the picture.</div>
+      </div>
+      <div class="dcard">
+        <h4>Use case testing <span class="tag">real flows</span></h4>
+        <p>One test for the main path, plus enough tests to cover every alternative path and every error path.
+        Closest to how the product is really used — and good raw material for performance profiles.</p>
+        <div class="ex"><b>Tiny example</b>Place order → main path; no margin, market closed, LP down → 3 more.</div>
+      </div>
+      <div class="dcard">
+        <h4>Combine them <span class="tag">usually best</span></h4>
+        <p>They are not rivals. A decision table tells you which combinations matter; partitioning tells you which
+        value to use inside each condition.</p>
+        <div class="ex"><b>Tiny example</b>Decision table row “margin ok = false” → pick a boundary value for it.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Empirical backing for pairwise:</b> in a medical-device study, 66&nbsp;% of failures came from a single variable, and single- plus two-variable interactions accounted for 97&nbsp;%. The residual risk is failures needing three or more variables at once.</span></div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card dsec" id="d-exp">
+    <h3><span class="num">7</span>Experience-based — where the techniques run out</h3>
+    <p class="lead">No formal coverage number here. These find the defects a systematic technique walks straight past, and they work when documentation is thin or time is short.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Error guessing <span class="tag">go for the throat</span></h4>
+        <p>Attack the places defects usually hide, based on what has broken before in this team and this product.</p>
+        <div class="ex"><b>Tiny example</b>empty list · 0 · null · a name with a trailing space · a date at midnight.</div>
+      </div>
+      <div class="dcard">
+        <h4>Exploratory <span class="tag">timeboxed</span></h4>
+        <p>A session with a <em>charter</em> (a goal) and a clock. You design, run and learn at the same time, and
+        the next test comes from what the last one told you.</p>
+        <div class="ex"><b>Tiny example</b>“60 min: try to break the ledger date filter.” Notes as you go.</div>
+      </div>
+      <div class="dcard">
+        <h4>Checklist-based <span class="tag">memory aid</span></h4>
+        <p>A list of things worth remembering, not step-by-step scripts. Keeps coverage broad without freezing
+        the tester into a fixed path.</p>
+        <div class="ex"><b>Tiny example</b>“Every list: empty, one row, 500 rows, sorted, filtered, exported.”</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card dsec" id="d-wb">
+    <h3><span class="num">8</span>White-box coverage — the two you will meet</h3>
+    <p class="lead">Mostly a developer’s tool, but the numbers land in your reports, so it pays to read them correctly.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Statement coverage <span class="tag">weaker</span></h4>
+        <p>Every executable line runs at least once. If a line holds the defect, at least it got executed — which
+        gives it a chance to fail visibly.</p>
+        <div class="ex"><b>Tiny example</b>An <span class="mono">if</span> with no <span class="mono">else</span>: one test can already reach 100 %.</div>
+      </div>
+      <div class="dcard">
+        <h4>Branch coverage <span class="tag acc">stronger</span></h4>
+        <p>Every decision is taken both ways — true and false. Full branch coverage implies full statement
+        coverage; the reverse is not true.</p>
+        <div class="ex"><b>Tiny example</b>Same <span class="mono">if</span>: now you need the skipped path too.</div>
+      </div>
+      <div class="dcard">
+        <h4>Reading any coverage number</h4>
+        <p>Every technique in this page defines its own <em>coverage items</em> — partitions, boundaries, table
+        columns, transitions, statements, branches. The percentage always means the same thing.</p>
+        <div class="formula" style="margin-top:8px">
+          <span class="f">coverage % = items exercised ÷ items total × 100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="card dsec" id="d-choose">
+    <h3><span class="num">9</span>How to choose — the short version</h3>
+    <p class="lead">There is no single best technique. The syllabus is blunt about it, and so is practice.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:34%">Situation</th><th>Reach for</th><th style="width:31%">Why</th></tr></thead>
+      <tbody>
+        <tr><td>A field with ranges</td><td>Equivalence partitioning + boundary values</td><td>Cheapest tests that still find the classic off-by-one.</td></tr>
+        <tr><td>Rules with several conditions</td><td>Decision table</td><td>Exposes combinations — and gaps in the spec.</td></tr>
+        <tr><td>Anything with a lifecycle</td><td>State transition</td><td>Invalid transitions are where the silent bugs live.</td></tr>
+        <tr><td>Too many configurations</td><td>Pairwise (+ classification tree)</td><td>Shrinks the set without losing most of the risk.</td></tr>
+        <tr><td>Whole user journeys</td><td>Use case testing</td><td>Matches how it is really used; reusable for load profiles.</td></tr>
+        <tr><td>Thin or missing spec</td><td>Exploratory + error guessing</td><td>Works with no documentation at all.</td></tr>
+        <tr><td>A release you must not break</td><td>All of the above, combined</td><td>Systematic gives breadth, experience gives depth.</td></tr>
+      </tbody>
+    </table>
+    <div class="keyline"><span class="k">◆</span><span><b>Two things worth memorising.</b> First: 100&nbsp;% coverage does not mean “fully tested” — it only means that model has no more tests to give you. Second: black-box and experience-based techniques are strongest <b>together</b>, because the second one covers the systematic blind spots of the first.</span></div>
+    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>What drives the choice</b> (per ISTQB): the type of project · the schedule · the information available · the testers’ skills.</span></div>
+  </div>
+
+ </div>
+</main>
+
+<main id="view-ai" class="wide" hidden>
+ <div class="doc">
+
+  <div class="doc-hero">
+    <h3>Testing AI — the same craft, different ground rules</h3>
+    <p>Everything on the manual-testing page still applies: an AI product is mostly ordinary software with one
+    probabilistic part in the middle. What changes is that part. You often cannot say what the <em>correct</em>
+    answer is, the same input need not give the same output twice, and the behaviour can drift after release.
+    So the unit of testing moves — from “a function” to <em>the data</em> and <em>the model</em> — and a single
+    passed test stops meaning anything on its own. Every box below is clickable.</p>
+    <div class="src">Grounded in <b>ISTQB CT-AI v2.0</b> (Certified Tester AI Testing, GA 2026-04-17) and
+    <b>ISTQB CT-GenAI v1.0</b> (Testing with Generative AI, 2025-07-25). Sections 1–7 are about testing a system
+    that <em>contains</em> AI; section 8 is the other direction — using GenAI to do your testing.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>The map</h2>
+    <div class="tree cols" id="treeAi">
+      <ul>
+        <li>
+          <button class="node n-root" data-go="d-ai-why">AI Testing</button>
+          <ul>
+            <li>
+              <button class="node n-ai-sys" data-go="d-ai-why">Testing an AI system<small>the product contains AI</small></button>
+              <ul>
+                <li>
+                  <button class="node n-level" data-go="d-ai-data">Input data testing<small>new level &middot; §4</small></button>
+                  <ul>
+                    <li><button class="node n-func" data-go="d-ai-bias">Bias</button></li>
+                    <li><button class="node n-func" data-go="d-ai-pipeline">Pipeline</button></li>
+                    <li><button class="node n-func" data-go="d-ai-repr">Representativeness</button></li>
+                    <li><button class="node n-func" data-go="d-ai-constraint">Constraints</button></li>
+                    <li><button class="node n-func" data-go="d-ai-labels">Labels</button></li>
+                  </ul>
+                </li>
+                <li>
+                  <button class="node n-level" data-go="d-ai-model">ML model testing<small>new level &middot; §5</small></button>
+                  <ul>
+                    <li><button class="node n-func" data-go="d-ai-mlperf">ML performance</button></li>
+                    <li><button class="node n-func" data-go="d-ai-metamorphic">Metamorphic</button></li>
+                    <li><button class="node n-func" data-go="d-ai-b2b">Back-to-back</button></li>
+                    <li><button class="node n-func" data-go="d-ai-adversarial">Adversarial</button></li>
+                    <li><button class="node n-func" data-go="d-ai-ab">A/B</button></li>
+                    <li><button class="node n-func" data-go="d-ai-fit">Over-/underfit</button></li>
+                    <li><button class="node n-func" data-go="d-ai-drift">Drift</button></li>
+                  </ul>
+                </li>
+                <li>
+                  <button class="node n-ai-gen" data-go="d-ai-genai">GenAI &amp; LLM<small>it writes back</small></button>
+                  <ul>
+                    <li><button class="node n-ai-gen" data-go="d-ai-bench">Benchmarks</button></li>
+                    <li><button class="node n-ai-gen" data-go="d-ai-judge">LLM as judge</button></li>
+                    <li><button class="node n-ai-gen" data-go="d-ai-red">Red teaming</button></li>
+                    <li><button class="node n-ai-gen" data-go="d-ai-blue">Blue teaming</button></li>
+                  </ul>
+                </li>
+                <li>
+                  <button class="node n-load" data-go="d-ai-deploy">Deployment<small>and after it</small></button>
+                  <ul>
+                    <li><button class="node n-load" data-go="d-ai-shadow">Shadow</button></li>
+                    <li><button class="node n-load" data-go="d-ai-canary">Canary</button></li>
+                    <li><button class="node n-load" data-go="d-ai-rollback">Rollback</button></li>
+                    <li><button class="node n-load" data-go="d-ai-monitor">Monitoring</button></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-ai-gen" data-go="d-ai-with">Testing <em>with</em> GenAI<small>AI helps you test</small></button>
+              <ul>
+                <li><button class="node n-ai-sys" data-go="d-ai-prompt">Prompt loop</button></li>
+                <li><button class="node n-ai-sys" data-go="d-ai-halluc">Hallucinations</button></li>
+                <li><button class="node n-ai-sys" data-go="d-ai-rag">RAG &amp; agents</button></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="legend">
+      <span><i style="background:#2d6aa8"></i>testing a system that contains AI</span>
+      <span><i style="background:#1b838e"></i>AI-specific test level</span>
+      <span><i style="background:#6b4b9a"></i>generative AI</span>
+      <span><i style="background:#2f6b33"></i>deployment / operation</span>
+    </div>
+  </div>
+
+  <div class="navchips">
+    <a href="#d-ai-why">1 · Why AI is different</a>
+    <a href="#d-ai-qual">2 · Quality characteristics</a>
+    <a href="#d-ai-levels">3 · Test levels</a>
+    <a href="#d-ai-data">4 · Data testing</a>
+    <a href="#d-ai-model">5 · Model testing</a>
+    <a href="#d-ai-genai">6 · GenAI &amp; LLM</a>
+    <a href="#d-ai-deploy">7 · Deployment</a>
+    <a href="#d-ai-with">8 · Testing with GenAI</a>
+    <a href="#d-ai-choose">9 · How to choose</a>
+  </div>
+
+  <!-- 1 -->
+  <div class="card dsec" id="d-ai-why">
+    <h3><span class="num">1</span>Why AI breaks normal testing</h3>
+    <p class="lead">Four properties do all the damage. Everything else on this page is a response to one of them.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-ai-oracle">
+        <h4>No test oracle <span class="tag acc">the core problem</span></h4>
+        <p>In normal testing you know the expected result, so passed/failed is obvious. With AI the expected
+        result is often unknown, subjective, or beyond what a human can check — there is no agreed
+        <em>ground truth</em>. Vague requirements make it worse.</p>
+        <div class="ex"><b>Tiny example</b>“Is this the <em>best</em> product recommendation?” has no right answer to compare against.</div>
+      </div>
+      <div class="dcard" id="d-ai-nondet">
+        <h4>Non-determinism <span class="tag">it varies</span></h4>
+        <p>Probabilistic sampling, floating-point limits and GPU parallelism mean the same input can give a
+        different output. One failed run proves nothing; one passed run proves even less.</p>
+        <div class="ex"><b>Tiny example</b>The model calls a cat a dog once in 200 runs — a single test will never tell you that.</div>
+      </div>
+      <div class="dcard" id="d-ai-locked">
+        <h4>Locked vs adaptive <span class="tag">does it change?</span></h4>
+        <p><b>Locked</b> — behaviour fixed after deployment (most deployed models). Largely deterministic, so
+        expected results stay valid; an updated model counts as a new system and is retested.
+        <b>Adaptive</b> — keeps learning in production (e.g. reinforcement learning), so its behaviour can change
+        <em>during</em> the test. Most LLM products sit between: locked at runtime, updated periodically.</p>
+        <div class="ex"><b>Rule of thumb</b>Adaptive → you cannot pre-write tests for behaviour that does not exist yet. Build an automated core suite and re-run it on every change.</div>
+      </div>
+      <div class="dcard" id="d-ai-stat">
+        <h4>Statistics, not verdicts <span class="tag">consequence</span></h4>
+        <p>Because of the three above, results are measured over a large, representative sample and reported
+        as a rate with a confidence level — not as one verdict. The test suite has to be big enough to be
+        statistically significant.</p>
+        <div class="ex"><b>Tiny example</b>“98 % accuracy, ±1 % at 95 % confidence” — not “the test passed”.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Ways round the oracle problem:</b> define acceptable ranges and tolerances instead of exact values · pin the environment so runs are repeatable · ask a domain expert (fallible, but a baseline) · use <b>metamorphic testing</b> — check relations between outputs, not the outputs · use a <b>pseudo-oracle</b>, a second independent implementation (see section 5).</span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card dsec" id="d-ai-qual">
+    <h3><span class="num">2</span>Quality characteristics — what you are allowed to demand</h3>
+    <p class="lead">ISO/IEC 25059 extends the familiar 25010 model with characteristics that only make sense for AI. They are what your acceptance criteria get written against.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>AI functional correctness <span class="tag acc">adjusted</span></h4>
+        <p>Perfect accuracy is not achievable, so correctness is defined <em>with</em> an accepted error rate:
+        both correct and incorrect outputs count, and a threshold says how many wrong answers are tolerable.</p>
+        <div class="ex"><b>Tiny example</b>“≥ 98 % of classifications correct” replaces “all classifications correct”.</div>
+      </div>
+      <div class="dcard">
+        <h4>AI robustness <span class="tag">under pressure</span></h4>
+        <p>Holding that level of correctness anyway — with biased, adversarial or invalid input, external
+        interference, adverse conditions, or an operator misusing it.</p>
+        <div class="ex"><b>Tiny example</b>Accuracy must not collapse when the photo is blurred or the prompt is hostile.</div>
+      </div>
+      <div class="dcard">
+        <h4>Functional adaptability <span class="tag">self-adjusting</span></h4>
+        <p>Can the system adapt on its own to a changed operating environment after deployment — and does it
+        do so correctly?</p>
+        <div class="ex"><b>Tiny example</b>A drone switches flight mode when it crosses a set altitude.</div>
+      </div>
+      <div class="dcard">
+        <h4>User controllability &amp; intervenability <span class="tag">the off switch</span></h4>
+        <p>A human (or another agent) can step in <b>in time</b> — controllability is the general ability to
+        intervene, intervenability is intervening specifically to prevent harm or hazard.</p>
+        <div class="ex"><b>Tiny example</b>Manual override is offered the moment performance degrades by 30 %; full deactivation past 50 %.</div>
+      </div>
+      <div class="dcard">
+        <h4>Transparency <span class="tag">can you explain it</span></h4>
+        <p>The right information about the system reaches the people who need it: model version, data
+        provenance, documentation, limits. Testable through reviews and through an API that reports it.</p>
+        <div class="ex"><b>Tiny example</b>An endpoint returns the deployed model’s version id and a link to its documentation.</div>
+      </div>
+      <div class="dcard">
+        <h4>Societal &amp; ethical risk mitigation <span class="tag">the broad one</span></h4>
+        <p>Accountability, fairness and non-discrimination, privacy, safety and security, human control of
+        technology, human-centred design, respect for the rule of law, environmental sustainability, labour
+        practices.</p>
+        <div class="ex"><b>Tiny example</b>Equal approval rates across protected groups — tested in section 4.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Acceptance criteria for AI are statistical, probabilistic or threshold-based, not binary.</b> Write them that way before you start, or you will have no way to call a result passed.</span></div>
+    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>Safety makes all of this harder:</b> requirements start as vague goals encoded in training data, so traceability is poor · non-determinism prevents guarantees · self-learning drifts away from what you tested · decisions are hard to explain (LIME and similar help, at a cost to performance) · functional-safety standards have not caught up, while the EU AI Act already classes AI used as a safety component as high-risk.</span></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card dsec" id="d-ai-levels">
+    <h3><span class="num">3</span>Test levels — two new ones on top of the usual four</h3>
+    <p class="lead">Component, integration, system and acceptance all still happen. An ML system adds two levels that have no equivalent in conventional software.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Input data testing <span class="tag acc">new</span></h4>
+        <p>The data <em>is</em> the specification, so it gets its own level — training, validation and test
+        datasets, plus the production data the model uses to generate predictions in operation. Section 4.</p>
+        <div class="ex"><b>Tiny example</b>Half the training rows for one account type are missing — found here, or never.</div>
+      </div>
+      <div class="dcard">
+        <h4>ML model testing <span class="tag acc">new</span></h4>
+        <p>The trained model as the thing under test — the ultimate output of the ML workflow, before it is
+        wired into anything. Section 5.</p>
+        <div class="ex"><b>Tiny example</b>Measure accuracy, recall and robustness on a held-out set.</div>
+      </div>
+      <div class="dcard">
+        <h4>The conventional four, unchanged</h4>
+        <p><b>Component</b> — the non-AI parts, such as data capture and communication. <b>Component
+        integration</b> — the model actually receives the input and its prediction reaches the rest of the system;
+        API testing lives here when AI comes as a service. <b>System</b> — model performance survives being
+        embedded, which matters especially after the model was deliberately changed (e.g. a compressed DNN),
+        plus non-functional work such as time to deliver a prediction. <b>Acceptance</b> — is the service suitable
+        for the intended system, and were the ML performance criteria met.</p>
+        <div class="ex"><b>Watch out</b>A model that is excellent standing alone can be mediocre once compressed and deployed. That is a system-level finding.</div>
+      </div>
+      <div class="dcard">
+        <h4>Risk-based, by workflow stage</h4>
+        <p>Most regulatory frameworks require a risk-based approach. One usable split: <b>development risks</b>
+        (sub-optimal algorithm, poor evaluation approach, framework vulnerabilities — §7) · <b>data risks</b>
+        (biased, unrepresentative, broken pipeline — §4) · <b>model risks</b> (below target performance,
+        overfitted, susceptible to adversarial examples — §5).</p>
+        <div class="ex"><b>Alternative</b>Categorise the risks by the ISO/IEC 25059 characteristics from section 2 instead.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card dsec" id="d-ai-data">
+    <h3><span class="num">4</span>Input data testing — the dataset is the spec</h3>
+    <p class="lead">Most defects blamed on “the model” were already in the data. Five kinds of check, all of which you can run before a single prediction is made.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-ai-bias">
+        <h4>Testing for bias <span class="tag acc">fairness</span></h4>
+        <p>Non-random, unfair differences in treatment based on sensitive attributes — gender, age, race — which
+        is often unlawful. Two sources: <b>data bias</b> (unrepresentative or poisoned training data) and
+        <b>algorithmic bias</b> (a threshold or rule that produces unfairness even on clean data).</p>
+        <p>Approaches: review how the data was collected and annotated and which populations it represents ·
+        exploratory data analysis looking for skewed distributions and odd groupings across sensitive attributes ·
+        run a representative dataset through the system and look for statistically significant differences in
+        outcome between groups — which catches bias whether it came from the data or the model.</p>
+        <div class="ex"><b>Disparate impact analysis</b>Pick the sensitive attribute → build counterfactuals (same loan application, gender flipped) → run them → analyse enough of them for a statistically significant result. Works on combinations of attributes too. Keep the counterfactuals realistic, or you measure the model’s reaction to nonsense instead of its bias.</div>
+      </div>
+      <div class="dcard" id="d-ai-pipeline">
+        <h4>Data pipeline testing <span class="tag">layered</span></h4>
+        <p>Start with a design review. <b>Component</b>: ingestion, transformation scripts, sensor interfaces —
+        code review, static analysis, validation rules, error handling, and vulnerabilities that would let
+        malware or poisoned data in. <b>Component integration</b>: data flows across internal interfaces and is
+        interpreted correctly on the far side. <b>System</b>: smoke first, then functional (transformations,
+        routing), then non-functional (load, scalability, security), plus <b>fault injection</b> with defective
+        inputs. <b>System integration</b>: sources, storage, monitoring and the model downstream.</p>
+        <div class="ex"><b>Tiny example</b>Back-to-back the operational pipeline against the training pipeline — the classic training/serving skew bug.</div>
+      </div>
+      <div class="dcard" id="d-ai-repr">
+        <h4>Data representativeness <span class="tag">does it match reality</span></h4>
+        <p>How closely training, validation and test data match what the model will actually meet in operation.
+        Catches skewed datasets, missing data, disproportionate feature distributions, operational scenarios with
+        no coverage, and imbalanced classes.</p>
+        <p>Define the target population first — domain experts, data from existing or similar systems, benchmark
+        datasets from trusted sources — then analyse your dataset’s characteristics against it.</p>
+        <div class="ex"><b>Tiny example</b>The model will serve 40 % mobile users; the training set is 98 % desktop.</div>
+      </div>
+      <div class="dcard" id="d-ai-constraint">
+        <h4>Dataset constraint testing <span class="tag">schema for data</span></h4>
+        <p>Write the rules the data must satisfy, like a database schema, then check them.
+        <b>Single-value</b> constraints apply to one attribute in one instance (type, range, format).
+        <b>Multi-value</b> constraints apply across instances — a total that must stay within bounds, a cap on
+        duplicates, a limit on how many nulls are allowed (often zero).</p>
+        <div class="ex"><b>Tiny example</b>Points awarded across one race must exceed 50.5 and not exceed 102 — no single row can tell you that.</div>
+      </div>
+      <div class="dcard" id="d-ai-labels">
+        <h4>Label correctness testing <span class="tag">supervised only</span></h4>
+        <p>Wrong labels directly undermine performance and generalisation. Approaches: <b>expert review</b> ·
+        <b>multiple annotation</b> — several annotators label the same data and disagreement marks a defect,
+        measured as inter-annotator agreement (Cohen’s Kappa, or plain percentage agreement) ·
+        <b>risk-based prioritisation</b> of what to re-check, targeting ambiguous or near-boundary samples and
+        whatever matters most for success or safety · <b>comparison</b> against similar datasets ·
+        <b>rule checks</b> (bounding boxes must not overlap or run off the image) · <b>model-based</b> — samples
+        with high loss are likely mislabelled, ambiguous, or outside the training distribution.</p>
+        <div class="ex"><b>In practice</b>Expert review sets the labelling guidelines early, IAA refines them, model-based checks keep finding stragglers as the model develops.</div>
+      </div>
+      <div class="dcard">
+        <h4>And the risks behind all five</h4>
+        <p>Data from untrustworthy sources or poorly managed → <b>provenance testing</b>. Out-of-range values and
+        wrong data types → constraint testing. Sub-optimal feature selection → <b>feature testing</b>. Augmentation
+        that skews the set, missing data, uncovered value ranges, ambiguous data, poor annotation → the checks
+        above.</p>
+        <div class="ex"><b>Keep in mind</b>Pipeline performance can degrade in operation, and an uncontrolled change to the pipeline is a security event.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card dsec" id="d-ai-model">
+    <h3><span class="num">5</span>Model testing — seven techniques, and when each earns its keep</h3>
+    <p class="lead">This is where the AI-specific test design lives. Several of them exist purely to work around the missing oracle.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-ai-mlperf">
+        <h4>ML functional performance <span class="tag acc">statistical</span></h4>
+        <p>Accuracy, precision, recall and F1 measured against acceptance criteria — but stated with a margin of
+        error and a confidence level, which together fix the minimum number of tests you need. It moves the
+        result from one verdict to a measurement.</p>
+        <div class="formula" style="margin-top:8px">
+          <span class="f">98 % accuracy · ±1 % MoE · 95 % CL → 601 tests, of which ≥ 589 must pass</span>
+          <span class="c">CT-AI §6.1.3, illustrative. Sequential testing allows early stopping: if accuracy holds, ~170 tests can already settle it.</span>
+        </div>
+      </div>
+      <div class="dcard" id="d-ai-adversarial">
+        <h4>Adversarial testing <span class="tag">fragile inputs</span></h4>
+        <p>Feed the model perturbations a human would not even notice, designed to make it predict wrongly.
+        Inputs that succeed are <em>adversarial examples</em>, and they show where safeguards are needed — against
+        accidental ones as much as against deliberate attacks.</p>
+        <p><b>Black box</b>: build an equivalent model whose internals you know, craft examples there, and rely on
+        transferability — or brute-force a vast number of variants and hope some land. <b>White box</b>: knowing
+        the architecture, parameters and training process makes crafting them much easier.</p>
+        <div class="ex"><b>Tiny example</b>A few pixels changed on a stop sign and the classifier reads a speed limit.</div>
+      </div>
+      <div class="dcard" id="d-ai-metamorphic">
+        <h4>Metamorphic testing <span class="tag acc">no oracle needed</span></h4>
+        <p>Take a source test case that <b>passed</b>, change its input by a known rule — a <em>metamorphic
+        relation</em> — and check that the output changed the way the relation says it must. You never need to know
+        the correct answer, only the relationship between answers.</p>
+        <p>Three common objectives: <b>consistency</b> (outputs align across related inputs), <b>monotonicity</b>
+        (output moves directionally with the input), <b>invariance</b> (output stays stable under a perturbation).
+        Derive the relations from domain knowledge, requirements or domain properties such as physical law;
+        validate them by expert review and by running them against reference models.</p>
+        <div class="ex"><b>Tiny example</b>A risk model predicting age at death: raise the cigarettes-per-day input and the prediction must go <em>down</em>. You never needed the true age.</div>
+        <div class="ex"><b>Limit</b>Wrong or incomplete relations give false confidence. MT finds relational flaws, not all absolute errors — pair it with other techniques.</div>
+      </div>
+      <div class="dcard" id="d-ai-drift">
+        <h4>Drift testing <span class="tag">after release</span></h4>
+        <p><b>Data drift</b> — the incoming data no longer looks like the training data (user behaviour shifted,
+        seasonality, a new kind of phishing). <b>Concept drift</b> — the meaning changed: the right answer for the
+        same input is now different, so the learned decision boundaries are outdated.</p>
+        <p><b>Dynamic</b> drift testing needs current ground truth from user feedback — direct (a rating) or
+        indirect (what they actually watched) — and compares it against the model output with a threshold.
+        <b>Static</b> drift testing needs no ground truth: it compares the statistical distributions of input and
+        predicted output over time, e.g. with a Kolmogorov-Smirnov test.</p>
+        <div class="ex"><b>Tiny example</b>New regulation turns a “low-risk” transaction type into a high-risk one. Nothing in the code changed; the model is now wrong.</div>
+      </div>
+      <div class="dcard" id="d-ai-fit">
+        <h4>Over- and underfitting <span class="tag">during training</span></h4>
+        <p><b>Overfitting</b>: the model learned the noise instead of the pattern, so it generalises badly.
+        Detected when it scores significantly worse on a separate test set — one that deliberately includes less
+        common examples — than on validation.
+        <b>Underfitting</b>: too simple, or the training data lacks features carrying the relationship. Detected
+        when metrics stay low on <em>both</em> training and validation, and the learning curves stay high and close
+        together without improving.</p>
+        <div class="ex"><b>Tiny example</b>99 % on training data, 71 % on anything new — classic overfit.</div>
+      </div>
+      <div class="dcard" id="d-ai-ab">
+        <h4>A/B testing <span class="tag">pick a winner</span></h4>
+        <p>Same inputs, two variants, results compared statistically to decide which is better — often in
+        production, with traffic split between them. It uses the existing system as a partial oracle. It does
+        <em>not</em> design test cases for you and gives no guidance on how to.</p>
+        <p>Use it to confirm an update performs at least as well as the version it replaces, and for self-learning
+        systems: after a change, compare, keep it if improved, revert if not. Usual statistics: t-test, z-test,
+        chi-squared, Mann-Whitney U.</p>
+        <div class="ex"><b>Tiny example</b>Routing algorithm v2 vs v1 compared on average commute time over consecutive weeks.</div>
+      </div>
+      <div class="dcard" id="d-ai-b2b">
+        <h4>Back-to-back testing <span class="tag acc">pseudo-oracle</span></h4>
+        <p>Run the same inputs through an independent second implementation and compare the outputs. You only
+        generate <em>inputs</em>, never expected results — so you can run enormous numbers of them, including
+        inputs generated automatically from training data.</p>
+        <p>The pseudo-oracle must not share components with the system under test, or a shared defect makes both
+        wrong in the same way — a real risk given how much open-source AI code is reused. Ideally a different
+        team, different framework, different algorithm; conventional software counts if it solves the same
+        problem. It only has to match functionally, which keeps it affordable.</p>
+        <div class="ex"><b>Best moment</b>Migrating to a new environment — development to production — and comparing results across edge cases.</div>
+        <div class="ex"><b>A/B vs back-to-back</b>A/B compares two variants on performance metrics to pick a winner. Back-to-back compares against a reference to <em>find defects</em>.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Before any of this:</b> review the model documentation — intended use, training data provenance, known limits, version. A review finds the mismatch between what the model is for and what it is about to be used for, which no amount of test execution will.</span></div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card dsec" id="d-ai-genai">
+    <h3><span class="num">6</span>GenAI &amp; LLM systems — testing something that writes back</h3>
+    <p class="lead">Generative systems produce text, images, video and audio. Correctness becomes coherence, originality, plausibility and adherence to domain rules — and the input space explodes.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>The input explosion problem <span class="tag acc">why it is hard</span></h4>
+        <p>There is an optional system prompt and a user prompt, each able to carry enormous and disparate data;
+        there is an API path as well as a UI; there are parameters — temperature, maximum tokens — that change
+        the output; and the context window keeps earlier turns alive and influencing everything after.</p>
+        <div class="ex"><b>Consequence</b>You cannot enumerate the input space. Sample it deliberately and record the parameters with every result, or the result is not reproducible.</div>
+      </div>
+      <div class="dcard" id="d-ai-bench">
+        <h4>Benchmarks <span class="tag">standardised</span></h4>
+        <p>Curated datasets and tasks that let you compare models consistently — language understanding,
+        reasoning, coding. Systematic and reproducible, which ad-hoc prompting is not.</p>
+        <div class="ex"><b>Use it for</b>“Is the new model version better than the one we run today?” — not for “is our feature correct?”.</div>
+      </div>
+      <div class="dcard" id="d-ai-judge">
+        <h4>A second model as judge <span class="tag">automation</span></h4>
+        <p>Manual review is often unavoidable, and pass/fail then rests on qualitative criteria that must be
+        written into the requirements. Where it can be automated, a second GenAI system determines the result —
+        for instance an image recognition system checking a generated image.</p>
+        <div class="ex"><b>Careful</b>The judge can reproduce the same biases and the same errors as the system it judges.</div>
+      </div>
+      <div class="dcard" id="d-ai-red">
+        <h4>Red teaming <span class="tag acc">fault attack</span></h4>
+        <p>Deliberately pushing the system to produce harmful or undesirable output — privacy violations, hateful
+        content, dangerous instructions. What it finds is then used to strengthen the system. Usually black box,
+        usually end-to-end, and increasingly a regulatory expectation (EU AI Act).</p>
+        <p>The core activity is interactive multi-turn prompting, typically 15–20 turns. The loop:
+        <b>1)</b> assemble a diverse team to cover many perspectives and attack vectors <b>2)</b> give it access in
+        a safe test environment <b>3)</b> probe, open-ended or by checklist <b>4)</b> analyse the failures to
+        understand the threats <b>5)</b> turn them into datasets that drive mitigations.</p>
+        <div class="ex"><b>Scope</b>Not just security. Also reliability, privacy, fairness, bias and misinformation — and for safety the point is often harmful output under <em>ordinary</em> use, with no attacker at all.</div>
+        <div class="ex"><b>Coverage at scale</b>Crowd-sourced prompt generation, or one LLM generating attack prompts while another checks the outputs. Hybrid works best: human creativity, machine scale.</div>
+      </div>
+      <div class="dcard" id="d-ai-blue">
+        <h4>Red vs blue <span class="tag">before vs during</span></h4>
+        <p>Red teaming is proactive and pre-deployment — best run after internal quality checks, before release.
+        <b>Blue teaming</b> is the running defence: ongoing real-time monitoring and filtering of live input. What
+        red teaming finds is what blue teaming should then watch for.</p>
+        <div class="ex"><b>Security specifics</b>Indirect prompt injection, and malicious content hidden in documents the RAG retrieves.</div>
+      </div>
+      <div class="dcard">
+        <h4>Non-functional, same as ever</h4>
+        <p>Resource utilisation during inference <em>and</em> training, because it is a direct cost: CPU and GPU
+        usage, memory consumption, network bandwidth, response times.</p>
+        <div class="ex"><b>Tiny example</b>Answer quality is fine; the per-request cost makes the feature unshippable.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card dsec" id="d-ai-deploy">
+    <h3><span class="num">7</span>Deployment and the watch afterwards</h3>
+    <p class="lead">An ML system is released into an environment that keeps moving. These checks exist because “it worked in training” is not a release criterion.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Install &amp; uninstall</h4>
+        <p>Install, upgrade and uninstall cleanly across every supported environment — including system
+        dependencies such as GPU drivers, framework compatibility, and the installation scripts themselves.</p>
+        <div class="ex"><b>Tiny example</b>Works on the dev box, fails on the edge device with the older driver.</div>
+      </div>
+      <div class="dcard" id="d-ai-rollback">
+        <h4>Rollback <span class="tag acc">test it first</span></h4>
+        <p>Restore the previous working state after a degraded or failed deployment — model only, or the whole
+        system including the data pipeline. It has to be exercised <b>before</b> deployment; a rollback first
+        attempted during an incident is not a rollback.</p>
+        <div class="ex"><b>Tiny example</b>New model ships, accuracy drops, previous version is back in minutes.</div>
+      </div>
+      <div class="dcard" id="d-ai-canary">
+        <h4>Canary release <span class="tag">a slice of real users</span></h4>
+        <p>Release to a small share of production traffic — say 5 % of users — and watch real-time metrics such as
+        latency, accuracy and error rate to detect regressions before the full rollout.</p>
+        <div class="ex"><b>Tiny example</b>5 % of users on v2 for a day; error rate doubles; the rollout stops there.</div>
+      </div>
+      <div class="dcard" id="d-ai-shadow">
+        <h4>Shadow testing <span class="tag acc">zero user risk</span></h4>
+        <p>Route the same requests to both the new and the current system, without affecting the live responses.
+        It compares old and new on live data in a controlled, low-risk setting, and uncovers performance
+        regressions and data drift before full deployment.</p>
+        <div class="ex"><b>Tiny example</b>Two weeks of shadow traffic show the new model is better overall but worse on one customer segment.</div>
+      </div>
+      <div class="dcard">
+        <h4>Format conversion &amp; portability</h4>
+        <p>A model converted from its training format into a deployment format must keep consistent behaviour and
+        acceptable operational efficiency — inference speed, memory use. Then confirm it across every target, from
+        mobile and edge devices to cloud servers.</p>
+        <div class="ex"><b>Tiny example</b>Quantising for mobile costs 4 points of accuracy — a release decision, once you know.</div>
+      </div>
+      <div class="dcard" id="d-ai-monitor">
+        <h4>Monitoring is the test that never ends</h4>
+        <p>Drift testing (§5) belongs here: static distribution comparison always, dynamic comparison against user
+        feedback where ground truth exists. Plus API testing of inputs, outputs, error messages and the
+        integrations around the model — data feeds, clients, the pipeline.</p>
+        <div class="ex"><b>Keep in mind</b>For an adaptive system, monitoring <em>is</em> the regression suite — the behaviour you signed off is not the behaviour it will have next month.</div>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span><b>Development-side risks worth a review rather than a test:</b> sub-optimal algorithm or framework choice · wrong hyperparameters · defective allocation of data to the training, validation and test sets · a weak evaluation approach such as skipping k-fold cross-validation · non-reproducible results from the stochastic nature of learning · framework security vulnerabilities and poor framework documentation.</span></div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card dsec" id="d-ai-with">
+    <h3><span class="num">8</span>The other direction — testing <em>with</em> GenAI</h3>
+    <p class="lead">CT-GenAI covers the opposite case: the product is ordinary, and the LLM is your tool. The tool is confidently wrong sometimes, so its output is itself a test object.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-ai-halluc">
+        <h4>Three failure modes <span class="tag acc">know the difference</span></h4>
+        <p><b>Hallucination</b> — factually wrong or irrelevant output: fictitious test cases, scripts that do not
+        run, tests verifying acceptance criteria that do not exist.
+        <b>Reasoning error</b> — misread conditional logic, cause and effect, or step-by-step problem solving;
+        LLMs pattern-match rather than reason, so test planning, estimation and prioritisation are where this
+        bites. <b>Bias</b> — inherited from training data; shows up in generated test data and in how acceptance
+        criteria get rewritten.</p>
+        <div class="ex"><b>Tiny example</b>The model generates a beautiful test suite for a field the spec never mentions.</div>
+      </div>
+      <div class="dcard">
+        <h4>Detecting them</h4>
+        <p><b>Hallucination</b>: cross-reference against the test basis and known system behaviour (automatable
+        against established sources), expert review, and consistency checks across several answers.
+        <b>Reasoning</b>: review the chain of reasoning for coherence, and execute the generated testware against
+        the real test object — which settles it. <b>Bias</b>: check what the output over- and under-represents
+        relative to the test strategy.</p>
+        <div class="ex"><b>How much of this</b>Scale it to the estimated risk of the task. Generated smoke tests ≠ generated safety-critical tests.</div>
+      </div>
+      <div class="dcard">
+        <h4>Mitigating them</h4>
+        <p>Give full context in the prompt · split the work into steps with <b>prompt chaining</b> and verify each
+        output before moving to the next · use structured, straightforward input formats · ground the model in
+        your own documents with <b>RAG</b> · and cross-check by running the same task on several models and
+        comparing the outputs.</p>
+        <div class="ex"><b>Non-determinism</b>Lower the temperature, which narrows the probability distribution at the cost of variety, and fix the random seed. Neither gives full reproducibility — so automate the verification instead of relying on identical reruns.</div>
+      </div>
+      <div class="dcard" id="d-ai-prompt">
+        <h4>Evaluate, then refine <span class="tag">the loop</span></h4>
+        <p>Judge GenAI output on <b>accuracy</b> against expert-written tests or the requirements,
+        <b>precision</b>, <b>recall</b> (do the generated cases cover the valid and invalid partitions?),
+        <b>relevance and contextual fit</b> to the test basis, <b>diversity</b> of behaviours and edge cases,
+        <b>execution success rate</b> (do the scripts even run?) and <b>time efficiency</b> versus doing it by
+        hand.</p>
+        <p>Then refine: iterate on wording and context · A/B two prompt versions against those metrics · analyse
+        the error types you keep getting · ask the testers who use the output · and try both longer and shorter
+        prompts, since more context does not always win. Share what works as a prompt library.</p>
+        <div class="ex"><b>Because output varies</b>The metrics have to be computed over a statistically relevant sample, not over one impressive answer.</div>
+      </div>
+      <div class="dcard" id="d-ai-rag">
+        <h4>RAG and agents <span class="tag">the infrastructure</span></h4>
+        <p><b>RAG</b> chunks your documents (roughly 256–512 tokens), embeds them in a vector database, retrieves
+        the semantically closest chunks at query time and hands them to the model as context — which is how the
+        answers get grounded in the current specification instead of in training data.
+        <b>LLM-powered agents</b> go further: they call predefined functions — “tools” — and act on external
+        systems, semi- or fully autonomously, sometimes several agents orchestrated together.</p>
+        <div class="ex"><b>Keep in mind</b>Agents inherit every failure mode above, and now they <em>act</em> on it. Automated verification of their results, or semi-autonomous mode for anything critical.</div>
+      </div>
+      <div class="dcard">
+        <h4>Privacy, and shadow AI <span class="tag">policy, not technique</span></h4>
+        <p>Test data and specifications pasted into a public model may be stored, reused for training, or exposed
+        — a GDPR problem as much as a security one. <b>Shadow AI</b> — staff using unapproved tools on their own —
+        turns that into unmanaged data leakage, compliance exposure and intellectual property disputes.</p>
+        <div class="ex"><b>The fix is organisational</b>An agreed strategy, approved tools, and clear rules about what may be pasted where.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="card dsec" id="d-ai-choose">
+    <h3><span class="num">9</span>How to choose — the short version</h3>
+    <p class="lead">Same logic as the manual page: start from what you are missing — the oracle, the data, the stability — and the technique follows.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:34%">Situation</th><th>Reach for</th><th style="width:31%">Why</th></tr></thead>
+      <tbody>
+        <tr><td>You cannot say what the right answer is</td><td>Metamorphic testing</td><td>Checks relations between outputs instead of the outputs themselves.</td></tr>
+        <tr><td>An older system solves the same problem</td><td>Back-to-back testing</td><td>Gives you a pseudo-oracle, so you only need to generate inputs.</td></tr>
+        <tr><td>Two candidate models, need to pick one</td><td>A/B testing</td><td>Statistical comparison on agreed performance metrics.</td></tr>
+        <tr><td>The accuracy claim has to be defensible</td><td>Statistical ML performance testing</td><td>Sample size follows from margin of error and confidence level, not from intuition.</td></tr>
+        <tr><td>Model looks fine, outcomes look unfair</td><td>Disparate impact analysis</td><td>Counterfactuals on sensitive attributes expose bias the aggregate metrics hide.</td></tr>
+        <tr><td>Accuracy was good, now users complain</td><td>Drift testing</td><td>The world moved; nothing in the code had to change.</td></tr>
+        <tr><td>Safety- or security-relevant model</td><td>Adversarial testing + red teaming</td><td>Finds the inputs that break it before someone else does.</td></tr>
+        <tr><td>Generative feature going to real users</td><td>Red teaming, then blue teaming</td><td>Probe before release, then monitor and filter in production.</td></tr>
+        <tr><td>New model version, live traffic available</td><td>Shadow testing, then canary</td><td>Real data with no user exposure, then a small slice with a tested rollback.</td></tr>
+        <tr><td>Something is wrong and you suspect the data</td><td>Representativeness + constraint + label testing</td><td>Cheapest defects to fix, and they cap everything downstream.</td></tr>
+      </tbody>
+    </table>
+    <div class="keyline"><span class="k">◆</span><span><b>Three things worth memorising.</b> First: a single test result is not evidence about a probabilistic system — only a sample is. Second: most “model defects” are data defects, and data testing is far cheaper than retraining. Third: for an adaptive system, testing does not finish at release; monitoring <em>is</em> the test.</span></div>
+    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>And the conventional techniques still apply.</b> Equivalence partitioning, boundary values, decision tables and exploratory testing are all still used on the non-AI parts of the system — which is most of it. See the Manual Tests tab.</span></div>
+  </div>
+
+ </div>
+</main>
+<main id="view-testproc" class="wide" hidden>
+ <div class="doc">
+
+  <div class="doc-hero">
+    <h3>The testing process — one cycle, seven activities</h3>
+    <p>This page is pure theory: not <em>which</em> system to test, but <em>how the work of testing is structured</em> —
+    whatever the system. Every project does some version of these seven activities. They are not a waterfall: analysis,
+    design, implementation and execution overlap and repeat every iteration, and monitoring &amp; control runs
+    alongside all of them, start to finish. The map below walks the cycle in order; the sections after it go one
+    activity at a time, then close with work products, traceability, the two testing roles, and the test-strategy
+    choices that shape planning.</p>
+    <div class="src">Grounded in the ISTQB syllabuses in <span class="mono">ISTQB_CertyfikowanyTester_PoziomPodstawowy_v4.0.1</span>
+    (Foundation Level v4.0.1, §1.4 — test activities, work products and roles) and
+    <span class="mono">SylabusPoziomuZawansowanegoTM_2012.1</span> (Advanced Level, Test Manager, §2.4 — test policy, test
+    strategy, master test plan).</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>The cycle</h2>
+    <div class="pflow">
+      <a class="pstep" href="#tp-planning"><span class="pn">1</span><b>Planning</b><small>set goals &amp; approach</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-monitoring"><span class="pn">2</span><b>Monitoring &amp; control</b><small>track, then steer</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-analysis"><span class="pn">3</span><b>Analysis</b><small>what to test</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-design"><span class="pn">4</span><b>Design</b><small>how to test</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-implementation"><span class="pn">5</span><b>Implementation</b><small>build the testware</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-execution"><span class="pn">6</span><b>Execution</b><small>run &amp; log</small></a>
+      <span class="parrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      <a class="pstep" href="#tp-completion"><span class="pn">7</span><b>Completion</b><small>close &amp; learn</small></a>
+    </div>
+    <div class="ploop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16m0 5v-5h5"/></svg>
+      <span>Not a one-way line: activities 3–6 repeat every iteration or test level, and 2 runs continuously underneath all of them.</span>
+    </div>
+  </div>
+
+  <div class="navchips">
+    <a href="#tp-planning">1 · Planning</a>
+    <a href="#tp-monitoring">2 · Monitoring &amp; control</a>
+    <a href="#tp-analysis">3 · Analysis</a>
+    <a href="#tp-design">4 · Design</a>
+    <a href="#tp-implementation">5 · Implementation</a>
+    <a href="#tp-execution">6 · Execution</a>
+    <a href="#tp-completion">7 · Completion</a>
+    <a href="#tp-products">8 · Work products &amp; roles</a>
+    <a href="#tp-strategy">9 · Test strategy</a>
+  </div>
+
+  <!-- 1 -->
+  <div class="card dsec" id="tp-planning">
+    <h3><span class="num">1</span>Test planning</h3>
+    <p class="lead">Defines the objectives of testing, then picks the approach that reaches them most effectively within the
+    constraints of the context. It is revisited whenever the plan drifts from reality, not written once and filed away.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 680 160" role="img" aria-label="A test level sits between an entry gate and an exit gate; it only starts once entry criteria are met, and only ends once exit criteria are met.">
+        <line class="ln" x1="14" y1="80" x2="650" y2="80" marker-end="url(#tpArrow)"/>
+        <text x="20" y="34" class="t-sub">resources · testware</text>
+        <text x="20" y="47" class="t-sub">ready · baseline quality</text>
+        <rect class="box-acc" x="150" y="28" width="16" height="104" rx="3"/>
+        <text x="158" y="22" class="t-acc" text-anchor="middle">ENTRY</text>
+        <rect class="box-dash" x="188" y="45" width="300" height="70" rx="10"/>
+        <text x="338" y="72" class="t-head" text-anchor="middle">Test level in progress</text>
+        <text x="338" y="90" class="t-sub" text-anchor="middle">analysis → design → implementation → execution</text>
+        <text x="338" y="104" class="t-sub" text-anchor="middle">(monitored &amp; controlled throughout — section 2)</text>
+        <rect class="box-acc" x="508" y="28" width="16" height="104" rx="3"/>
+        <text x="516" y="22" class="t-acc" text-anchor="middle">EXIT</text>
+        <text x="536" y="34" class="t-sub">coverage · defect data</text>
+        <text x="536" y="47" class="t-sub">or time/budget spent</text>
+        <rect class="box-soft" x="560" y="60" width="100" height="40" rx="8"/>
+        <text x="610" y="84" class="t-head" text-anchor="middle">Next level</text>
+      </svg>
+      <figcaption>Entry and exit criteria are literal gates around a level: analysis, design, implementation and
+      execution don't open the gate until the first is met, and don't close it until the second is — <b>running out
+      of time or budget can also be a valid exit</b>, if stakeholders knowingly accept the risk.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>What a test plan documents <span class="tag">ISO/IEC/IEEE 29119-3</span></h4>
+        <p>Scope, objectives and test basis; assumptions and constraints; stakeholders and their roles, needs and
+        training; how and how often information gets communicated; the risk register; the approach — levels, types,
+        techniques, work products, entry/exit criteria, independence, metrics, data and environment needs; and the
+        budget and schedule.</p>
+      </div>
+      <div class="dcard">
+        <h4>Entry &amp; exit criteria <span class="tag acc">gatekeeping</span></h4>
+        <p>Entry: resources, testware and a baseline level of quality (e.g. a smoke test passes) are in place before a
+        level starts. Exit: coverage reached, defects below an agreed density, or a binary yes/no such as "all planned
+        tests ran". Running out of time or budget is a valid exit criterion too, if stakeholders knowingly accept the
+        residual risk. In agile these are usually called Definition of Ready (entry, per story) and Definition of Done
+        (exit).</p>
+      </div>
+      <div class="dcard">
+        <h4>Four estimation techniques</h4>
+        <p>Ratio-based (reuse a dev:test ratio from past projects), extrapolation (measure the first iterations,
+        project the rest), Wideband Delphi / planning poker (experts estimate alone, compare, repeat until they
+        converge), and three-point: E&nbsp;=&nbsp;(a&nbsp;+&nbsp;4m&nbsp;+&nbsp;b)/6 with error SD&nbsp;=&nbsp;(b&nbsp;−&nbsp;a)/6, from an
+        optimistic (a), most-likely (m) and pessimistic (b) guess.</p>
+      </div>
+      <div class="dcard">
+        <h4>Prioritizing test cases</h4>
+        <p>By risk (cover the biggest risks first), by coverage (maximise coverage, or prioritise whatever adds the
+        most <em>new</em> coverage), by requirement or business priority, or by history (run whatever has failed most
+        often, first).</p>
+      </div>
+      <div class="dcard">
+        <h4>Planning in iterative lifecycles</h4>
+        <p><b>Release planning</b> shapes the product backlog and the approach for every iteration ahead: testable
+        user stories, acceptance criteria, project/product risk input, a release-level effort estimate.
+        <b>Iteration planning</b> works one backlog at a time: detailed risk analysis per story, testability,
+        splitting stories into tasks and estimating each one.</p>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span>A test plan does not invent its approach from scratch — a mature
+    organization leans on an existing <b>test policy</b> and <b>test strategy</b>. See section 9.</span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card dsec" id="tp-monitoring">
+    <h3><span class="num">2</span>Test monitoring and control</h3>
+    <p class="lead">Two linked activities that run continuously from planning through completion — not a stage you pass
+    through once.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 460 300" role="img" aria-label="A closed feedback loop: test activities produce metrics, metrics are compared against the plan, a deviation produces a control directive, and the directive steers the activities again.">
+        <rect class="node" x="165" y="18" width="130" height="50" rx="10"/>
+        <text x="230" y="40" class="t-head" text-anchor="middle">Test activities</text>
+        <text x="230" y="56" class="t-sub" text-anchor="middle">(3 – 7, running now)</text>
+
+        <rect class="node" x="332" y="130" width="118" height="50" rx="10"/>
+        <text x="391" y="152" class="t-head" text-anchor="middle">Metrics</text>
+        <text x="391" y="168" class="t-sub" text-anchor="middle">progress · defects · risk</text>
+
+        <rect class="node" x="165" y="242" width="130" height="50" rx="10"/>
+        <text x="230" y="264" class="t-head" text-anchor="middle">Compare vs. plan</text>
+        <text x="230" y="280" class="t-sub" text-anchor="middle">monitoring</text>
+
+        <rect class="node-acc" x="10" y="130" width="120" height="50" rx="10"/>
+        <text x="70" y="152" class="t-head" text-anchor="middle">Control directive</text>
+        <text x="70" y="168" class="t-sub" text-anchor="middle">re-prioritize · reschedule</text>
+
+        <path class="ln" d="M280,68 Q250,116 332,145" marker-end="url(#tpArrow)"/>
+        <text x="390" y="50" class="t-sub" text-anchor="middle">produce</text>
+
+        <path class="ln" d="M400,180 Q330,196 280,242" marker-end="url(#tpArrow)"/>
+        <text x="390" y="272" class="t-sub" text-anchor="middle">measured against</text>
+
+        <path class="ln" d="M180,242 Q140,216 130,168" marker-end="url(#tpArrow)"/>
+        <text x="70" y="272" class="t-sub" text-anchor="middle">deviation found</text>
+
+        <path class="ln-acc" d="M130,142 Q150,95 180,68" marker-end="url(#tpArrow)"/>
+        <text x="70" y="50" class="t-acc" text-anchor="middle">steers ↻</text>
+      </svg>
+      <figcaption><b>Monitoring</b> is gathering and comparing — the top-right-bottom arrows, turning activity into
+      metrics and metrics into a verdict against the plan. <b>Control</b> is the accent arrow — the directive
+      (re-prioritize, reassess entry/exit, reschedule, add resources) that steers the activities again and closes
+      the loop.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Monitoring vs. control</h4>
+        <p><b>Monitoring</b> is the ongoing comparison of actual testing against the plan. <b>Control</b> is acting on
+        that information — issuing directives that keep testing on track for its objectives.</p>
+      </div>
+      <div class="dcard">
+        <h4>What gets measured</h4>
+        <p>Project progress (tasks done, effort spent); test progress (cases implemented, run, passed/failed;
+        environment readiness); product quality (availability, response time, time between failures); defects (count
+        and priority found/fixed, defect density, detection rate); residual risk; coverage (requirements, code); and
+        the cost of testing itself.</p>
+      </div>
+      <div class="dcard">
+        <h4>Test progress report <span class="tag">recurring</span></h4>
+        <p>Issued regularly — daily, weekly — covering the period, progress against schedule and any deviations,
+        impediments and how they were worked around, the metrics above, new or changed risks, and what is planned
+        for the next period.</p>
+      </div>
+      <div class="dcard">
+        <h4>Test summary report <span class="tag acc">at completion</span></h4>
+        <p>Written once, at a milestone: a summary of testing, a quality assessment against the original objectives
+        and exit criteria, deviations from the plan, impediments met, the metrics gathered, unmitigated risks and
+        open defects, and lessons learned.</p>
+      </div>
+      <div class="dcard">
+        <h4>Typical control actions</h4>
+        <p>Re-prioritising tests when a risk materialises; re-checking entry/exit criteria after a fix lands;
+        rescheduling because the environment slipped; pulling in more resources when needed.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card dsec" id="tp-analysis">
+    <h3><span class="num">3</span>Test analysis — "what to test"</h3>
+    <p class="lead">Turns the test basis into a prioritized list of testable conditions, before a single test case gets
+    written.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 520 240" role="img" aria-label="Test analysis is a funnel: the wide test basis narrows through testable-feature analysis into a small set of prioritized test conditions, sized by risk, with basis defects falling out to the side.">
+        <path class="box-soft" d="M40,20 L440,20 L300,120 L180,120 Z"/>
+        <text x="240" y="48" class="t-head" text-anchor="middle">Test basis</text>
+        <text x="240" y="64" class="t-sub" text-anchor="middle">requirements · user stories · risk data</text>
+        <text x="240" y="100" class="t-sub" text-anchor="middle">testable features identified</text>
+
+        <line class="ln" x1="240" y1="120" x2="240" y2="152" marker-end="url(#tpArrow)"/>
+
+        <rect class="node-acc" x="155" y="168" width="70" height="26" rx="6"/>
+        <text x="190" y="185" class="t-sub" text-anchor="middle">high risk</text>
+        <rect class="chip" x="232" y="172" width="55" height="22" rx="6"/>
+        <text x="259" y="187" class="t-sub" text-anchor="middle">medium</text>
+        <rect class="chip" x="294" y="176" width="42" height="18" rx="6"/>
+        <text x="315" y="189" class="t-sub" text-anchor="middle">low</text>
+
+        <path class="ln-dash" d="M440,30 Q480,60 460,100" marker-end="url(#tpArrow)"/>
+        <text x="468" y="60" class="t-sub">defect in</text>
+        <text x="468" y="73" class="t-sub">the basis</text>
+        <rect class="box-dash" x="420" y="100" width="90" height="34" rx="8"/>
+        <text x="465" y="121" class="t-sub" text-anchor="middle">defect report</text>
+      </svg>
+      <figcaption>The funnel narrows by risk: prioritized <b>test conditions</b> come out sized by the risk and risk
+      level they cover (bigger chip = higher priority). Reading the basis closely enough to do this often finds
+      defects in the basis itself — those exit sideways as ordinary defect reports, before a test case exists.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>From test basis to test conditions</h4>
+        <p>Analyse the test basis to find testable features, then define and prioritize the test conditions tied to
+        each one — weighted by the risk and the level of risk they relate to.</p>
+      </div>
+      <div class="dcard">
+        <h4>Defects found before a test exists</h4>
+        <p>Reading the test basis closely often surfaces ambiguous, missing or contradictory requirements on its own.
+        These get reported like any other defect — analysis is already a defect-finding activity, not only a
+        preparation step.</p>
+      </div>
+      <div class="dcard">
+        <h4>Testability</h4>
+        <p>Is the item specified clearly and completely enough to test? Is it accessible and controllable — hooks,
+        logs, observable outputs — or does it only expose a black box with nothing to check against?</p>
+      </div>
+      <div class="dcard">
+        <h4>Where test techniques come in</h4>
+        <p>Black-box, white-box and experience-based techniques (see the Manual testing tab) are the toolbox analysis
+        reaches for, so conditions come from a systematic method rather than from guesswork.</p>
+      </div>
+      <div class="dcard">
+        <h4>Measurable, not vague</h4>
+        <p>Conditions are written so they can later be counted. "Every documented error message is produced at least
+        once" is testable; "the error handling is good" is not.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card dsec" id="tp-design">
+    <h3><span class="num">4</span>Test design — "how to test"</h3>
+    <p class="lead">Converts each test condition into one or more concrete test cases, plus everything the cases will
+    need in order to run.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 640 220" role="img" aria-label="One test condition fans out into several test cases, one of which is expanded to show its anatomy: identifier, preconditions, steps, and expected result.">
+        <rect class="node-acc" x="16" y="85" width="150" height="50" rx="10"/>
+        <text x="91" y="105" class="t-head" text-anchor="middle">Test condition</text>
+        <text x="91" y="121" class="t-sub" text-anchor="middle">prioritized, from analysis</text>
+
+        <path class="ln" d="M166,95 Q210,55 268,40" marker-end="url(#tpArrow)"/>
+        <path class="ln-acc" d="M166,110 L268,110" marker-end="url(#tpArrow)"/>
+        <path class="ln" d="M166,125 Q210,165 268,180" marker-end="url(#tpArrow)"/>
+
+        <rect class="box" x="270" y="16" width="140" height="48" rx="9"/>
+        <text x="340" y="36" class="t-sub" text-anchor="middle">Test case 1</text>
+        <text x="340" y="51" class="t-sub" text-anchor="middle">covers coverage item A</text>
+
+        <rect class="box-acc" x="270" y="86" width="140" height="48" rx="9"/>
+        <text x="340" y="106" class="t-head" text-anchor="middle">Test case 2</text>
+        <text x="340" y="121" class="t-sub" text-anchor="middle">covers coverage item B</text>
+
+        <rect class="box" x="270" y="156" width="140" height="48" rx="9"/>
+        <text x="340" y="176" class="t-sub" text-anchor="middle">Test charter</text>
+        <text x="340" y="191" class="t-sub" text-anchor="middle">exploratory session</text>
+
+        <path class="ln-acc" d="M410,110 L448,110" marker-end="url(#tpArrow)"/>
+
+        <text x="536" y="28" class="t-lbl" text-anchor="middle">anatomy of test case 2</text>
+        <rect class="box-dash" x="450" y="46" width="172" height="128" rx="8"/>
+        <line class="ln-dash" x1="450" y1="78" x2="622" y2="78"/>
+        <line class="ln-dash" x1="450" y1="110" x2="622" y2="110"/>
+        <line class="ln-dash" x1="450" y1="142" x2="622" y2="142"/>
+        <text x="460" y="66" class="t-sub">ID</text>
+        <text x="460" y="98" class="t-sub">Preconditions</text>
+        <text x="460" y="130" class="t-sub">Steps / input</text>
+        <text x="460" y="162" class="t-sub">Expected result</text>
+      </svg>
+      <figcaption>Coverage items decide exactly which inputs each case needs, so one condition routinely becomes
+      <b>several</b> cases (or a charter, for exploratory work). Every case carries the same four parts — what
+      distinguishes a good one is that it still traces back to the condition it was built to cover.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Conditions become cases</h4>
+        <p>Each condition becomes one or more test cases — or test charters, for an exploratory session — guided by
+        coverage items that pin down exactly which inputs to pick.</p>
+      </div>
+      <div class="dcard">
+        <h4>Anatomy of a test case</h4>
+        <p>An identifier, preconditions, the input or action, the expected result, and any post-conditions. A good
+        case traces back to the condition(s) it was built to cover.</p>
+      </div>
+      <div class="dcard">
+        <h4>Test data requirements</h4>
+        <p>Which values, records and combinations the cases need get decided here — and get built later, during
+        implementation.</p>
+      </div>
+      <div class="dcard">
+        <h4>Test environment design</h4>
+        <p>Hardware, network, stubs, drivers, simulators, virtualized services and any other tool or infrastructure
+        piece the cases will depend on.</p>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span>Design is still spec-based thinking — it does not decide
+    <b>who</b> will run the case. Manual vs. automated is a choice made afterward, in implementation.</span></div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card dsec" id="tp-implementation">
+    <h3><span class="num">5</span>Test implementation</h3>
+    <p class="lead">Builds or acquires everything the test cases need to actually run. This is where "testware" stops
+    being a description and becomes something executable.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 660 230" role="img" aria-label="Test cases group into procedures, procedures group into a suite, and the suite is placed on a priority schedule; an environment check feeds in as a prerequisite.">
+        <rect class="box-dash" x="20" y="20" width="420" height="110" rx="10"/>
+        <text x="40" y="38" class="t-sub">Test suite</text>
+
+        <rect class="box-soft" x="36" y="50" width="185" height="66" rx="8"/>
+        <text x="128" y="66" class="t-sub" text-anchor="middle">Procedure A</text>
+        <rect class="chip" x="46" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="82" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="118" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="154" y="76" width="52" height="24" rx="5"/>
+        <text x="180" y="92" class="t-sub" text-anchor="middle">…</text>
+
+        <rect class="box-soft" x="238" y="50" width="185" height="66" rx="8"/>
+        <text x="330" y="66" class="t-sub" text-anchor="middle">Procedure B</text>
+        <rect class="chip" x="248" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="284" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="320" y="76" width="30" height="24" rx="5"/>
+        <rect class="chip" x="356" y="76" width="52" height="24" rx="5"/>
+        <text x="382" y="92" class="t-sub" text-anchor="middle">…</text>
+
+        <text x="456" y="14" class="t-lbl" text-anchor="middle">prerequisite</text>
+        <rect class="node-acc" x="470" y="30" width="170" height="46" rx="9"/>
+        <text x="555" y="48" class="t-sub" text-anchor="middle">Environment ready ✓</text>
+        <text x="555" y="63" class="t-sub" text-anchor="middle">data · stubs · config</text>
+        <path class="ln" d="M470,53 L442,65" marker-end="url(#tpArrow)"/>
+
+        <path class="ln-acc" d="M230,130 Q230,160 120,168" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="20" y1="195" x2="640" y2="195"/>
+        <circle class="node-acc" cx="100" cy="195" r="9"/><text x="100" y="216" class="t-sub" text-anchor="middle">1st</text>
+        <circle class="node" cx="300" cy="195" r="9"/><text x="300" y="216" class="t-sub" text-anchor="middle">2nd</text>
+        <circle class="node" cx="520" cy="195" r="9"/><text x="520" y="216" class="t-sub" text-anchor="middle">3rd</text>
+        <text x="640" y="192" class="t-sub" text-anchor="end">execution schedule →</text>
+      </svg>
+      <figcaption>Cases are ordered into <b>procedures</b>, procedures group into a <b>suite</b>, and the suite is slotted
+      into the execution schedule by priority (section 1) — highest-risk work runs first regardless of what happens
+      later in the run. None of it starts until the environment is built and verified.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Procedures &amp; suites</h4>
+        <p>Test cases are ordered into test procedures (scripts), then grouped into test suites for efficient,
+        coherent execution.</p>
+      </div>
+      <div class="dcard">
+        <h4>Scheduling execution</h4>
+        <p>Procedures are prioritized and arranged into a test execution schedule, so the cases that matter most run
+        first regardless of what happens to the rest of the run.</p>
+      </div>
+      <div class="dcard">
+        <h4>Scripting</h4>
+        <p>Manual scripts are written up for a person to follow step by step; automated scripts are coded against the
+        chosen framework (see the Automated testing tab).</p>
+      </div>
+      <div class="dcard">
+        <h4>Building the environment</h4>
+        <p>The test environment is assembled and verified to be correctly configured <em>before</em> the first test
+        runs against it — not discovered to be wrong afterward.</p>
+      </div>
+      <div class="dcard">
+        <h4>Traceability check</h4>
+        <p>Implementation is also where the bi-directional link — test basis → conditions → cases → scripts — gets
+        verified, not assumed to still hold.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card dsec" id="tp-execution">
+    <h3><span class="num">6</span>Test execution</h3>
+    <p class="lead">Running the tests per the schedule, manually or with a tool, and reacting to whatever comes back.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 700 260" role="img" aria-label="Run a test, compare actual against expected, branch on a match: a pass is logged, a mismatch is analyzed into a defect report, which loops back as a confirmation retest and a wider regression run.">
+        <rect class="box-soft" x="20" y="90" width="110" height="50" rx="9"/>
+        <text x="75" y="111" class="t-sub" text-anchor="middle">Run per</text>
+        <text x="75" y="126" class="t-sub" text-anchor="middle">schedule</text>
+        <path class="ln" d="M130,115 L180,115" marker-end="url(#tpArrow)"/>
+
+        <rect class="box-soft" x="182" y="90" width="130" height="50" rx="9"/>
+        <text x="247" y="111" class="t-sub" text-anchor="middle">Compare actual</text>
+        <text x="247" y="126" class="t-sub" text-anchor="middle">vs. expected</text>
+        <path class="ln" d="M312,115 L352,115" marker-end="url(#tpArrow)"/>
+
+        <polygon class="box" points="402,80 452,115 402,150 352,115"/>
+        <text x="402" y="119" class="t-sub" text-anchor="middle">match?</text>
+
+        <path class="ln" d="M402,80 Q402,40 440,30" marker-end="url(#tpArrow)"/>
+        <text x="412" y="55" class="t-sub">yes</text>
+        <rect class="box-soft" x="440" y="10" width="110" height="42" rx="9"/>
+        <text x="495" y="36" class="t-sub" text-anchor="middle">Log: pass</text>
+
+        <path class="ln" d="M452,115 L500,115" marker-end="url(#tpArrow)"/>
+        <text x="460" y="106" class="t-sub">no</text>
+        <rect class="node-acc" x="502" y="90" width="150" height="50" rx="9"/>
+        <text x="577" y="111" class="t-head" text-anchor="middle">Analyze anomaly</text>
+        <text x="577" y="126" class="t-sub" text-anchor="middle">likely cause</text>
+
+        <path class="ln" d="M577,140 L577,180" marker-end="url(#tpArrow)"/>
+        <rect class="node-acc" x="502" y="182" width="150" height="46" rx="9"/>
+        <text x="577" y="202" class="t-head" text-anchor="middle">Defect report</text>
+        <text x="577" y="217" class="t-sub" text-anchor="middle">to the developer</text>
+
+        <path class="ln-acc" d="M502,195 Q310,235 247,145" marker-end="url(#tpArrow)"/>
+        <text x="300" y="238" class="t-acc">confirmation retest, after fix</text>
+
+        <path class="ln-dash" d="M502,210 Q170,250 75,145" marker-end="url(#tpArrow)"/>
+        <text x="130" y="253" class="t-sub">regression: re-run unrelated tests too</text>
+      </svg>
+      <figcaption>Two different loops close here: a <b>confirmation test</b> (retest) checks one specific fix by
+      re-entering at "compare"; <b>regression testing</b> goes further back and re-runs tests unrelated to the fix,
+      to catch anything else that moved.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Forms it takes</h4>
+        <p>A scheduled test run, continuous testing inside a pipeline, or a paired/exploratory session — same
+        activity underneath, different cadence.</p>
+      </div>
+      <div class="dcard">
+        <h4>Comparing &amp; logging</h4>
+        <p>Actual results are compared against expected results; every run is logged — what ran, against which build
+        or version, pass or fail.</p>
+      </div>
+      <div class="dcard">
+        <h4>From anomaly to defect report</h4>
+        <p>A failure is analysed for its likely cause before it gets reported, so the report already points roughly
+        at where the problem lives rather than just describing the symptom.</p>
+      </div>
+      <div class="dcard">
+        <h4>Confirmation &amp; regression</h4>
+        <p>A confirmation test (retest) checks that a specific fix worked; regression testing re-runs unrelated tests
+        to check that nothing else broke along the way.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card dsec" id="tp-completion">
+    <h3><span class="num">7</span>Test completion</h3>
+    <p class="lead">Closes out a chunk of testing at a milestone and turns it into knowledge the next cycle can reuse,
+    instead of letting it evaporate.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 680 170" role="img" aria-label="At a milestone, open defects, change requests and backlog items pass through a closing gate, which produces an archived or handed-over testware set and a test summary report for stakeholders.">
+        <rect class="box-soft" x="14" y="55" width="150" height="60" rx="10"/>
+        <text x="89" y="78" class="t-sub" text-anchor="middle">Open defects,</text>
+        <text x="89" y="93" class="t-sub" text-anchor="middle">change requests,</text>
+        <text x="89" y="108" class="t-sub" text-anchor="middle">backlog items</text>
+
+        <line class="ln" x1="164" y1="85" x2="258" y2="85" marker-end="url(#tpArrow)"/>
+        <rect class="box-acc" x="262" y="40" width="20" height="90" rx="4"/>
+        <text x="272" y="34" class="t-acc" text-anchor="middle">✓ CLOSE</text>
+        <text x="300" y="72" class="t-sub">accounted for — closed,</text>
+        <text x="300" y="85" class="t-sub">deferred, or carried forward</text>
+        <text x="300" y="98" class="t-sub">consciously, never dropped</text>
+
+        <path class="ln" d="M282,55 Q330,15 420,30" marker-end="url(#tpArrow)"/>
+        <rect class="box-soft" x="422" y="8" width="230" height="46" rx="9"/>
+        <text x="537" y="27" class="t-sub" text-anchor="middle">Archive / handover</text>
+        <text x="537" y="42" class="t-sub" text-anchor="middle">testware · environment closed</text>
+
+        <path class="ln" d="M282,115 Q330,155 420,140" marker-end="url(#tpArrow)"/>
+        <rect class="box-soft" x="422" y="116" width="230" height="46" rx="9"/>
+        <text x="537" y="135" class="t-sub" text-anchor="middle">Test summary report</text>
+        <text x="537" y="150" class="t-sub" text-anchor="middle">+ lessons learned → stakeholders</text>
+      </svg>
+      <figcaption>The mirror image of section 1's entry gate: nothing closes until every open item from the finished
+      testing has a decision attached, and what comes out the other side is what the <b>next</b> cycle inherits.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>When it happens</h4>
+        <p>A test level finishes, an agile iteration ends, the project ends or is cancelled, or a maintenance release
+        ships.</p>
+      </div>
+      <div class="dcard">
+        <h4>What gets checked</h4>
+        <p>Every open defect report, change request and backlog item left over from the testing just finished is
+        accounted for — closed, deferred or consciously carried forward, never silently dropped.</p>
+      </div>
+      <div class="dcard">
+        <h4>What gets kept</h4>
+        <p>Testware worth reusing is identified and archived, or handed over to whoever maintains it next; the test
+        environment is shut down in an agreed, reproducible state.</p>
+      </div>
+      <div class="dcard">
+        <h4>What gets written</h4>
+        <p>A test summary report for stakeholders (section 2), plus a short retrospective — what worked, what should
+        change next time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card dsec" id="tp-products">
+    <h3><span class="num">8</span>Work products, traceability and the two roles</h3>
+    <p class="lead">Every activity above leaves something behind, and all of it should trace back to the test basis it
+    came from.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 700 200" role="img" aria-label="Each of the seven activities produces a work product; a traceability thread running underneath links every one of them back to the test basis and forward to the defects found.">
+        <g font-size="10.5">
+          <circle class="node-acc" cx="60" cy="34" r="17"/><text x="60" y="38" class="t-sub" text-anchor="middle">1</text>
+          <circle class="node" cx="166" cy="34" r="17"/><text x="166" y="38" class="t-sub" text-anchor="middle">2</text>
+          <circle class="node" cx="272" cy="34" r="17"/><text x="272" y="38" class="t-sub" text-anchor="middle">3</text>
+          <circle class="node" cx="378" cy="34" r="17"/><text x="378" y="38" class="t-sub" text-anchor="middle">4</text>
+          <circle class="node" cx="484" cy="34" r="17"/><text x="484" y="38" class="t-sub" text-anchor="middle">5</text>
+          <circle class="node" cx="590" cy="34" r="17"/><text x="590" y="38" class="t-sub" text-anchor="middle">6</text>
+          <circle class="node-acc" cx="640" cy="34" r="17"/><text x="640" y="38" class="t-sub" text-anchor="middle">7</text>
+        </g>
+        <line class="ln" x1="60" y1="51" x2="60" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="166" y1="51" x2="166" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="272" y1="51" x2="272" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="378" y1="51" x2="378" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="484" y1="51" x2="484" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="590" y1="51" x2="590" y2="80" marker-end="url(#tpArrow)"/>
+        <line class="ln" x1="640" y1="51" x2="640" y2="118" marker-end="url(#tpArrow)"/>
+
+        <rect class="chip" x="22" y="84" width="76" height="30" rx="6"/><text x="60" y="103" class="t-sub" text-anchor="middle">Test plan</text>
+        <rect class="chip" x="128" y="84" width="76" height="30" rx="6"/><text x="166" y="103" class="t-sub" text-anchor="middle">Progress rpt.</text>
+        <rect class="chip" x="234" y="84" width="76" height="30" rx="6"/><text x="272" y="103" class="t-sub" text-anchor="middle">Conditions</text>
+        <rect class="chip" x="340" y="84" width="76" height="30" rx="6"/><text x="378" y="103" class="t-sub" text-anchor="middle">Test cases</text>
+        <rect class="chip" x="446" y="84" width="76" height="30" rx="6"/><text x="484" y="103" class="t-sub" text-anchor="middle">Scripts</text>
+        <rect class="chip" x="552" y="84" width="76" height="30" rx="6"/><text x="590" y="103" class="t-sub" text-anchor="middle">Test logs</text>
+        <rect class="chip" x="610" y="124" width="60" height="30" rx="6"/><text x="640" y="143" class="t-sub" text-anchor="middle">Summary</text>
+
+        <line class="ln-dash" x1="30" y1="170" x2="670" y2="170"/>
+        <text x="20" y="190" class="t-acc" text-anchor="start">test basis</text>
+        <text x="680" y="190" class="t-acc" text-anchor="end">defects / results</text>
+      </svg>
+      <figcaption>The dashed <b>traceability spine</b> is the thread that should run under every one of these outputs,
+      linking the original test basis to the defects and results that came out the other end — it is what lets you
+      prove coverage, scope a change's impact, and survive an audit.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Work products, by activity</h4>
+        <p><b>Planning:</b> test plan, schedule, risk register, entry/exit criteria. <b>Monitoring &amp; control:</b>
+        progress reports, control directives, risk updates. <b>Analysis:</b> prioritized test conditions, defects
+        against the test basis. <b>Design:</b> prioritized test cases, test charters, coverage items, data and
+        environment requirements. <b>Implementation:</b> test procedures, scripts, suites, data, environment
+        components. <b>Execution:</b> test logs, defect reports. <b>Completion:</b> test summary report, lessons
+        learned, change requests.</p>
+      </div>
+      <div class="dcard">
+        <h4>Why traceability matters</h4>
+        <p>Linking test basis → conditions/cases → results → defects lets you prove coverage, scope the impact of a
+        change, support an audit, and turn "70% of code is covered" into something a stakeholder can actually act
+        on.</p>
+      </div>
+      <div class="dcard">
+        <h4>Two roles, not two people</h4>
+        <p>A <b>test management</b> role owns planning, monitoring, control and completion. A <b>testing</b> role
+        owns analysis, design, implementation and execution. One person often holds both; in agile the team usually
+        absorbs the first role, and only cross-team concerns go to a test manager outside it.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="card dsec" id="tp-strategy">
+    <h3><span class="num">9</span>Test strategy — the choice behind planning</h3>
+    <p class="lead"><em>Advanced-level material.</em> A test strategy is the organization's general, reusable approach
+    to testing; a test plan is what one project does with it. Real strategies are usually a blend of several of
+    these, not a single pure choice.</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 520 390" role="img" aria-label="Seven strategy types radiate from a central test strategy hub; two pairs are connected by an arc to show they are commonly blended rather than chosen alone.">
+        <path class="ln-dash" d="M260,60 Q330,70 377,117"/>
+        <path class="ln-dash" d="M195,345 Q260,375 325,345"/>
+
+        <line class="ln" x1="260" y1="210" x2="260" y2="60"/>
+        <line class="ln" x1="260" y1="210" x2="377" y2="117"/>
+        <line class="ln" x1="260" y1="210" x2="406" y2="243"/>
+        <line class="ln" x1="260" y1="210" x2="325" y2="345"/>
+        <line class="ln" x1="260" y1="210" x2="195" y2="345"/>
+        <line class="ln" x1="260" y1="210" x2="114" y2="243"/>
+        <line class="ln" x1="260" y1="210" x2="143" y2="117"/>
+
+        <circle class="node-acc" cx="260" cy="210" r="56"/>
+        <text x="260" y="205" class="t-head" text-anchor="middle">Test</text>
+        <text x="260" y="222" class="t-head" text-anchor="middle">strategy</text>
+
+        <circle class="node" cx="260" cy="60" r="30"/><text x="260" y="19" class="t-sub" text-anchor="middle">Analytical (risk-based)</text>
+        <circle class="node" cx="377" cy="117" r="30"/><text x="440" y="113" class="t-sub" text-anchor="middle">Model-</text><text x="440" y="126" class="t-sub" text-anchor="middle">based</text>
+        <circle class="node" cx="406" cy="243" r="30"/><text x="470" y="239" class="t-sub" text-anchor="middle">Methodical</text>
+        <circle class="node" cx="325" cy="345" r="30"/><text x="325" y="385" class="t-sub" text-anchor="middle">Process-compliant</text>
+        <circle class="node" cx="195" cy="345" r="30"/><text x="195" y="385" class="t-sub" text-anchor="middle">Reactive</text>
+        <circle class="node" cx="114" cy="243" r="30"/><text x="50" y="239" class="t-sub" text-anchor="middle">Consultative</text>
+        <circle class="node" cx="143" cy="117" r="30"/><text x="60" y="113" class="t-sub" text-anchor="middle">Regression-</text><text x="60" y="126" class="t-sub" text-anchor="middle">averse</text>
+      </svg>
+      <figcaption>The dashed arcs mark two common blends — analytical risk analysis feeding a model-based performance
+      test, or a reactive exploratory pass alongside process-mandated acceptance criteria. Organizations combine
+      spokes to fit the project, they rarely pick just one.</figcaption>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>Analytical <span class="tag acc">e.g. risk-based</span></h4>
+        <p>Conditions are derived from analysing the test basis — risks, requirements — rather than decided up
+        front.</p>
+      </div>
+      <div class="dcard">
+        <h4>Model-based</h4>
+        <p>Build a model of the real or expected environment, inputs and behaviour — e.g. an operational profile for
+        performance testing — and test against that model.</p>
+      </div>
+      <div class="dcard">
+        <h4>Methodical</h4>
+        <p>A pre-agreed checklist or quality standard (e.g. ISO/IEC 25010 characteristics) applied the same way every
+        release.</p>
+      </div>
+      <div class="dcard">
+        <h4>Process- or standard-compliant</h4>
+        <p>Follow a process mandated from outside the test team — a regulator, or a framework's own ceremonies, such
+        as Scrum's per-iteration acceptance criteria — rather than one the team designed itself.</p>
+      </div>
+      <div class="dcard">
+        <h4>Reactive</h4>
+        <p>Design and run tests only once the software exists, reacting to its actual behaviour. The natural home of
+        exploratory and attack-based testing.</p>
+      </div>
+      <div class="dcard">
+        <h4>Consultative</h4>
+        <p>Test conditions come mainly from a key stakeholder's input — e.g. a prioritized browser/OS matrix handed
+        to an outsourced test vendor.</p>
+      </div>
+      <div class="dcard">
+        <h4>Regression-averse</h4>
+        <p>Heavy automation aimed specifically at the risk of regression, re-run on every change.</p>
+      </div>
+    </div>
+    <div class="keyline"><span class="k">◆</span><span>A test strategy also states the levels it governs and their
+    entry/exit criteria, and can cover integration order, independence, environments, automation, tool choice, reuse,
+    retest vs. regression, reporting, metrics, defect management, configuration management and roles — all
+    consistent with the organization's test policy.</span></div>
+  </div>
+
+ </div>
+</main>
+
+<main id="view-autodoc" class="wide" hidden>
+ <div class="doc">
+
+  <div class="doc-hero">
+    <h3>Automated testing — how a suite should be built</h3>
+    <p>Writing a script that clicks or calls something is the easy part. What decides whether a suite is still
+    trusted a year later is its <em>structure</em>: which tests are automated at which level, how the code is
+    layered, what one test looks like inside, who owns the state it leaves behind, and how it waits for a system
+    that answers asynchronously. A suite that fails at random, or passes while the product is broken, is worse
+    than no suite. Every box below is clickable.</p>
+    <div class="src">Grounded in <b>ISTQB CT-TAE</b> (Test Automation Engineering — the generic test automation
+    architecture, gTAA), Gerard Meszaros, <b>xUnit Test Patterns</b> (fixtures, test doubles, test smells),
+    Mike Cohn's test pyramid and Martin Fowler's writing on non-deterministic tests. The “in our suite” notes
+    point at <span class="mono">QA MANAGER/autotests</span>.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>The map</h2>
+    <div class="tree cols" id="treeAuto">
+      <ul>
+        <li>
+          <button class="node n-root" data-go="d-at-why">Test automation</button>
+          <ul>
+            <li>
+              <button class="node n-ai-sys" data-go="d-at-strategy">Strategy<small>what, and at which level</small></button>
+              <ul>
+                <li><button class="node n-func" data-go="d-at-pyramid">Pyramid</button></li>
+                <li><button class="node n-func" data-go="d-at-select">Selection</button></li>
+                <li><button class="node n-func" data-go="d-at-roi">ROI</button></li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-level" data-go="d-at-arch">Architecture<small>gTAA layers</small></button>
+              <ul>
+                <li><button class="node n-func" data-go="d-at-layers">Layers</button></li>
+                <li><button class="node n-func" data-go="d-at-adapt">Adaptation</button></li>
+                <li><button class="node n-func" data-go="d-at-config">Config</button></li>
+                <li><button class="node n-func" data-go="d-at-approach">Approaches</button></li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-ai-gen" data-go="d-at-anatomy">One test<small>anatomy</small></button>
+              <ul>
+                <li><button class="node n-ai-gen" data-go="d-at-aaa">Arrange-Act-Assert</button></li>
+                <li><button class="node n-ai-gen" data-go="d-at-one">One behaviour</button></li>
+                <li><button class="node n-ai-gen" data-go="d-at-assert">Assertions</button></li>
+                <li><button class="node n-ai-gen" data-go="d-at-first">FIRST</button></li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-load" data-go="d-at-state">State &amp; data<small>fixtures, isolation</small></button>
+              <ul>
+                <li><button class="node n-load" data-go="d-at-fixture">Fixtures</button></li>
+                <li><button class="node n-load" data-go="d-at-teardown">Teardown</button></li>
+                <li><button class="node n-load" data-go="d-at-data">Test data</button></li>
+                <li><button class="node n-load" data-go="d-at-doubles">Test doubles</button></li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-perf" data-go="d-at-flaky">Reliability<small>timing &amp; flakiness</small></button>
+              <ul>
+                <li><button class="node n-perf" data-go="d-at-wait">Waiting</button></li>
+                <li><button class="node n-perf" data-go="d-at-retry">Retries</button></li>
+                <li><button class="node n-perf" data-go="d-at-quarantine">Quarantine</button></li>
+              </ul>
+            </li>
+            <li>
+              <button class="node n-grey" data-go="d-at-run">Running it<small>CI, reports</small></button>
+              <ul>
+                <li><button class="node n-grey" data-go="d-at-ci">Pipeline</button></li>
+                <li><button class="node n-grey" data-go="d-at-markers">Tags</button></li>
+                <li><button class="node n-grey" data-go="d-at-report">Reporting</button></li>
+                <li><button class="node n-grey" data-go="d-at-maint">Maintenance</button></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="legend">
+      <span><i style="background:#2d6aa8"></i>strategy</span>
+      <span><i style="background:#1b838e"></i>architecture</span>
+      <span><i style="background:#6b4b9a"></i>a single test</span>
+      <span><i style="background:#2f6b33"></i>state and data</span>
+      <span><i style="background:#7a2230"></i>reliability</span>
+      <span><i style="background:#98a4b1"></i>execution</span>
+    </div>
+  </div>
+
+  <div class="navchips">
+    <a href="#d-at-why">1 · Why and what</a>
+    <a href="#d-at-strategy">2 · Strategy</a>
+    <a href="#d-at-arch">3 · Architecture</a>
+    <a href="#d-at-anatomy">4 · One test</a>
+    <a href="#d-at-state">5 · State &amp; data</a>
+    <a href="#d-at-flaky">6 · Reliability</a>
+    <a href="#d-at-run">7 · Running it</a>
+    <a href="#d-at-smells">8 · Test smells</a>
+    <a href="#d-at-choose">9 · How to choose</a>
+  </div>
+
+  <!-- 1 -->
+  <div class="card dsec" id="d-at-why">
+    <h3><span class="num">1</span>Why automate, and what automation is not</h3>
+    <p class="lead">Automation does not find new defects by itself. It re-checks, cheaply and quickly, things somebody already decided are worth checking.</p>
+    <div class="dgrid">
+      <div class="dcard">
+        <h4>What it buys you <span class="tag acc">the point</span></h4>
+        <p>Fast, repeatable regression on every change; checks a human cannot do well (thousands of combinations,
+        exact numbers, timing); and a living specification — a readable test says what the system is supposed to do.</p>
+        <div class="ex"><b>Tiny example</b>After every hedger deploy, the same exposure scenarios run in minutes and give the same verdict for the same build.</div>
+      </div>
+      <div class="dcard">
+        <h4>What it does not replace <span class="tag">limits</span></h4>
+        <p>Exploratory testing, usability, judging whether a requirement makes sense, and anything whose expected
+        result nobody can write down. An automated test only checks what it was told to check — it is blind
+        to everything next to it.</p>
+        <div class="ex"><b>Keep in mind</b>A green suite means “the checks we wrote still pass”, not “the product works”.</div>
+      </div>
+      <div class="dcard">
+        <h4>Automation is software <span class="tag">treat it so</span></h4>
+        <p>A test suite has its own code, architecture, reviews, defects and technical debt. It deserves the same
+        standards as production code: version control, review, naming, no copy-paste, refactoring.</p>
+        <div class="ex"><b>Rule of thumb</b>If nobody would accept the code in the product, it should not be accepted in the tests either.</div>
+      </div>
+      <div class="dcard">
+        <h4>Trust is the product <span class="tag">the real metric</span></h4>
+        <p>A test is useful only if a red result reliably means “something is broken” and a green one reliably
+        means “this behaviour still works”. False alarms teach people to ignore failures; false passes hide them.</p>
+        <div class="ex"><b>Tiny example</b>One test that fails every third run for no reason makes the whole team rerun the pipeline instead of reading the failure.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card dsec" id="d-at-strategy">
+    <h3><span class="num">2</span>Strategy — what to automate, and at which level</h3>
+    <p class="lead">The cheapest test that can catch a defect is the right place for it. Push checks down to the lowest level that still sees the behaviour.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-pyramid">
+        <h4>The test pyramid <span class="tag acc">shape of a suite</span></h4>
+        <p>Many fast <b>unit</b> tests at the bottom, fewer <b>service / API</b> tests in the middle, a thin layer of
+        <b>end-to-end</b> tests on top. Lower tests are faster, more precise about where the defect is, and less
+        brittle; higher tests prove the parts work together.</p>
+        <div class="ex"><b>Anti-pattern</b>The “ice-cream cone”: mostly UI end-to-end tests and almost no unit tests — slow, flaky and vague about the cause of a failure.</div>
+      </div>
+      <div class="dcard" id="d-at-levels">
+        <h4>What each level is for <span class="tag">the layers</span></h4>
+        <p><b>Unit</b> — one function or class, no network, milliseconds. <b>Integration / contract</b> — two
+        components and the agreement between them (request and response shape). <b>API / service</b> — a
+        deployed service through its real interface. <b>End-to-end</b> — a user flow across several services.</p>
+        <div class="ex"><b>In our suite</b>The hedger tests are service-level: real PLAT and CORE gateways on test-env, no UI. That is the right level for exposure and routing rules.</div>
+      </div>
+      <div class="dcard" id="d-at-select">
+        <h4>Choosing what to automate <span class="tag">selection</span></h4>
+        <p>Automate what is run often, is stable, is risky if it breaks, has a clear expected result and is tedious or
+        error-prone by hand. Leave out one-off checks, features still changing every week, and anything whose
+        oracle is a human opinion.</p>
+        <div class="ex"><b>Rule of thumb</b>Every regression bug that reached production is a candidate for a test at the lowest level that would have caught it.</div>
+      </div>
+      <div class="dcard" id="d-at-roi">
+        <h4>Return on investment <span class="tag">cost is ongoing</span></h4>
+        <p>The cost of a test is not writing it — it is running, debugging and updating it for as long as it exists.
+        A test pays off when (runs × manual cost saved) exceeds (build + maintenance + time lost to false failures).</p>
+        <div class="ex"><b>Tiny example</b>A brittle UI test rewritten after every redesign can cost more than doing the check by hand.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card dsec" id="d-at-arch">
+    <h3><span class="num">3</span>Architecture — layers, so a change touches one place</h3>
+    <p class="lead">The test says <em>what</em> is checked; lower layers know <em>how</em> to talk to the system. When an endpoint changes, one helper changes — not forty tests.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-layers">
+        <h4>The generic architecture (gTAA) <span class="tag acc">ISTQB TAE</span></h4>
+        <p>Four layers: <b>test generation</b> (where cases come from — written by hand, from models or data),
+        <b>test definition</b> (the test cases and their data), <b>test execution</b> (runner, setup, logging,
+        reporting) and <b>test adaptation</b> (the code that actually talks to the system under test).</p>
+        <div class="ex"><b>Why it matters</b>Each layer can change without rewriting the others: a new runner, a new API version, new data.</div>
+      </div>
+      <div class="dcard" id="d-at-adapt">
+        <h4>Adaptation layer <span class="tag">clients &amp; helpers</span></h4>
+        <p>API clients, page objects or protocol helpers that hide URLs, auth, payload shapes and parsing.
+        Helpers are named after the business action (<span class="mono">open_market_order</span>,
+        <span class="mono">enable_all_assignments</span>), not after the HTTP call.</p>
+        <div class="ex"><b>In our suite</b><span class="mono">utils/http.py</span> (transport, tokens) → <span class="mono">utils/methods/*_utils.py</span> (business actions) → <span class="mono">tests/…</span> (scenarios only).</div>
+      </div>
+      <div class="dcard" id="d-at-config">
+        <h4>Configuration out of code <span class="tag">one place</span></h4>
+        <p>Environment URLs, accounts, symbols and timeouts live in configuration, not scattered through tests.
+        Secrets never sit in the repository. The same suite must run against another environment by changing
+        configuration only.</p>
+        <div class="ex"><b>In our suite</b><span class="mono">utils/config.py</span> plus the mcp-server vault for tokens; tests never contain a password.</div>
+      </div>
+      <div class="dcard" id="d-at-approach">
+        <h4>Scripting approaches <span class="tag">how tests are written</span></h4>
+        <p><b>Linear</b> (recorded, copy-pasted steps) → <b>structured</b> (shared functions) → <b>data-driven</b>
+        (one script, many data rows) → <b>keyword-driven</b> (tests composed from business keywords) →
+        <b>model-based</b> (cases generated from a model). Higher approaches cost more to start and much less to maintain.</p>
+        <div class="ex"><b>Tiny example</b><span class="mono">@pytest.mark.parametrize</span> over volumes and sides is data-driven: one test body, every row reported separately.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card dsec" id="d-at-anatomy">
+    <h3><span class="num">4</span>Anatomy of one good test</h3>
+    <p class="lead">Someone who has never seen the test should understand from its name and body what is checked, and from its failure message what went wrong.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-aaa">
+        <h4>Arrange – Act – Assert <span class="tag acc">three blocks</span></h4>
+        <p><b>Arrange</b> the preconditions, <b>act</b> once — the behaviour under test — and <b>assert</b> on the
+        outcome. Given-When-Then is the same idea in business language. Mixing the blocks (assert, act again,
+        assert) usually means two tests in one.</p>
+        <div class="ex"><b>Tiny example</b>Arrange: rule on, account 1004 disabled. Act: client 1001 buys 30 lots SYMBOL1. Assert: 1004 received no order, the others got the split.</div>
+      </div>
+      <div class="dcard" id="d-at-one">
+        <h4>One behaviour per test <span class="tag">focus</span></h4>
+        <p>A test checks one rule, so a failure points at one cause. The name states the rule and the expected
+        outcome — <span class="mono">test_disabled_hedger_gets_no_share</span>, not
+        <span class="mono">test_hedger_3</span>. Several assertions are fine when they describe the same outcome.</p>
+        <div class="ex"><b>Smell</b>A test called “full flow” that fails on step 7 of 12 tells you nothing until somebody reads the log.</div>
+      </div>
+      <div class="dcard" id="d-at-assert">
+        <h4>Assertions that explain <span class="tag">the failure is the report</span></h4>
+        <p>Assert on exact expected values derived from the specification, not on “something came back”. Put the
+        context in the message: expected, actual, the account and the step. Never assert on a value the test
+        itself calculated the same way as the product.</p>
+        <div class="ex"><b>Tiny example</b><span class="mono">assert vol == 6, f"1002 should hedge 6 lots, got {vol}"</span> beats a bare <span class="mono">assert vol</span>.</div>
+      </div>
+      <div class="dcard" id="d-at-first">
+        <h4>FIRST <span class="tag">properties to check</span></h4>
+        <p><b>Fast</b> enough to run often, <b>Independent</b> of other tests and their order, <b>Repeatable</b> in any
+        environment and on any run, <b>Self-validating</b> (pass or fail, no reading logs to decide) and
+        <b>Timely</b> — written with the change, not months later.</p>
+        <div class="ex"><b>Check</b>Run the suite in random order and twice in a row. Anything that changes the verdict breaks I or R.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card dsec" id="d-at-state">
+    <h3><span class="num">5</span>State and data — the test owns what it touches</h3>
+    <p class="lead">Most unstable suites are not unstable because of timing but because tests share state: an account, a rule, an open position left by the previous test.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-fixture">
+        <h4>Fixtures <span class="tag acc">setup in one place</span></h4>
+        <p>The known state a test starts from, built by shared, named fixtures instead of copy-pasted setup. Scope
+        is chosen deliberately: per test for anything the test changes, per module or session only for expensive,
+        read-only things (a login token, a downloaded instrument list).</p>
+        <div class="ex"><b>In our suite</b><span class="mono">autotest_rule</span> in <span class="mono">tests/hedger/conftest.py</span> prepares the AUTOTEST hedge rule for each test.</div>
+      </div>
+      <div class="dcard" id="d-at-teardown">
+        <h4>Teardown that always runs <span class="tag">leave it clean</span></h4>
+        <p>Restore what was changed in a <span class="mono">yield</span> fixture or <span class="mono">finally</span>, so it runs
+        even when the assertion fails. Then verify the clean state rather than assuming it — the next test
+        depends on it.</p>
+        <div class="ex"><b>In our suite</b>Exposure is zeroed only after the rule is on and every matrix account is <span class="mono">isEnabled=true</span>, then the state is read back to confirm it is 0.</div>
+      </div>
+      <div class="dcard" id="d-at-data">
+        <h4>Test data <span class="tag">known, owned, unique</span></h4>
+        <p>Data a test creates should be unique (ids, ClOrdIDs, names with a run suffix) so parallel or repeated runs
+        do not collide. Shared environment data is read, not assumed — and shared resources are reserved for
+        automation or locked while a suite runs.</p>
+        <div class="ex"><b>Rule of thumb</b>Never let a test depend on data another test created. Builders or factory helpers make the needed data explicit.</div>
+      </div>
+      <div class="dcard" id="d-at-doubles">
+        <h4>Test doubles <span class="tag">Meszaros</span></h4>
+        <p><b>Dummy</b> (filler, never used), <b>stub</b> (canned answers), <b>spy</b> (records calls),
+        <b>mock</b> (expects specific calls), <b>fake</b> (a working lightweight implementation, e.g. an in-memory FIX acceptor).
+        They make lower-level tests fast and deterministic; service-level tests use the real thing.</p>
+        <div class="ex"><b>In this app</b>The FIX client tests run against a fake acceptor on localhost — logon, orders and logout are checked without test-env.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card dsec" id="d-at-flaky">
+    <h3><span class="num">6</span>Reliability — waiting, retries and flaky tests</h3>
+    <p class="lead">A flaky test passes and fails on the same code. It is a defect — in the test, the environment or the product — never background noise.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-wait">
+        <h4>Wait for a condition, not for time <span class="tag acc">no sleep</span></h4>
+        <p>Asynchronous systems need waiting, but a fixed <span class="mono">sleep(5)</span> is either too short (flaky)
+        or too long (slow). Poll for the expected state with a timeout and a clear message when it never arrives.</p>
+        <div class="ex"><b>Tiny example</b>“Poll positions every 0.5 s for up to 10 s until 1002 shows 6 lots” instead of “sleep 10 s, then read once”.</div>
+      </div>
+      <div class="dcard" id="d-at-retry">
+        <h4>Retries are not fixes <span class="tag">be honest</span></h4>
+        <p>Retrying a <em>check</em> that races with eventual consistency is legitimate. Re-running a whole failed
+        test until it passes hides the defect. If a test needs a rerun to pass, that is a finding, not a pass.</p>
+        <div class="ex"><b>In our suite</b><span class="mono">utils/retry.py</span> retries a verify step on AssertionError only — and its docstring says a test that needs it to pass at all belongs in the bug registry.</div>
+      </div>
+      <div class="dcard" id="d-at-quarantine">
+        <h4>Quarantine, then fix <span class="tag">contain it</span></h4>
+        <p>A known-flaky test is moved out of the gating run with a ticket and an owner, so it does not train people
+        to ignore red builds — and it comes back once fixed. Typical causes: shared state, order dependence,
+        timing, test data collisions, unstable environment.</p>
+        <div class="ex"><b>Rule of thumb</b>Quarantine with a deadline. A quarantine nobody looks at is deleted coverage.</div>
+      </div>
+      <div class="dcard">
+        <h4>The environment is part of the test <span class="tag">shared ground</span></h4>
+        <p>Service-level suites run on a shared environment. Two suites changing the same rule at once will both
+        fail for reasons neither caused. Serialise runs that share resources, and check the environment is
+        healthy before blaming the product.</p>
+        <div class="ex"><b>In our suite</b>Only one pytest run at a time on test-env, and an unreachable environment is reported as “unverified”, not as test failures.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card dsec" id="d-at-run">
+    <h3><span class="num">7</span>Running it — pipeline, tags, reports</h3>
+    <p class="lead">A suite nobody runs automatically decays. Wire it into the delivery pipeline, and make its output usable by someone who did not write it.</p>
+    <div class="dgrid">
+      <div class="dcard" id="d-at-ci">
+        <h4>In the pipeline <span class="tag acc">continuous</span></h4>
+        <p>Fast checks on every commit, the service-level suite on every deploy to the test environment, long or
+        costly suites nightly. A failure blocks the change it belongs to — feedback within minutes, not a week later.</p>
+        <div class="ex"><b>Rule of thumb</b>The longer the gap between the change and the failure, the more expensive it is to find the cause.</div>
+      </div>
+      <div class="dcard" id="d-at-markers">
+        <h4>Tags and selection <span class="tag">run what you need</span></h4>
+        <p>Markers group tests by area, risk or cost so a run can be selected: smoke only, everything touching
+        trading, one service. Strict markers stop a typo from silently creating a new, empty group.</p>
+        <div class="ex"><b>In our suite</b><span class="mono">pytest.ini</span> defines PLAT, CORE, ADMIN, MANAGER, TRADING and SMOKE with <span class="mono">--strict-markers</span>.</div>
+      </div>
+      <div class="dcard" id="d-at-report">
+        <h4>Reports with evidence <span class="tag">traceable</span></h4>
+        <p>A useful report says which behaviour failed, on which build and environment, with the requests,
+        responses and values that prove it — and links the test to the requirement or ticket it covers.</p>
+        <div class="ex"><b>In our suite</b><span class="mono">utils/scenario.py</span> attaches the scenario to the report, so a failure reads as a test case, not only as a stack trace.</div>
+      </div>
+      <div class="dcard" id="d-at-maint">
+        <h4>Maintenance <span class="tag">continuous, not a project</span></h4>
+        <p>Review tests like code; delete tests that no longer check anything meaningful; refactor helpers when the
+        same steps appear in several tests; track the suite's run time and flaky rate as health metrics.</p>
+        <div class="ex"><b>Smell</b>A test nobody understands but nobody dares delete. Either document why it exists or remove it.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card dsec" id="d-at-smells">
+    <h3><span class="num">8</span>Test smells — signs the structure is wrong</h3>
+    <p class="lead">Each smell has a structural cause. Fixing the cause fixes every test that shows it.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:26%">Smell</th><th>What you see</th><th style="width:34%">Structural fix</th></tr></thead>
+      <tbody>
+        <tr><td>Fragile test</td><td>Breaks on changes unrelated to what it checks</td><td>Move endpoint and payload details into the adaptation layer</td></tr>
+        <tr><td>Erratic (flaky) test</td><td>Same code, different verdicts</td><td>Isolate state, poll instead of sleep, unique test data</td></tr>
+        <tr><td>Interacting tests</td><td>Passes alone, fails in the suite (or the reverse)</td><td>Per-test fixtures with guaranteed teardown and a verified clean state</td></tr>
+        <tr><td>Obscure test</td><td>You cannot tell what is checked without reading helpers</td><td>Business-named helpers, Arrange-Act-Assert, a name that states the rule</td></tr>
+        <tr><td>Assertion roulette</td><td>Many bare asserts, a failure says only “AssertionError”</td><td>Assertion messages with expected, actual and context</td></tr>
+        <tr><td>Conditional test logic</td><td><span class="mono">if</span> / <span class="mono">try</span> deciding what to assert</td><td>Split into tests with fixed preconditions; a test has one path</td></tr>
+        <tr><td>Test code duplication</td><td>The same ten setup lines in every file</td><td>Fixtures and helpers; data-driven parametrisation</td></tr>
+        <tr><td>Slow suite</td><td>Nobody runs it before pushing</td><td>Push checks down the pyramid; wait for conditions; run in parallel where state allows</td></tr>
+        <tr><td>Green but blind</td><td>Passes while the feature is broken</td><td>Assert on exact expected values from the spec; see a test fail before trusting it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9 -->
+  <div class="card dsec" id="d-at-choose">
+    <h3><span class="num">9</span>How to choose — the short version</h3>
+    <p class="lead">Same logic as the other pages: start from the problem you have, and the structural answer follows.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:34%">Situation</th><th>Reach for</th><th style="width:31%">Why</th></tr></thead>
+      <tbody>
+        <tr><td>A business rule with clear inputs and outputs</td><td>Unit or service-level test, data-driven</td><td>Cheapest level that still sees the rule; one body, many rows.</td></tr>
+        <tr><td>Two services must agree on a message</td><td>Contract test</td><td>Catches a broken agreement without a full end-to-end environment.</td></tr>
+        <tr><td>A user flow across several systems</td><td>A few end-to-end tests</td><td>Proves the integration; keep them few, the detail lives lower down.</td></tr>
+        <tr><td>The system answers asynchronously</td><td>Polling with a timeout</td><td>Waits exactly as long as needed and fails with a reason.</td></tr>
+        <tr><td>Tests fail only when run together</td><td>Per-test fixtures, verified teardown</td><td>The cause is shared state, not the assertion.</td></tr>
+        <tr><td>An endpoint change broke forty tests</td><td>Adaptation layer / helpers</td><td>The next change touches one function.</td></tr>
+        <tr><td>A dependency is slow, costly or unavailable</td><td>Test double (stub or fake)</td><td>Deterministic and fast; keep a few tests against the real one.</td></tr>
+        <tr><td>A test fails at random</td><td>Quarantine with an owner, then root cause</td><td>Protects trust in a red build while it is fixed.</td></tr>
+        <tr><td>A production bug escaped</td><td>Regression test at the lowest level that catches it</td><td>Turns the incident into a permanent check.</td></tr>
+      </tbody>
+    </table>
+    <div class="keyline"><span class="k">◆</span><span><b>Three things worth memorising.</b> First: a suite is only as valuable as it is trusted — one flaky test costs more than it catches. Second: structure beats volume; layers and fixtures decide the maintenance cost of every future test. Third: never trust a test you have not seen fail.</span></div>
+    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>Test design comes first.</b> Automation executes test cases; it does not choose them. Equivalence partitioning, boundary values and decision tables from the Manual testing tab decide <em>which</em> cases are worth automating.</span></div>
+  </div>
+
+ </div>
+</main>
+
+</div><!-- /.shell -->
+</div><!-- /.app -->
+
+<script src="/js/01-core.js"></script>
+<script src="/js/02-doc.js"></script>
+<script src="/js/03-runs.js"></script>
+<script src="/js/04-jobs.js"></script>
+<script src="/js/06-suite.js"></script>
+<script src="/js/07-staging.js"></script>
+<script src="/js/08-bugs.js"></script>
+<script src="/js/09-risk.js"></script>
+<script src="/js/11-pipe.js"></script>
+<script src="/js/12-tools.js"></script>
+<script src="/js/14-report.js"></script>
+<script src="/js/15-tfmonitor.js"></script>
+<script src="/js/16-metrics.js"></script>
+<script src="/js/17-workspace.js"></script>
+<script src="/js/18-release-watch.js"></script>
+<script src="/js/19-run-summary.js"></script>
+<script src="/js/10-main.js"></script>
+</body>
+</html>

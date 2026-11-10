@@ -1,0 +1,47 @@
+{
+  "_opis": "Kryteria akceptacji testów czatu MCP. Czyta je serwer MCP (bateria pytań), aplikacja (widok wyników) i autotesty (utils/mcp_chat.py). Zmiana działa od następnego pytania, bez restartu. Wartości progów to ułamki (0.95 = 95%).",
+
+  "_opis_progi": "Metryki z macierzy pomyłek. TP: czat podał dane i są poprawne. TN: słusznie odmówił (np. konto nie istnieje). FP: podał dane, choć powinien odmówić. FN: odmówił albo nie znalazł, choć dane były. WRONG: podał dane, ale błędne (zła wartość, złe narzędzie lub parametry, zły format). Accuracy = (TP+TN)/wszystkie. Precision = TP/(TP+FP+WRONG): gdy czat coś twierdzi, jak często ma rację (1 - precision to odsetek halucynacji). Recall (sensitivity) = TP/(TP+FN+WRONG): ile pytań z odpowiedzią dostało poprawną. Specificity = TN/(TN+FP): ile pytań bez odpowiedzi czat słusznie odrzucił. F1 = 2PR/(P+R).",
+  "thresholds": {
+    "accuracy": 0.95,
+    "precision": 0.98,
+    "recall": 0.90,
+    "specificity": 0.95,
+    "f1": 0.93
+  },
+
+  "_opis_latency": "Czas od wysłania wiadomości do pełnej odpowiedzi czatu (z wywołaniami narzędzi MCP), w ms, liczony dla pierwszej próby.",
+  "latency": {
+    "p50Ms": 20000,
+    "p95Ms": 45000,
+    "maxMs": 90000
+  },
+
+  "_opis_afterChange": "Pytanie zadane zaraz po dodaniu, edycji lub usunięciu: MCP może jeszcze nie widzieć zmiany. Pytanie jest powtarzane (nowa rozmowa) do 'attempts' razy co 'delayMs', aż odpowiedź będzie poprawna. Przypadek, który przeszedł dopiero w kolejnej próbie, liczy się jako poprawny, a czas do spójności trafia do raportu.",
+  "afterChange": {
+    "attempts": 3,
+    "delayMs": 5000
+  },
+
+  "_opis_bateria": "Testy czatu MCP są probabilistyczne, więc każde narzędzie MCP pod testem dostaje baterię od minCasesPerTool do maxCasesPerTool pytań (pytania po zmianie też się liczą). Mniej pytań = wynik INCONCLUSIVE, a audyt runu każe agentowi dołożyć brakujące. minDeclineShare to minimalny udział pytań, na które poprawna odpowiedź to odmowa. Warianty mają się różnić: parafrazy, PL i EN, literówki, pytania nie wprost, inny zapis numeru konta, różne pola i filtry, prośba o format (CSV, tabela, JSON, plik), pytania bez odpowiedzi.",
+  "battery": {
+    "minCasesPerTool": 50,
+    "maxCasesPerTool": 100,
+    "minDeclineShare": 0.2,
+    "concurrency": 10
+  },
+
+  "_opis_porownanie": "Porównanie liczb: wartość z odpowiedzi może być zaokrąglona do pokazanej precyzji (np. 998 528 492 dla 998528492.44), o ile acceptRounded=true. relTolerance to dopuszczalny błąd względny — domyślnie 0, bo przy dużych kwotach nawet 0.0005 przepuszcza różnicę setek tysięcy (sprawdzone: 1 USD różnicy na saldzie ~1 mld był niewidoczny).",
+  "numbers": {
+    "acceptRounded": true,
+    "relTolerance": 0
+  },
+
+  "_opis_odmowa": "Wyrażenia (regex, bez wielkości liter), po których odpowiedź uznaje się za odmowę lub brak danych.",
+  "declineMarkers": [
+    "nie istnieje", "nie znalaz", "nie znaleziono", "brak (danych|konta|wynik)", "nie mam (dostępu|narzędzi|informacji)",
+    "nie mogę", "nie udało", "niedostępn", "nie jest dostępn", "nie pobrał", "nie sprawdzi", "nie obsługuj", "nie mam możliwości", "nie ma takiego", "nie ma żadnego", "nie ma \\w+( \\w+)? (o nazwie|o id|o numerze|z id)","\\b0 wynik", "zero wynik", "no accounts", "0 results", "zero results",
+    "not found", "there is no ", "there's no ", "\\bno \\w+( \\w+)? (named|with id)", "isn't configured", "is not configured","unavailable", "not supported", "isn't available", "is not available", "does not exist", "doesn't exist", "no (such|data|results|account)",
+    "couldn't", "could not", "can't", "cannot", "unable to", "don't have (access|a tool)", "not available", "unreachable"
+  ]
+}

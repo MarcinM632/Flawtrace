@@ -1,0 +1,14 @@
+{
+  "name": "qa-agents-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local UI for the QA agents (Analyses, QA MCP, Autotests, Test suite). No dependencies.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/api.test.js test/units.test.js",
+    "ui-smoke": "node scripts/ui-smoke.js",
+    "ui-interact": "node scripts/ui-interact.js",
+    "tool-groups": "node scripts/build-tool-groups.mjs"
+  }
+}
