@@ -39,13 +39,13 @@ async function loadWorkspace(){
 function wsAgo(ts){if(!ts)return'never fetched';const m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<1?'just now':m+' min ago'}
 
 function renderWorkspace(){
-  $('#wsSub').textContent=`Your open tasks in PRJ / SVC / OPS, ranked by Jira priority, then by service risk from the bug registry. Last synced ${wsAgo(WS_META.fetchedAt)}${WS_META.busy?' · syncing…':''}.`;
+  $('#wsSub').textContent=`Your open Jira tasks, ranked by Jira priority, then by service risk from the bug registry. Last synced ${wsAgo(WS_META.fetchedAt)}${WS_META.busy?' · syncing…':''}.`;
   $('#wsErr').textContent=(WS_META.ok===false&&WS_META.error)?('Jira sync failed: '+WS_META.error):'';
   const next=WS_TASKS[0];
   $('#wsNextBox').innerHTML=next?`
     <div class="panel-h"><h2>Test this next</h2><span class="meta-r">${esc(next.label)} · ${esc(next.key)}</span></div>
     <div class="panel-b">${wsCard(next,true)}</div>
-  `:`<div class="panel-b"><div class="empty">${ico('inbox',28)}<b>No open tasks assigned to you</b><span>Nothing in PRJ, SVC or OPS is currently assigned to you with an open status.</span></div></div>`;
+  `:`<div class="panel-b"><div class="empty">${ico('inbox',28)}<b>No open tasks assigned to you</b><span>Nothing in the connected Jira projects is assigned to you with an open status. Check the data in Sources, step 2.</span></div></div>`;
   $('#wsCount').textContent=WS_TASKS.length?`${WS_TASKS.length} task${WS_TASKS.length===1?'':'s'}`:'';
   $('#wsList').innerHTML=WS_TASKS.length?WS_TASKS.map((t,i)=>wsCard(t,false,i)).join(''):(next?'':'');
   $('#view-workspace').querySelectorAll('[data-wsopen]').forEach(b=>b.onclick=()=>wsToggle(b.dataset.wsopen));

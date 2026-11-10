@@ -20,7 +20,9 @@ cd agent-ui
 npm start
 ```
 
-Open http://127.0.0.1:4317 in the browser. The page **Sources** opens with a checklist. Work through it from top to bottom. Every step shows a green tick when it is done.
+Open http://127.0.0.1:4317 in the browser. The setup window opens and stays open until the test environment API is connected. Work through its steps from top to bottom; every step except the first can be skipped and done later on the page **Sources**, where **Open setup** brings the window back.
+
+With the API alone the agents still work: they read the application model built from the specification (the resources, what each can do, which one must exist before another and the order to create test data in), work out from it what the application is for and build the test flows. Every source you add later makes them more accurate.
 
 ## 3. Connect the sources
 

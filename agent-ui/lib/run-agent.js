@@ -371,7 +371,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   const repoRule = (stagingDir || AUTOTEST_REPO).replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '//' + d.toLowerCase());
   const autotestTools = [
     'Read', 'Grep', 'Glob', 'Skill',
-    ...['general_get_status', 'general_read_list_endpoints', 'general_read_describe_endpoint', 'general_read_get_coverage'].map((n) => `mcp__${MCP_SERVER}__${n}`),
+    ...['general_get_status', 'general_read_app_model', 'general_read_list_endpoints', 'general_read_describe_endpoint', 'general_read_get_coverage'].map((n) => `mcp__${MCP_SERVER}__${n}`),
     `Write(${repoRule}/**)`, `Edit(${repoRule}/**)`,
   ];
   const toolsFor = (mode) =>

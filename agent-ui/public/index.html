@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QA Manager</title>
+<title>Flawtrace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -43,8 +43,8 @@
 <div class="app">
 <aside class="sidebar">
   <div class="brand">
-    <div class="mark"><svg width="16" height="16"><use href="#i-bolt"/></svg></div>
-    <div><div class="b-name">QA Manager</div></div>
+    <div class="mark">F</div>
+    <div><div class="b-name">Flawtrace</div></div>
   </div>
   <nav class="nav" aria-label="Main">
     <div class="nav-group">Workspace</div>
@@ -103,6 +103,27 @@
   <div class="modal-box wide guide" role="dialog" aria-modal="true" aria-label="Getting started">
     <div class="guide-body" id="guideBody"></div>
     <div class="modal-act"><button class="btn" id="guideClose">Close</button></div>
+  </div>
+</div>
+<div class="modal setup" id="setupModal" hidden>
+  <div class="setup-box" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <aside class="setup-rail">
+      <div class="setup-brand"><span class="brand-mark">F</span>Flawtrace</div>
+      <p class="setup-kicker">Setup</p>
+      <h2 id="setupTitle">Connect what the agents learn from</h2>
+      <ol class="setup-steps" id="setupSteps"></ol>
+      <p class="setup-note">Only the API is required. With the API alone, the agents learn the application from its endpoints.</p>
+    </aside>
+    <div class="setup-main">
+      <div class="setup-head"><span class="setup-count" id="setupCount"></span><button type="button" class="btn sm" id="setupGuide"><svg width="13" height="13"><use href="#i-book"/></svg>Full guide</button></div>
+      <div class="setup-stage" id="setupStage"></div>
+      <div class="setup-foot">
+        <button type="button" class="btn" id="setupBack">Back</button>
+        <span class="setup-hint" id="setupHint"></span>
+        <button type="button" class="btn" id="setupSkip">Skip</button>
+        <button type="button" class="go" id="setupNext">Next</button>
+      </div>
+    </div>
   </div>
 </div>
 <div class="modal" id="cmtModal" hidden>
@@ -491,7 +512,7 @@
       <div class="panel-b">
         <div class="src-intro-row">
           <div><h2>Set up in six steps</h2><p class="src-lead">Work from top to bottom. Only step 1 is required to run tests. <b id="srcProgress"></b></p></div>
-          <button type="button" class="btn sm" id="srcGuide"><svg width="13" height="13"><use href="#i-book"/></svg>Full guide</button>
+          <div class="src-intro-acts"><button type="button" class="btn sm" id="srcWizard"><svg width="13" height="13"><use href="#i-play"/></svg>Open setup</button><button type="button" class="btn sm" id="srcGuide"><svg width="13" height="13"><use href="#i-book"/></svg>Full guide</button></div>
         </div>
         <ol class="src-steps" id="srcSt"></ol>
       </div>
@@ -2692,6 +2713,7 @@
 <script src="/js/18-release-watch.js"></script>
 <script src="/js/19-run-summary.js"></script>
 <script src="/js/20-sources.js"></script>
+<script src="/js/21-setup.js"></script>
 <script src="/js/10-main.js"></script>
 </body>
 </html>

@@ -236,6 +236,9 @@ sprzątanie; dla zadań o czasie odpowiedzi, obciążeniu lub liczbie użytkowni
 (3) oczekiwane wyniki, których nie podaje zlecenie, bierz z ticketu, Confluence (confluence_search) i kontraktu
 endpointu, nigdy z pamięci. Strategię i techniki z procedury stosujesz na żywym środowisku: każdy krok to realne
 wywołanie, każdy wynik porównany z oczekiwanym, każda rozbieżność potwierdzona retestem.
+Gdy zlecenie nie wskazuje ticketu albo źródła wiedzy są puste (API-ONLY MODE w opisie źródeł), zacznij od
+\`general_read_app_model\`: z modelu zasobów, zależności i kolejności tworzenia danych ustal, do czego służy aplikacja,
+i z tego zbuduj flow testu (kolejne endpointy, id z odpowiedzi przekazywane do następnego wywołania).
 
 ZLECENIE Z TICKETEM JIRY
 Narzędzi Jiry nie masz i nie potrzebujesz: gdy zlecenie wskazuje ticket, aplikacja pobrała go przed startem i

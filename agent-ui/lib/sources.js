@@ -428,6 +428,8 @@ function uploadSpec(name, text) {
 }
 
 const catalogue = () => openapi.loadFolder(SPECS_DIR);
+/** The application model of the imported specifications (see lib/app-model.js). */
+function appModel() { const c = catalogue(); const m = require('./app-model'); const model = m.build(c.endpoints); return { ...model, titles: c.specs.map((s) => s.title).filter(Boolean), markdown: m.markdown(model, c.specs.map((s) => s.title).filter(Boolean).join(', ') || 'the application') }; }
 const apiReady = () => { const c = read(); return !!c.api.baseUrl && catalogue().endpoints.length > 0; };
 
 /* ------------------------------------------------ Knowledge base ------------------------------------------------ */
@@ -506,12 +508,15 @@ function brief(mode) {
   const repos = repoList().filter((r) => r.ready);
   if (repos.length) lines.push(`- Code repositories (local copies, read only): ${repos.map((r) => `${r.name} at "${r.path}"`).join('; ')}.${mode === 'qa' ? ' Read them with Read, Grep, Glob and git -C <path> log/show/diff.' : ' List them with mcp__sources__repo_list.'}`);
   if (s.api) lines.push(`- Test environment API: ${c.api.baseUrl}, ${s.endpoints} endpoints from the imported OpenAPI specifications.${mode === 'qamcp' ? ' Call them only through the qa MCP server.' : ' Endpoint contracts are listed by mcp__sources__api_endpoints.'}`);
+  if (s.api && !s.jira && !s.confluence && !s.repos && !s.rulesFilled) {
+    lines.push(`API-ONLY MODE: the API specification is the only source. Before anything else read the application model (${mode === 'qamcp' ? 'mcp__qa__general_read_app_model' : 'mcp__sources__api_app_model'}): it lists the resources, what each can do, which resource must exist before another and the order to create test data in. From it, work out what the application is for and which business flows it supports (for example: create a customer, then an order for that customer, then pay and cancel it). Name each flow by its endpoints in order and pass ids from one answer to the next call. Expected results come from the contract: status codes, required fields, types, enums and formats. Everything the contract does not settle is an open question in the report, not an assumption.`);
+  }
   lines.push('Rules: a business rule, threshold or expected result comes from these sources, never from memory. When the sources disagree with each other or with the task, report the difference. When none of them covers a rule, list it as an open question instead of inventing it. Name the source of every expected result (ticket key, page title, file path or endpoint).');
   return lines.join('\n');
 }
 
 module.exports = {
-  apiReady, brief, catalogue, confluencePage, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
+  apiReady, appModel, brief, catalogue, confluencePage, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
   adfText, jiraCheck, jiraCount, jiraLink, jiraProjectKeys, jiraProjectMap, jiraRest, jiraSearchAll, jiraUsers, jiraVersions, liveMap, projectClause, jql,
   knowledgeDir, knowledgeFiles, mcpServers, read, repoList, save, status, syncRepos, test, uploadSpec, view,
   SPECS_DIR, FILE,

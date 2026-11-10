@@ -431,7 +431,7 @@ function showTab(t){
   VIEWS.forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=v!==t});
   const [crumb,title,desc]=PAGE[t];
   $('#crumb').textContent=crumb; $('#pageTitle').textContent=title; $('#pageDesc').textContent=desc;
-  document.title=title+' · QA Manager';
+  document.title=title+' · Flawtrace';
   try{history.replaceState(null,'',t==='runs'?location.pathname+location.search:'#'+t)}catch(e){}
   scrollTo(0,0);
   if(t==='workspace')loadWorkspace();

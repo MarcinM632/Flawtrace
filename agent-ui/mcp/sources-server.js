@@ -107,6 +107,12 @@ serve({
       handler: async () => REPOS,
     },
     {
+      name: 'api_app_model',
+      description: 'What the API specification says about the application: resources, what each can do, dependencies between them, the order to create test data in and a life-cycle flow per resource. Read it first when there is no ticket or documentation.',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => { const c = loadFolder(SPECS_DIR); const m = require('../lib/app-model'); return m.markdown(m.build(c.endpoints), c.specs.map((s) => s.title).filter(Boolean).join(', ') || 'the application'); },
+    },
+    {
       name: 'api_endpoints',
       description: 'Lists the endpoints of the test environment API from the imported specifications, with their parameters. Filter by words.',
       inputSchema: { type: 'object', properties: { filter: { type: 'string' }, limit: { type: 'number' } } },

@@ -280,6 +280,7 @@ const server = http.createServer(async (req, res) => {
       try { const r = sources.uploadSpec(b.name, b.text); await toolsLib.refresh(); return json(res, 200, r); } catch (e) { return json(res, 400, { error: e.message }); }
     }
     if (req.method === 'GET' && p === '/api/sources/knowledge') return json(res, 200, sources.knowledgeFiles());
+    if (req.method === 'GET' && p === '/api/sources/app-model') return json(res, 200, sources.appModel());
     // Jira data check: what Jira returns for each search the app uses, next to what the app has loaded so far.
     if (req.method === 'POST' && p === '/api/sources/jira/check') {
       const b = (await body(req, 1e4)) || {};

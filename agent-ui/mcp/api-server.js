@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { serve, clip } = require('./stdio');
 const { loadFolder } = require('../lib/openapi');
+const appModel = require('../lib/app-model');
 
 const SPECS_DIR = process.env.QA_SPECS_DIR || path.join(__dirname, '..', 'specs');
 const SOURCES_FILE = process.env.QA_SOURCES_FILE || path.join(__dirname, '..', 'sources.json');
@@ -139,6 +140,12 @@ serve({
       description: 'The contract of one endpoint: path, query and header parameters and the outline of the request body.',
       inputSchema: { type: 'object', properties: { name: { type: 'string' }, method: { type: 'string' }, path: { type: 'string' } } },
       handler: async (a) => describe(find(a)),
+    },
+    {
+      name: 'general_read_app_model',
+      description: 'What the specification says about the application: its resources, what each can do, which resource must exist before another (order to create test data in) and the life-cycle flow to test for each. Read it first when there is no ticket or documentation.',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => appModel.markdown(appModel.build(cat.endpoints), cat.specs.map((s) => s.title).filter(Boolean).join(', ') || 'the application'),
     },
     {
       name: 'general_call_endpoint',
