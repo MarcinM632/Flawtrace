@@ -196,7 +196,7 @@ function boxplotChart(rows,opts={}){
     g+=`<line x1="${x(r.median).toFixed(1)}" y1="${(cy-boxH/2).toFixed(1)}" x2="${x(r.median).toFixed(1)}" y2="${(cy+boxH/2).toFixed(1)}" stroke="var(--acc)" stroke-width="2.5"></line>`;
     if(r.sub)g+=`<text x="${(x(r.max)+10).toFixed(1)}" y="${(cy+4).toFixed(1)}" font-size="11" fill="var(--ink3)">${esc(r.sub)}</text>`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}" font-family="Inter,system-ui,sans-serif">${g}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}" font-family="Roboto,Arial,sans-serif">${g}</svg>`;
 }
 function boxplotCard(sel,rows,opts){ $(sel).innerHTML=boxplotChart(rows,opts); tipBind($(sel)); }
 
@@ -377,17 +377,9 @@ wireFileField('execution',{drop:'#exFileDrop',input:'#exFileInput',empty:'#exFil
 wireFileField('completion',{drop:'#cpFileDrop',input:'#cpFileInput',empty:'#cpFileEmpty',list:'#cpFileList',err:'#cpFileErr'});
 
 /* ---------- theme ---------- */
-(function(){
-  let t='dark'; try{t=localStorage.getItem('theme')||'dark'}catch(e){}
-  document.documentElement.dataset.theme=t; paintTheme(t);
-})();
-function paintTheme(t){$('#themeIcon').setAttribute('href',t==='dark'?'#i-sun':'#i-moon')}
-$('#theme').onclick=()=>{
-  const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
-  document.documentElement.dataset.theme=t; paintTheme(t);
-  try{localStorage.setItem('theme',t)}catch(e){}
-  if(!$('#view-risk').hidden)renderRisk();
-};
+/* Light theme only. */
+document.documentElement.dataset.theme='light';
+try{localStorage.removeItem('theme')}catch(e){}
 
 /* ---------- navigation ---------- */
 const VIEWS=['workspace','runs','qamcp','autotest','planning','tfmonitor','analysis','design','implementation','execution','completion','runsummary','bugs','risk','metricsgen','fix','tools','doc','ai','autodoc','testproc'];
@@ -425,10 +417,10 @@ function showTab(t){
     const on=x.dataset.tab===t; x.classList.toggle('on',on);
     on?x.setAttribute('aria-current','page'):x.removeAttribute('aria-current');
   });
-  VIEWS.forEach(v=>$('#view-'+v).hidden=v!==t);
+  VIEWS.forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=v!==t});
   const [crumb,title,desc]=PAGE[t];
   $('#crumb').textContent=crumb; $('#pageTitle').textContent=title; $('#pageDesc').textContent=desc;
-  document.title=title+' · QA Agents';
+  document.title=title+' · QA Manager';
   try{history.replaceState(null,'',t==='runs'?location.pathname+location.search:'#'+t)}catch(e){}
   scrollTo(0,0);
   if(t==='workspace')loadWorkspace();

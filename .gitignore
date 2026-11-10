@@ -3,3 +3,6 @@ agent-ui/runs/
 __pycache__/
 .pytest_cache/
 test-results/
+agent-ui/*.json
+!agent-ui/package.json
+agent-ui/jira-sync.last.txt

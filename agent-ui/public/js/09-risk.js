@@ -99,7 +99,7 @@ function hbars(sel,rows,opt){
       +`<text x="${L+wpx+9}" y="${y+h-3.5}" font-size="${opt.fs||12}" font-weight="600" fill="var(--ink)">${esc(r.vlabel)}</text>`;
     if(r.sub)g+=`<text x="${L+wpx+13+String(r.vlabel).length*7.6}" y="${y+h-3.5}" font-size="10.5" fill="var(--muted)">${esc(r.sub)}</text>`;
   });
-  $(sel).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||'')}" font-family="Inter,system-ui,sans-serif">${g}</svg>`;
+  $(sel).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||'')}" font-family="Roboto,Arial,sans-serif">${g}</svg>`;
   tipBind($(sel));
 }
 

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QA Agents</title>
+<title>QA Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -43,7 +43,7 @@
 <aside class="sidebar">
   <div class="brand">
     <div class="mark"><svg width="16" height="16"><use href="#i-bolt"/></svg></div>
-    <div><div class="b-name">QA Agents</div><div class="b-sub">Quality engineering console</div></div>
+    <div><div class="b-name">QA Manager</div></div>
   </div>
   <nav class="nav" aria-label="Main">
     <div class="nav-group">Workspace</div>
@@ -83,7 +83,6 @@
   <div class="side-foot">
     <div class="conn wait" id="conn"><span class="d"></span><span id="connTxt">Connecting…</span></div>
     <button class="icon-btn" id="restartBtn" title="Restart the server (picks up code changes on disk)" aria-label="Restart server"><svg width="15" height="15"><use href="#i-restart"/></svg></button>
-    <button class="icon-btn" id="theme" title="Toggle light / dark theme" aria-label="Toggle theme"><svg width="15" height="15"><use href="#i-moon" id="themeIcon"/></svg></button>
   </div>
 </aside>
 
@@ -258,7 +257,7 @@ nothing was closed instead of opened."></textarea>
         </div>
         <div class="field">
           <label for="pfNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="pfNotes" placeholder="e.g. this iteration also touches the hedger rule, check for conflicts there"></textarea>
+          <textarea id="pfNotes" placeholder="e.g. this iteration also touches the pricing rules, check for conflicts there"></textarea>
         </div>
         <div class="field">
           <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
@@ -296,7 +295,7 @@ nothing was closed instead of opened."></textarea>
         </div>
         <div class="field">
           <label for="anNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="anNotes" placeholder="e.g. Phase 1 flagged risk on the hedger rule interaction"></textarea>
+          <textarea id="anNotes" placeholder="e.g. Phase 1 flagged risk on the rule interaction"></textarea>
         </div>
         <div class="field">
           <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
@@ -534,11 +533,10 @@ nothing was closed instead of opened.
         <div class="qenv" id="aEnv"></div>
         <div class="field">
           <label for="aCase">Test case</label>
-          <textarea id="aCase" style="min-height:190px" placeholder="Describe it the way you would write it in a test plan, e.g.
+          <textarea id="aCase" style="min-height:120px" placeholder="Describe it the way you would write it in a test plan, e.g.
 
-Changing an account group's default leverage in PLAT Admin
-must not change the leverage of a trading account that was
-already created from an offer with its own leverage."></textarea>
+Changing a group's default setting must not change the
+setting of an account that already has its own value."></textarea>
           <div class="hint" id="aHint"></div>
           <div class="cnt" id="aCnt" style="margin-top:6px;text-align:right"></div>
         </div>
@@ -549,7 +547,7 @@ already created from an offer with its own leverage."></textarea>
         </div>
         <div class="field">
           <label for="aNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="aNotes" placeholder="e.g. add it to the existing test_open_market_position.py"></textarea>
+          <textarea id="aNotes" placeholder="e.g. add it to the existing test_create_item.py"></textarea>
         </div>
         <div class="field">
           <label>Data files <span class="opt">Optional — CSV or any text file, drag & drop, click, or paste — add as many as you like</span></label>
