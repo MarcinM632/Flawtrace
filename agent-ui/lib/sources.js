@@ -306,6 +306,11 @@ function knowledgeFiles() {
   return { dir: dir.split(path.sep).join('/'), files: out };
 }
 
+/** True when how-we-test.md exists and no placeholder in angle brackets is left. */
+function rulesFilled() {
+  try { return !/<[^>\n]{2,}>/.test(fs.readFileSync(path.join(knowledgeDir(), 'how-we-test.md'), 'utf8')); } catch (_) { return false; }
+}
+
 /* ------------------------------------------------ Status and agent wiring ------------------------------------------------ */
 
 function status() {
@@ -317,6 +322,7 @@ function status() {
     repos: repoList().filter((r) => r.ready).length,
     reposTotal: c.repos.length,
     knowledge: knowledgeFiles().files.length,
+    rulesFilled: rulesFilled(),
     endpoints: cat.endpoints.length,
     api: !!c.api.baseUrl && cat.endpoints.length > 0,
   };

@@ -1,5 +1,7 @@
 # Agents
 
+New here? Start with [GETTING_STARTED.md](../GETTING_STARTED.md).
+
 One folder per agent. The application starts each agent in its folder, so `CLAUDE.md` there is its working method.
 
 | Folder | Agent |

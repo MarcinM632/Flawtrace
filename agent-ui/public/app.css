@@ -1557,7 +1557,7 @@ input,textarea,select{border-color:var(--line2)}
 .composer .dz-list{gap:5px}
 
 /* ================= sources ================= */
-.src-st{display:flex;flex-wrap:wrap;gap:8px}
+
 .src-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border:1px solid var(--line2);border-radius:999px;font-size:12.5px;color:var(--ink2);background:var(--surface)}
 .src-chip::before{content:"";width:7px;height:7px;border-radius:99px;background:var(--ink4)}
 .src-chip.on{color:var(--ink)}
@@ -1572,7 +1572,7 @@ input,textarea,select{border-color:var(--line2)}
 .src-row .st.bad{color:var(--bad)}
 .src-acts{display:flex;gap:8px;margin-top:10px}
 .src-save{display:flex;align-items:center;gap:12px;margin-top:16px}
-.src-save .go{width:auto}
+.src-save .go{width:auto;margin-top:0}
 .src-res{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 .src-res .chk.ok{color:var(--ok);background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
 .src-files{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -1583,3 +1583,40 @@ input,textarea,select{border-color:var(--line2)}
 #view-sources .row2{align-items:start}
 #view-sources .panel-h .jbtns{margin-left:auto}
 @media (max-width:760px){.src-row,.src-row.repo{grid-template-columns:1fr 34px}.src-row input:first-child{grid-column:1/-1}.src-auth{grid-template-columns:1fr}}
+
+/* ================= sources: guided setup ================= */
+.src-intro-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.src-intro h2{margin:0 0 4px;font-size:16px;font-weight:600}
+.src-lead{margin:0;font-size:13px;color:var(--ink2)}
+.src-lead b{font-weight:600;color:var(--ink)}
+.src-steps{list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.src-steps li{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface2);font-size:12.5px;color:var(--ink2);cursor:pointer;min-width:0}
+.src-steps li:hover{border-color:var(--line2);background:var(--surface3)}
+.src-steps li span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-steps li.done{color:var(--ink)}
+.step-h{display:flex;align-items:center;gap:10px}
+.step-n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:99px;border:1.5px solid var(--ink4);color:var(--ink3);font-size:11.5px;font-weight:600;background:var(--surface)}
+.step-n.done{border-color:var(--ok);background:var(--ok);color:#fff}
+.step-n svg{display:block}
+.step-req{font-size:11px;font-weight:600;color:var(--acc);border:1px solid var(--acc-line);background:var(--acc-soft);border-radius:99px;padding:1px 8px}
+.src-why{margin:0 0 4px;font-size:13.5px;color:var(--ink)}
+.src-help{margin:0 0 16px;font-size:12.5px;color:var(--ink3);line-height:1.55}
+.src-help a,.setup-banner a{color:var(--acc);font-weight:500}
+.src-check{margin-top:4px}
+.setup-banner{display:flex;align-items:center;gap:12px;margin:12px 28px 0;padding:8px 10px 8px 14px;border:1px solid var(--acc-line);background:var(--acc-soft);border-radius:var(--r-sm);font-size:13px;color:var(--ink)}
+.setup-banner[hidden]{display:none}
+.setup-banner button{margin-left:auto}
+.guide-body{max-height:min(70vh,720px);overflow:auto;font-family:var(--sans);font-size:13.5px;font-weight:400;line-height:1.6;color:var(--ink);padding-right:6px}
+.guide-body h1{font-size:20px;margin:0 0 10px}
+.guide-body h2{font-size:16px;margin:22px 0 8px}
+.guide-body h3{font-size:14px;margin:16px 0 6px}
+.guide-body p,.guide-body ul,.guide-body ol{margin:0 0 10px}
+.guide-body table{border-collapse:collapse;width:100%;margin:0 0 12px;font-size:12.5px}
+.guide-body th,.guide-body td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.guide-body th{background:var(--surface2);font-weight:600}
+.guide-body code,.guide-body pre{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:4px}
+.guide-body code{padding:1px 5px}
+.guide-body pre{padding:10px 12px;overflow:auto}
+.guide-body pre code{border:0;padding:0;background:none}
+@media (max-width:1100px){.src-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.src-steps{grid-template-columns:1fr 1fr}.setup-banner{margin:12px 16px 0}.src-intro-row{flex-direction:column}}

@@ -452,6 +452,7 @@ function showTab(t){
   if(t==='tools')loadTools();
   if(t==='sources')loadSources();
   if(t==='fix')fxLoad();
+  if(typeof updateSetupBanner==='function')updateSetupBanner();
   renderPipe();
   requestAnimationFrame(relayoutDoc);
 }
@@ -462,6 +463,8 @@ const showBugs=()=>showTab('bugs');
 function applyHash(){
   const [t,sub]=(location.hash||'').slice(1).split('/');
   if(VIEWS.includes(t)&&t!=='runs')showTab(t);
+  /* First visit with nothing connected and no page in the address: start on the setup. */
+  if(!t&&typeof srcFirstRun==='function')srcFirstRun();
   if(t==='autotest'&&sub)atSetSub(sub);
 }
 (function(){const [c,t,d]=PAGE.runs;$('#crumb').textContent=c;$('#pageTitle').textContent=t;$('#pageDesc').textContent=d})();

@@ -94,10 +94,17 @@
   <p class="tb-desc" id="pageDesc"></p>
 </header>
 
+<div class="setup-banner" id="setupBanner" hidden><span>Connect the test environment to start.</span><a href="#sources" data-tab-link="sources">Open Sources</a><button type="button" class="btn icon sm" id="setupBannerX" title="Hide until the next visit" aria-label="Hide"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
 <div class="relwatch" id="relwatch" hidden></div>
 
 <div class="pipe" id="pipe" hidden></div>
 
+<div class="modal" id="guideModal" hidden>
+  <div class="modal-box wide guide" role="dialog" aria-modal="true" aria-label="Getting started">
+    <div class="guide-body" id="guideBody"></div>
+    <div class="modal-act"><button class="btn" id="guideClose">Close</button></div>
+  </div>
+</div>
 <div class="modal" id="cmtModal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="cmtTitle">
     <h3 id="cmtTitle">Create autotests</h3>
@@ -480,14 +487,21 @@
 
 <main id="view-sources" class="wide" hidden>
   <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Connected sources</h2><span class="jbtns"><button type="button" class="btn sm" id="srcTest">Test connections</button></span></div>
-      <div class="panel-b"><div class="src-st" id="srcSt"></div><div id="srcTestOut"></div></div>
+    <section class="panel src-intro">
+      <div class="panel-b">
+        <div class="src-intro-row">
+          <div><h2>Set up in six steps</h2><p class="src-lead">Work from top to bottom. Only step 1 is required to run tests. <b id="srcProgress"></b></p></div>
+          <button type="button" class="btn sm" id="srcGuide"><svg width="13" height="13"><use href="#i-book"/></svg>Full guide</button>
+        </div>
+        <ol class="src-steps" id="srcSt"></ol>
+      </div>
     </section>
 
     <section class="panel">
-      <div class="panel-h"><h2>Test environment API</h2><span class="meta-r" id="srcApiMeta"></span></div>
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="1">1</span>Test environment API <span class="step-req">Required</span></h2><span class="meta-r" id="srcApiMeta"></span></div>
       <div class="panel-b">
+        <p class="src-why">The agents call these endpoints to run tests on the real environment.</p>
+        <p class="src-help">Where to find this: the address every API path starts with, and the Swagger UI page or the OpenAPI JSON of the same environment. Without an address, upload the JSON file.</p>
         <div class="row2">
           <div class="field"><label for="srcBase">Base address</label><input id="srcBase" placeholder="https://test.example.com/api" autocomplete="off"></div>
           <div class="field"><label for="srcAuthV">Authorization <span class="opt">optional</span></label>
@@ -504,8 +518,10 @@
     </section>
 
     <section class="panel">
-      <div class="panel-h"><h2>Jira</h2></div>
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="2">2</span>Jira</h2></div>
       <div class="panel-b">
+        <p class="src-why">The agents read the ticket, its subtasks and every comment.</p>
+        <p class="src-help">Where to find this: create a token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">Atlassian API tokens</a> and use the email you sign in with. For Jira Data Center leave the email empty and paste a personal access token.</p>
         <div class="row2">
           <div class="field"><label for="srcJiraUrl">Address</label><input id="srcJiraUrl" placeholder="https://your-org.atlassian.net" autocomplete="off"></div>
           <div class="field"><label for="srcJiraProj">Projects <span class="opt">optional</span></label><input id="srcJiraProj" placeholder="PRJ, SVC" autocomplete="off"></div>
@@ -519,8 +535,10 @@
     </section>
 
     <section class="panel">
-      <div class="panel-h"><h2>Confluence</h2></div>
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="3">3</span>Confluence</h2></div>
       <div class="panel-b">
+        <p class="src-why">The agents search specifications and read the newest pages.</p>
+        <p class="src-help">Where to find this: leave every field empty when Confluence is on the same Atlassian site as Jira. Spaces limit the search to the spaces that hold specifications.</p>
         <div class="row2">
           <div class="field"><label for="srcConfUrl">Address <span class="opt">empty uses the Jira address</span></label><input id="srcConfUrl" placeholder="https://your-org.atlassian.net/wiki" autocomplete="off"></div>
           <div class="field"><label for="srcConfSpaces">Spaces <span class="opt">optional</span></label><input id="srcConfSpaces" placeholder="QA, DEV" autocomplete="off"></div>
@@ -534,8 +552,10 @@
     </section>
 
     <section class="panel">
-      <div class="panel-h"><h2>Code repositories</h2><span class="meta-r" id="srcRepoMeta"></span></div>
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="4">4</span>Code repositories</h2><span class="meta-r" id="srcRepoMeta"></span></div>
       <div class="panel-b">
+        <p class="src-why">The agents check in the code what exists, what changed and which rules apply.</p>
+        <p class="src-help">Where to find this: the clone address from the repository page, or a local folder. Private repositories need git access on this computer, so check first that git clone works in a terminal.</p>
         <div id="srcRepos" class="src-rows"></div>
         <div class="src-acts"><button type="button" class="btn sm" id="srcRepoAdd">Add repository</button></div>
         <div class="src-save"><button type="button" class="btn" id="srcRepoSave">Save and sync</button><span class="err" id="srcRepoErr"></span></div>
@@ -544,11 +564,22 @@
     </section>
 
     <section class="panel">
-      <div class="panel-h"><h2>Knowledge base</h2><span class="meta-r" id="srcKbMeta"></span></div>
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="5">5</span>Knowledge base</h2><span class="meta-r" id="srcKbMeta"></span></div>
       <div class="panel-b">
+        <p class="src-why">The agents follow these rules before any general habit.</p>
+        <p class="src-help">Where to find this: open how-we-test.md in the knowledge folder and replace every line in angle brackets with your environments, test data prefix and definition of done.</p>
         <div class="field"><label for="srcKbDir">Folder</label><input id="srcKbDir" autocomplete="off"></div>
         <div id="srcKbFiles" class="src-files"></div>
         <div class="src-save"><button type="button" class="btn" id="srcKbSave">Save</button></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2 class="step-h"><span class="step-n" data-step="6">6</span>Check</h2></div>
+      <div class="panel-b">
+        <p class="src-why">Confirms that every source answers and that an agent can call the test environment.</p>
+        <div class="src-save src-check"><button type="button" class="btn" id="srcTest">Test connections</button><button type="button" class="btn" id="srcTry"><svg width="13" height="13"><use href="#i-play"/></svg>Run a check in QA MCP</button></div>
+        <div id="srcTestOut"></div>
       </div>
     </section>
   </div>

@@ -238,6 +238,9 @@ const server = http.createServer(async (req, res) => {
       return json(res, 202, { busy: true });
     }
     // Sources: Jira, Confluence, repositories, knowledge base and the API of the test environment.
+    if (req.method === 'GET' && p === '/api/guide') {
+      try { return json(res, 200, { text: fs.readFileSync(path.join(ROOT, 'GETTING_STARTED.md'), 'utf8') }); } catch (_) { return json(res, 404, { error: 'GETTING_STARTED.md not found' }); }
+    }
     if (req.method === 'GET' && p === '/api/plat-status') {
       const c = sources.read(); const st = sources.status();
       return json(res, 200, { configured: st.api, environment: 'test', hosts: c.api.baseUrl ? [c.api.baseUrl] : [], endpoints: st.endpoints, readOnly: !!c.api.readOnly });

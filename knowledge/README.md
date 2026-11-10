@@ -1,5 +1,7 @@
 # Knowledge base
 
+New here? Start with [GETTING_STARTED.md](../GETTING_STARTED.md).
+
 Every agent reads this folder before it works on a task. Put here what a new tester on the team would need to know.
 
 | File | Content |
