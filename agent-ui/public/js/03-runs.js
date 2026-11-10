@@ -264,8 +264,8 @@ function renderAgents(){
   $('#hint').textContent='';
   $('#ticketLabel').textContent=a.freeform?'Ticket or requirement':'Ticket key';
   const t=$('#ticket');
-  t.placeholder=a.freeform?'Ticket key or task description':'Ticket key';
-  t.style.height=a.freeform?'96px':'38px';
+  t.placeholder=a.freeform?'Ticket key or task description. Add any context you want the agent to consider.':'Ticket key';
+  t.style.height=a.freeform?'':'38px';t.style.minHeight=a.freeform?'':'0';
   $('#goKbd').parentNode.innerHTML=a.freeform?'or press <kbd>Ctrl</kbd> + <kbd id="goKbd">Enter</kbd>':'or press <kbd id="goKbd">Enter</kbd>';
 }
 $('#agents').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.k){sel=b.dataset.k;renderAgents()}};

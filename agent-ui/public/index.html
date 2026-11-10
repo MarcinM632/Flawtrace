@@ -16,6 +16,7 @@
   <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
   <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6.5L4.6 18A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 15h9"/></symbol>
   <symbol id="i-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6a4 4 0 0 1 8 0"/><rect x="7" y="6" width="10" height="13" rx="5"/><path d="M3 11h4M17 11h4M3.5 17h3.5M17 17h3.5M4.5 6.5 7 8M19.5 6.5 17 8"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5 12.6 19.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
@@ -163,22 +164,10 @@
         </div>
         <div class="field">
           <label for="ticket" id="ticketLabel">Ticket key</label>
-          <textarea id="ticket" placeholder="Ticket key or task description" autocomplete="off" style="min-height:0;height:38px"></textarea>
+          <div class="composer"><textarea id="ticket" placeholder="Ticket key or task description. Add any context you want the agent to consider." autocomplete="off"></textarea><div class="dropzone" id="fileDrop" tabindex="0"><input type="file" id="fileInput" hidden><div class="dz-empty" id="fileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="fileList" hidden></div></div></div><div class="err" id="fileErr"></div>
           <div class="hint" id="hint"></div>
         </div>
-        <div class="field">
-          <label for="notes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="notes" placeholder="Anything the agent should focus on"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="fileDrop" tabindex="0">
-            <input type="file" id="fileInput" hidden>
-            <div class="dz-empty" id="fileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="fileList" hidden></div>
-          </div>
-          <div class="err" id="fileErr"></div>
-        </div>
+        <textarea id="notes" hidden></textarea>
         <button class="go" id="go"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis</button>
         <div class="kbd-hint">or press <kbd id="goKbd">Enter</kbd></div>
         <div class="err" id="err"></div>
@@ -200,32 +189,13 @@
         <div class="qenv" id="qEnv"></div>
         <div class="field">
           <label for="qProcess">Test process</label>
-          <textarea id="qProcess" style="min-height:120px" placeholder="Test process to run"></textarea>
+          <div class="composer"><textarea id="qProcess" placeholder="Describe the test process. Add any context you want the agent to consider."></textarea><div class="dropzone" id="qFileDrop" tabindex="0"><input type="file" id="qFileInput" hidden><div class="dz-empty" id="qFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="qFileList" hidden></div></div></div><div class="err" id="qFileErr"></div>
           <div class="hint" id="qHint"></div>
           <div class="cnt" id="qCnt" style="margin-top:6px;text-align:right"></div>
           <div id="qBrief"></div>
         </div>
-        <div class="field">
-          <label for="qNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="qNotes" placeholder="Anything the agent should keep in mind"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="qFileDrop" tabindex="0">
-            <input type="file" id="qFileInput" hidden>
-            <div class="dz-empty" id="qFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="qFileList" hidden></div>
-          </div>
-          <div class="err" id="qFileErr"></div>
-        </div>
-        <div class="field">
-          <label for="qScope">Tools <span class="opt">Affects cost and speed</span></label>
-          <select id="qScope">
-            <option value="auto">Only the tools this process needs</option>
-            <option value="all">All tools</option>
-          </select>
-          <div class="hint"></div>
-        </div>
+        <textarea id="qNotes" hidden></textarea>
+        <select id="qScope" hidden><option value="auto" selected>auto</option></select>
         <button class="go" id="qGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test process</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="qErr"></div>
@@ -248,22 +218,10 @@
       <div class="panel-b">
         <div class="field">
           <label for="pfTask">Backlog task</label>
-          <textarea id="pfTask" style="min-height:96px" placeholder="Ticket key or task description"></textarea>
+          <div class="composer"><textarea id="pfTask" placeholder="Ticket key or task description. Add any context you want the agent to consider."></textarea><div class="dropzone" id="pfFileDrop" tabindex="0"><input type="file" id="pfFileInput" hidden><div class="dz-empty" id="pfFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="pfFileList" hidden></div></div></div><div class="err" id="pfFileErr"></div>
           <div class="hint" id="pfHint"></div>
         </div>
-        <div class="field">
-          <label for="pfNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="pfNotes" placeholder="Anything the agent should check as well"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="pfFileDrop" tabindex="0">
-            <input type="file" id="pfFileInput" hidden>
-            <div class="dz-empty" id="pfFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="pfFileList" hidden></div>
-          </div>
-          <div class="err" id="pfFileErr"></div>
-        </div>
+        <textarea id="pfNotes" hidden></textarea>
         <button class="go" id="pfGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run planning check</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="pfErr"></div>
@@ -286,22 +244,10 @@
       <div class="panel-b">
         <div class="field">
           <label for="anTask">Backlog task</label>
-          <textarea id="anTask" style="min-height:96px" placeholder="Ticket key or task description"></textarea>
+          <div class="composer"><textarea id="anTask" placeholder="Ticket key or task description. Add any context you want the agent to consider."></textarea><div class="dropzone" id="anFileDrop" tabindex="0"><input type="file" id="anFileInput" hidden><div class="dz-empty" id="anFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="anFileList" hidden></div></div></div><div class="err" id="anFileErr"></div>
           <div class="hint" id="anHint"></div>
         </div>
-        <div class="field">
-          <label for="anNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="anNotes" placeholder="Findings from Planning or other notes"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="anFileDrop" tabindex="0">
-            <input type="file" id="anFileInput" hidden>
-            <div class="dz-empty" id="anFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="anFileList" hidden></div>
-          </div>
-          <div class="err" id="anFileErr"></div>
-        </div>
+        <textarea id="anNotes" hidden></textarea>
         <button class="go" id="anGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis check</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="anErr"></div>
@@ -325,31 +271,12 @@
         <div class="qenv" id="exEnv"></div>
         <div class="field">
           <label for="exProcess">Procedure from Phase 5</label>
-          <textarea id="exProcess" style="min-height:120px" placeholder="Procedure to run"></textarea>
+          <div class="composer"><textarea id="exProcess" placeholder="Paste the procedure to run. Add any context you want the agent to consider."></textarea><div class="dropzone" id="exFileDrop" tabindex="0"><input type="file" id="exFileInput" hidden><div class="dz-empty" id="exFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="exFileList" hidden></div></div></div><div class="err" id="exFileErr"></div>
           <div class="hint" id="exHint"></div>
           <div class="cnt" id="exCnt" style="margin-top:6px;text-align:right"></div>
         </div>
-        <div class="field">
-          <label for="exNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="exNotes" placeholder="For example, a retest of a defect from the last run"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="exFileDrop" tabindex="0">
-            <input type="file" id="exFileInput" hidden>
-            <div class="dz-empty" id="exFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="exFileList" hidden></div>
-          </div>
-          <div class="err" id="exFileErr"></div>
-        </div>
-        <div class="field">
-          <label for="exScope">Tools <span class="opt">Affects cost and speed</span></label>
-          <select id="exScope">
-            <option value="auto">Only the tools this process needs</option>
-            <option value="all">All tools</option>
-          </select>
-          <div class="hint"></div>
-        </div>
+        <textarea id="exNotes" hidden></textarea>
+        <select id="exScope" hidden><option value="auto" selected>auto</option></select>
         <button class="go" id="exGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run execution</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="exErr"></div>
@@ -372,22 +299,10 @@
       <div class="panel-b">
         <div class="field">
           <label for="cpTask">Completed task</label>
-          <textarea id="cpTask" style="min-height:96px" placeholder="Ticket key of a finished task"></textarea>
+          <div class="composer"><textarea id="cpTask" placeholder="Ticket key of a finished task. Add any context you want the explanation to cover."></textarea><div class="dropzone" id="cpFileDrop" tabindex="0"><input type="file" id="cpFileInput" hidden><div class="dz-empty" id="cpFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="cpFileList" hidden></div></div></div><div class="err" id="cpFileErr"></div>
           <div class="hint" id="cpHint"></div>
         </div>
-        <div class="field">
-          <label for="cpNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="cpNotes" placeholder="Anything the explanation should focus on"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="cpFileDrop" tabindex="0">
-            <input type="file" id="cpFileInput" hidden>
-            <div class="dz-empty" id="cpFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="cpFileList" hidden></div>
-          </div>
-          <div class="err" id="cpFileErr"></div>
-        </div>
+        <textarea id="cpNotes" hidden></textarea>
         <button class="go" id="cpGo"><svg width="13" height="13"><use href="#i-play"/></svg> Explain this task</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="cpErr"></div>
@@ -430,22 +345,10 @@
       <div class="panel-b">
         <div class="field">
           <label for="dsTask">Scope to design</label>
-          <textarea id="dsTask" style="min-height:96px" placeholder="Ticket key or the requirement to design tests for"></textarea>
+          <div class="composer"><textarea id="dsTask" placeholder="Ticket key or requirement. Add any context you want the agent to consider."></textarea><div class="dropzone" id="dsFileDrop" tabindex="0"><input type="file" id="dsFileInput" hidden><div class="dz-empty" id="dsFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="dsFileList" hidden></div></div></div><div class="err" id="dsFileErr"></div>
           <div class="hint" id="dsHint"></div>
         </div>
-        <div class="field">
-          <label for="dsNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="dsNotes" placeholder="Areas to focus on"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="dsFileDrop" tabindex="0">
-            <input type="file" id="dsFileInput" hidden>
-            <div class="dz-empty" id="dsFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="dsFileList" hidden></div>
-          </div>
-          <div class="err" id="dsFileErr"></div>
-        </div>
+        <textarea id="dsNotes" hidden></textarea>
         <button class="go" id="dsGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test design</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="dsErr"></div>
@@ -468,22 +371,10 @@
       <div class="panel-b">
         <div class="field">
           <label for="imTask">Test design from Phase 4</label>
-          <textarea id="imTask" style="min-height:96px" placeholder="Ticket key or the test design report"></textarea>
+          <div class="composer"><textarea id="imTask" placeholder="Ticket key or test design report. Add any context you want the agent to consider."></textarea><div class="dropzone" id="imFileDrop" tabindex="0"><input type="file" id="imFileInput" hidden><div class="dz-empty" id="imFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="imFileList" hidden></div></div></div><div class="err" id="imFileErr"></div>
           <div class="hint" id="imHint"></div>
         </div>
-        <div class="field">
-          <label for="imNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="imNotes" placeholder="Risk list or scope from earlier phases"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="imFileDrop" tabindex="0">
-            <input type="file" id="imFileInput" hidden>
-            <div class="dz-empty" id="imFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="imFileList" hidden></div>
-          </div>
-          <div class="err" id="imFileErr"></div>
-        </div>
+        <textarea id="imNotes" hidden></textarea>
         <button class="go" id="imGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run implementation</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="imErr"></div>
@@ -524,28 +415,12 @@
         <div class="qenv" id="aEnv"></div>
         <div class="field">
           <label for="aCase">Test case</label>
-          <textarea id="aCase" style="min-height:120px" placeholder="Test case to automate"></textarea>
+          <div class="composer"><textarea id="aCase" placeholder="Describe the test case. Add any context you want the agent to consider."></textarea><div class="dropzone" id="aFileDrop" tabindex="0"><input type="file" id="aFileInput" hidden><div class="dz-empty" id="aFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="aFileList" hidden></div></div></div><div class="err" id="aFileErr"></div>
           <div class="hint" id="aHint"></div>
           <div class="cnt" id="aCnt" style="margin-top:6px;text-align:right"></div>
         </div>
-        <div class="field">
-          <label for="aFolder">Folder in tests <span class="opt">Optional</span></label>
-          <input id="aFolder" list="folderList" placeholder="Picked by topic if left blank" autocomplete="off">
-          <datalist id="folderList"></datalist>
-        </div>
-        <div class="field">
-          <label for="aNotes">Additional context <span class="opt">Optional</span></label>
-          <textarea id="aNotes" placeholder="For example, extend an existing test file"></textarea>
-        </div>
-        <div class="field">
-          <label>Data files <span class="opt">Optional</span></label>
-          <div class="dropzone" id="aFileDrop" tabindex="0">
-            <input type="file" id="aFileInput" hidden>
-            <div class="dz-empty" id="aFileEmpty">Drop files here, click to browse or paste with Ctrl+V</div>
-            <div class="dz-list" id="aFileList" hidden></div>
-          </div>
-          <div class="err" id="aFileErr"></div>
-        </div>
+        <input id="aFolder" hidden><datalist id="folderList"></datalist>
+        <textarea id="aNotes" hidden></textarea>
         <button class="go" id="aGo"><svg width="13" height="13"><use href="#i-code"/></svg> Write the test</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
         <div class="err" id="aErr"></div>

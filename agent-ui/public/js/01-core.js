@@ -362,6 +362,16 @@ function wireFileField(key,ids){
   drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');take([...e.dataTransfer.files])};
   drop.onpaste=e=>{const fl=e.clipboardData&&e.clipboardData.files;if(fl&&fl.length){e.preventDefault();take([...fl])}};
   list.onclick=e=>{const b=e.target.closest('[data-rm]');if(b){e.stopPropagation();FILES[key].splice(+b.dataset.rm,1);render()}};
+  /* The task textarea and the attach bar form one box: files can be dropped or pasted straight into the text. */
+  const box=drop.closest('.composer'), ta=box&&box.querySelector('textarea');
+  if(ta){
+    ta.addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){e.preventDefault();box.classList.add('drag')}});
+    ta.addEventListener('dragleave',()=>box.classList.remove('drag'));
+    ta.addEventListener('drop',e=>{const fl=e.dataTransfer&&e.dataTransfer.files;box.classList.remove('drag');if(fl&&fl.length){e.preventDefault();take([...fl])}});
+    ta.addEventListener('paste',e=>{const fl=e.clipboardData&&e.clipboardData.files;if(fl&&fl.length){e.preventDefault();take([...fl])}});
+    drop.addEventListener('dragover',()=>box.classList.add('drag'));
+    drop.addEventListener('drop',()=>box.classList.remove('drag'));
+  }
   render();
   FILE_UI[key]={clear:()=>{FILES[key]=[];err.textContent='';render()}};
 }

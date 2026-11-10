@@ -1543,3 +1543,15 @@ input,textarea,select{border-color:var(--line2)}
 .dcard h4 .tag{display:none}
 .ex{font-family:var(--sans);font-size:13px;background:var(--surface2)}
 .ex b{color:var(--ink);font-weight:500}
+
+/* ================= composer: one box for the task, its context and attached files ================= */
+.composer{border:1px solid var(--line2);border-radius:var(--r-sm);background:var(--field);transition:border-color .15s,box-shadow .15s}
+.composer:focus-within{border-color:var(--acc-line);box-shadow:0 0 0 3px var(--acc-soft)}
+.composer.drag{border-color:var(--acc);background:var(--acc-soft)}
+.composer textarea{display:block;border:0;border-radius:var(--r-sm) var(--r-sm) 0 0;background:transparent;min-height:140px;resize:vertical}
+.composer textarea:focus,.composer textarea:hover{border:0;box-shadow:none}
+.composer .dropzone{border:0;border-top:1px solid var(--line);border-radius:0 0 var(--r-sm) var(--r-sm);padding:8px 12px;background:var(--surface2);min-height:0}
+.composer .dropzone:hover{background:var(--surface3)}
+.composer .dz-empty{display:flex;align-items:center;gap:6px;text-align:left;font-size:12.5px;color:var(--ink2)}
+.composer .dz-or{color:var(--ink4)}
+.composer .dz-list{gap:5px}
