@@ -1,5 +1,5 @@
-// Flawtrace: setup wizard. Opens on the first visit and stays open until the test environment API is connected,
-// because without it no agent can do anything. It shows the Sources panels one at a time (the same forms, so
+// Flawtrace: setup wizard. Opens on the first visit and can be closed at any time (nothing is mandatory; the API is
+// needed only to run tests, and the banner keeps reminding until it is connected). It shows the Sources panels one at a time (the same forms, so
 // saving and importing work exactly as on the Sources page) and ends with what the agents will learn from.
 const SETUP={i:0,panels:[],homes:[],open:false};
 const SETUP_STEPS=[
@@ -37,8 +37,7 @@ function setupRender(){
   const next=$('#setupNext');
   next.textContent=SETUP.i===5?'Start using Flawtrace':'Next';
   next.disabled=false;
-  $('#setupHint').textContent=SETUP.i===0&&!ready?'Required to finish the setup. You can fill in the other steps first.':SETUP.i===5&&!ready?'Connect the API in step 1 to finish the setup.':'';
-  if(SETUP.i===5)next.disabled=!ready;
+  $('#setupHint').textContent=!ready?'Optional. Close this window any time; the API is needed only to run tests.':'';
 }
 function setupRestore(p){const i=setupPanels().indexOf(p);const h=SETUP.homes[i];if(h&&h.parentNode)h.replaceWith(p)}
 
@@ -74,7 +73,6 @@ async function openSetup(start){
   setupRender();
 }
 function closeSetup(){
-  if(!setupApiReady())return;
   setupPanels().forEach(setupRestore);
   SETUP.open=false;$('#setupModal').hidden=true;document.body.classList.remove('modal-open');
   try{localStorage.setItem('setup.seen','1')}catch(_){}
@@ -84,11 +82,13 @@ function setupGo(i){SETUP.i=Math.max(0,Math.min(SETUP_STEPS.length-1,i));setupRe
 
 $('#setupNext').onclick=()=>{if(SETUP.i===5)return closeSetup();setupGo(SETUP.i+1)};
 $('#setupBack').onclick=()=>setupGo(SETUP.i-1);
+$('#setupClose').onclick=closeSetup;
+$('#setupModal').addEventListener('mousedown',e=>{if(e.target===$('#setupModal'))closeSetup()});
 $('#setupSkip').onclick=()=>setupGo(SETUP.i+1);
 $('#setupSteps').addEventListener('click',e=>{const li=e.target.closest('li');if(!li)return;const i=+li.dataset.i;setupGo(i)});
 $('#setupGuide').onclick=()=>$('#srcGuide').click();
 $('#srcWizard').onclick=()=>openSetup(0);
-// Esc and clicks outside never close the wizard before the API is connected.
+// Esc, the close button and a click outside close the wizard at any time; nothing in it is mandatory.
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&SETUP.open&&$('#guideModal').hidden){e.stopPropagation();closeSetup()}},true);
 // Saving inside the wizard re-renders the ticks and unlocks Next.
 const _srcRender=renderSources;
@@ -98,4 +98,4 @@ $('#srcTry').addEventListener('click',()=>{if(SETUP.open&&setupApiReady())closeS
 
 /* First visit: the wizard replaces the old redirect to Sources. */
 srcFirstRun=function(){};
-srcStatus.then(s=>{if(s&&!s.api)openSetup(0)});
+srcStatus.then(s=>{let seen=false;try{seen=!!localStorage.getItem('setup.seen')}catch(_){}if(s&&!s.api&&!seen)openSetup(0)});

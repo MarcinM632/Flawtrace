@@ -1888,3 +1888,5 @@ body.modal-open{overflow:hidden}
 .crumb::before{content:"";display:inline-block}
 .nav-group::after{display:block}
 .setup-stage .row2+.row2,.setup-stage .row2+.field{margin-top:16px}
+
+.setup-head-acts{display:flex;gap:8px;align-items:center}

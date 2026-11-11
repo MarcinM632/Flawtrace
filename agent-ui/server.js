@@ -594,12 +594,18 @@ process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e &
 // próbując nasłuchiwać aż ten się zwolni (listenWithRetry), dopiero potem ten proces się kończy —
 // więc nawet gdy coś pójdzie nie po kolei, nowy proces i tak w końcu przejmie port.
 function listenWithRetry(srv, port, host, cb, triesLeft = 15) {
-  srv.on('error', (err) => {
+  // One handler per attempt, removed on the next one: a handler left behind would fire again on every later
+  // EADDRINUSE and multiply the retries until the process ran out of memory.
+  const onListening = () => { srv.removeListener('error', onError); cb(); };
+  const onError = (err) => {
+    srv.removeListener('listening', onListening);
     if (err.code === 'EADDRINUSE' && triesLeft > 0) { setTimeout(() => listenWithRetry(srv, port, host, cb, triesLeft - 1), 400); return; }
     console.error('Could not start the server:', err.message);
     process.exit(1);
-  });
-  srv.listen(port, host, cb);
+  };
+  srv.once('error', onError);
+  srv.once('listening', onListening);
+  srv.listen(port, host);
 }
 
 loadAll();
