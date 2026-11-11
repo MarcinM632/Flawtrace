@@ -387,6 +387,11 @@ const server = http.createServer(async (req, res) => {
       if (a.mode === 'autotest') {
         extra.layer = b.layer === 'ui' ? 'ui' : 'api';
         extra.folder = String(b.folder || '').trim().replace(/[^\w/-]/g, '');
+        if (extra.layer === 'ui' && b.url) {
+          let u; try { u = new URL(String(b.url).trim()); } catch (_) { return json(res, 400, { error: 'The page link is not a valid address.' }); }
+          if (!/^https?:$/.test(u.protocol) || u.username || u.password) return json(res, 400, { error: 'Use an http(s) link without a user name or password in it.' });
+          extra.url = u.href;
+        }
         // Testy UI żyją pod tests/ui/, testy API poza nim: zakładka pytest nie może pisać do tests/ui/ i odwrotnie.
         if (extra.folder && extra.layer === 'ui' && !/^ui(\/|$)/.test(extra.folder)) extra.folder = 'ui/' + extra.folder;
         if (extra.layer === 'api' && /^ui(\/|$)/.test(extra.folder)) return json(res, 400, { error: 'tests/ui/ holds Playwright tests. Pick another area, or switch to the Playwright tab.' });

@@ -219,6 +219,8 @@ function runGuard(mode, file) {
 }
 
 async function guardedPytest(r, targets, secrets, repo, envFile) {
+  // A test written from a public link touches no PLAT environment: no vault credentials, no Hedge rule to guard, no lock.
+  if (r.meta.url) return runPytest(r, targets, {}, repo, envFile);
   if (process.env.QA_HEDGE_GUARD === '0') return runPytest(r, targets, secrets, repo, envFile); // testy aplikacji pracują na atrapie bramki
   const release = await envLock.acquire(`Autotests run ${r.meta.id}`,
     (h) => emit(r, { type: 'status', text: `Waiting for the environment: ${h.label} is running tests on it…` }));
@@ -394,7 +396,7 @@ function failedTests(output) {
  */
 async function verifyAutotests(r, snapBefore, fixWith, env = environment.profile()) {
   const meta = r.meta;
-  const sec = await loadTestSecrets(env.vaultProfile);
+  const sec = meta.url ? { ok: true, values: {} } : await loadTestSecrets(env.vaultProfile);
   if (!sec.ok) return { state: 'unverified', summary: sec.reason, attempts: [] };
   const attempts = [];
   const cancelled = () => meta.status === 'cancelled';

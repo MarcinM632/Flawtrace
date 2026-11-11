@@ -428,6 +428,7 @@ function setALayer(l){
   const L=LAYER_UI[aLayer];
   document.querySelectorAll('#aLayer button').forEach(b=>{const on=b.dataset.l===aLayer;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
   $('#aTitle').textContent=L.title;
+  $('#aUrlField').hidden=aLayer!=='ui';
   $('#aCase').placeholder=L.placeholder;
   $('#aFolder').placeholder=L.folder;
   $('#aNotes').placeholder=L.notes;
@@ -441,7 +442,7 @@ $('#aLayer').onclick=e=>{const b=e.target.closest('button[data-l]');if(b&&b.data
 $('#aGo').onclick=async()=>{
   $('#aErr').textContent='';$('#aGo').disabled=true;
   try{
-    const m=await post('/api/runs',{agent:'autotest',layer:aLayer,ticket:$('#aCase').value,notes:$('#aNotes').value,folder:$('#aFolder').value,dataFiles:FILES.autotest});
+    const m=await post('/api/runs',{agent:'autotest',layer:aLayer,url:aLayer==='ui'?$('#aUrl').value.trim():'',ticket:$('#aCase').value,notes:$('#aNotes').value,folder:$('#aFolder').value,dataFiles:FILES.autotest});
     await open(m.id);
     FILE_UI.autotest.clear();
   }catch(e){$('#aErr').textContent=e.message}
