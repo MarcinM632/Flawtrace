@@ -219,7 +219,7 @@ function runGuard(mode, file) {
 }
 
 async function guardedPytest(r, targets, secrets, repo, envFile) {
-  // A test written from a public link touches no PLAT environment: no vault credentials, no Hedge rule to guard, no lock.
+  // A test built from a public page touches no PLAT environment: no vault credentials, no Hedge rule to guard, no lock.
   if (r.meta.url) return runPytest(r, targets, {}, repo, envFile);
   if (process.env.QA_HEDGE_GUARD === '0') return runPytest(r, targets, secrets, repo, envFile); // testy aplikacji pracują na atrapie bramki
   const release = await envLock.acquire(`Autotests run ${r.meta.id}`,

@@ -16,8 +16,20 @@ function summarizeEndpoint(name, input) {
   return arg ? `${short} · ${String(arg).slice(0, 40)}` : short;
 }
 
+// Steps of the browser the agent drives with Playwright MCP (QA MCP with a page link). They are part of the flow
+// that "Create autotests" replays, so they get their own event type, like endpoint calls.
+const BROWSER_PREFIX = 'mcp__playwright__';
+const isBrowser = (name) => typeof name === 'string' && name.startsWith(BROWSER_PREFIX);
+function summarizeBrowser(name, input) {
+  const short = name.slice(BROWSER_PREFIX.length);
+  const i = input || {};
+  const what = i.url || i.element || (Array.isArray(i.fields) ? i.fields.map((f) => f.name || f.ref).filter(Boolean).join(', ') : '') || i.text || i.key || '';
+  return what ? `${short} · ${String(what).replace(/\s+/g, ' ').slice(0, 120)}` : short;
+}
+
 function summarizeTool(name, input) {
   if (isEndpoint(name)) return summarizeEndpoint(name, input);
+  if (isBrowser(name)) return summarizeBrowser(name, input);
   if (!input) return name;
   if (name === 'Bash') return 'Bash: ' + String(input.command || '').split('\n')[0].slice(0, 160);
   if (name === 'Agent' || name === 'Task') return `Subagent ${input.subagent_type || ''}: ${input.description || ''}`;
@@ -77,6 +89,10 @@ function flowSteps(events, outMax) {
       // Ponawiany odczyt (czekanie na stan) zwijamy do jednej linii z ×N i odpowiedzią z OSTATNIEGO odczytu.
       if (call === prev) { rep++; lines[lines.length - 1].out = out; continue; }
       flush(); lines.push({ text: call, out }); prev = call; rep = 1;
+    } else if (e.type === 'browser') {
+      // Page snapshots are the agent's eyes, not part of the flow; the steps that act on the page are.
+      if (/browser_(snapshot|take_screenshot|console_messages|network_requests|wait_for)/.test(e.text)) continue;
+      flush(); lines.push({ text: 'BROWSER ' + String(e.text).replace('browser_', '') + (e.input ? ' ' + e.input : ''), out: '' });
     } else if (e.type === 'text' && e.who === 'main' && !/^\s*STATUS:/.test(e.text)) {
       flush(); lines.push({ text: 'note: ' + String(e.text).replace(/\s+/g, ' ').trim().slice(0, 300), out: '' });
     }
@@ -114,6 +130,7 @@ module.exports = {
   endpointContracts,
   extractReport,
   flowFromRun,
+  isBrowser,
   isEndpoint,
   summarizeTool,
 };

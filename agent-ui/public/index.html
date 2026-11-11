@@ -217,6 +217,11 @@
       <div class="panel-b">
         <div class="qenv" id="qEnv"></div>
         <div class="field">
+          <label for="qUrl">Page link <span class="muted">optional</span></label>
+          <input id="qUrl" type="url" inputmode="url" placeholder="https://example.com/login" autocomplete="off" spellcheck="false">
+          <div class="hint">With a link the agent also opens the page in its own browser and does the process on it. Afterwards <b>Create autotests</b> turns that run into a Playwright test.</div>
+        </div>
+        <div class="field">
           <label for="qProcess">Test process</label>
           <div class="composer"><textarea id="qProcess" placeholder="Describe the test process. Add any context you want the agent to consider."></textarea><div class="dropzone" id="qFileDrop" tabindex="0"><input type="file" id="qFileInput" hidden><div class="dz-empty" id="qFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="qFileList" hidden></div></div></div><div class="err" id="qFileErr"></div>
           <div class="hint" id="qHint"></div>
@@ -442,11 +447,6 @@
       <div class="panel-h"><h2 id="aTitle">Write an API test</h2></div>
       <div class="panel-b">
         <div class="qenv" id="aEnv"></div>
-        <div class="field" id="aUrlField" hidden>
-          <label for="aUrl">Page link <span class="muted">optional</span></label>
-          <input id="aUrl" type="url" inputmode="url" placeholder="https://example.com/login" autocomplete="off" spellcheck="false">
-          <div class="hint">With a link the agent opens the page in its own browser, walks the flow you describe below and writes the Playwright test from what it saw. Without one it writes the test from your description only.</div>
-        </div>
         <div class="field">
           <label for="aCase">Test case</label>
           <div class="composer"><textarea id="aCase" placeholder="Describe the test case. Add any context you want the agent to consider."></textarea><div class="dropzone" id="aFileDrop" tabindex="0"><input type="file" id="aFileInput" hidden><div class="dz-empty" id="aFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="aFileList" hidden></div></div></div><div class="err" id="aFileErr"></div>
