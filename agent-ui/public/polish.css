@@ -1,20 +1,16 @@
-/* Flawtrace — polish layer. Loaded after app.css: colour accent, depth, motion and layout fixes.
+/* Flawtrace — polish layer. Loaded after app.css: depth, motion and layout fixes, still black and white.
    Everything here is token-driven or a small override, so removing this file brings back the plain look. */
 
-/* ================= tokens: an indigo accent with a teal counterpoint, softer depth ================= */
+/* ================= tokens: stays black and white; only depth and motion are added ================= */
 :root{
-  --acc:#4f46e5; --acc-h:#4338ca; --acc-ink:#ffffff; --acc-tx:#4338ca;
-  --acc-soft:#eeedfd; --acc-line:#6f69ee;
-  --acc-2:#0ea5a4;
-  --grad:linear-gradient(135deg,#5b52f0 0%,#4f46e5 45%,#7c3aed 100%);
-  --grad-soft:linear-gradient(135deg,#eeedfd 0%,#f1ecfe 100%);
-  --bg:#f6f5f8; --bg2:#efedf4;
-  --surface2:#fbfafd; --surface3:#f2f0f7;
-  --line:#e8e5ee; --line2:#d8d4e2;
-  --info:#4338ca; --info-soft:#eeedfd;
-  --shadow:0 1px 2px rgba(31,27,60,.05),0 10px 28px -16px rgba(31,27,60,.18);
-  --shadow-lift:0 2px 4px rgba(31,27,60,.06),0 18px 40px -18px rgba(79,70,229,.30);
-  --glow:0 8px 22px -8px rgba(79,70,229,.60);
+  --acc:#1c1c1c; --acc-h:#333333; --acc-ink:#ffffff; --acc-tx:#1c1c1c;
+  --acc-soft:#ecebe8; --acc-line:#1c1c1c;
+  --acc-2:#6e6d68;
+  --grad:linear-gradient(135deg,#34332f 0%,#1c1c1c 55%,#0e0e0e 100%);
+  --grad-soft:linear-gradient(135deg,#f0eeeb 0%,#e9e7e3 100%);
+  --shadow:0 1px 2px rgba(28,28,28,.05),0 10px 28px -16px rgba(28,28,28,.20);
+  --shadow-lift:0 2px 4px rgba(28,28,28,.06),0 18px 40px -18px rgba(28,28,28,.32);
+  --glow:0 8px 22px -8px rgba(28,28,28,.55);
   --ease:cubic-bezier(.22,1,.36,1);
 }
 
@@ -23,9 +19,9 @@ body{background:var(--bg)}
 body::before{
   content:"";position:fixed;inset:-20vmax;z-index:0;pointer-events:none;
   background:
-    radial-gradient(38vmax 38vmax at 12% 8%,rgba(99,102,241,.24),transparent 62%),
-    radial-gradient(34vmax 34vmax at 92% 14%,rgba(14,165,164,.17),transparent 62%),
-    radial-gradient(42vmax 42vmax at 70% 96%,rgba(168,85,247,.17),transparent 62%);
+    radial-gradient(38vmax 38vmax at 12% 8%,rgba(28,28,28,.07),transparent 62%),
+    radial-gradient(34vmax 34vmax at 92% 14%,rgba(28,28,28,.05),transparent 62%),
+    radial-gradient(42vmax 42vmax at 70% 96%,rgba(28,28,28,.06),transparent 62%);
   animation:drift 38s ease-in-out infinite alternate;
 }
 @keyframes drift{
@@ -36,20 +32,20 @@ body::before{
 
 /* ================= sidebar ================= */
 .sidebar{
-  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(250,249,253,.66));
+  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(250,249,248,.66));
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
 }
 .mark{
   background:var(--grad);box-shadow:var(--glow);
   animation:markPulse 5s ease-in-out infinite;
 }
-@keyframes markPulse{0%,100%{box-shadow:0 8px 22px -8px rgba(79,70,229,.55)}50%{box-shadow:0 10px 30px -6px rgba(124,58,237,.75)}}
+@keyframes markPulse{0%,100%{box-shadow:0 8px 22px -8px rgba(28,28,28,.55)}50%{box-shadow:0 10px 30px -6px rgba(28,28,28,.75)}}
 .nav button{transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease)}
-.nav button:hover{transform:translateX(2px);background:rgba(79,70,229,.07)}
+.nav button:hover{transform:translateX(2px);background:rgba(28,28,28,.06)}
 .nav button:hover svg{color:var(--acc)}
 .nav button.on{
   background:var(--grad);color:#fff;border-color:transparent;
-  box-shadow:0 8px 20px -10px rgba(79,70,229,.7);
+  box-shadow:0 8px 20px -10px rgba(28,28,28,.7);
 }
 .nav button.on svg{color:#fff}
 .nav button.on::before{display:none}
@@ -76,7 +72,7 @@ body::before{
 header.topbar{
   padding-left:max(36px,calc((100% - 1520px)/2 + 36px));
   padding-right:max(36px,calc((100% - 1520px)/2 + 36px));
-  background:rgba(246,245,248,.72);
+  background:rgba(245,243,242,.72);
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
 }
 .crumb{color:var(--acc);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:11px}
@@ -110,26 +106,26 @@ main > .col > *:nth-child(4){animation-delay:.18s}
 /* ================= buttons ================= */
 .go{
   background:var(--grad);border-color:transparent;overflow:hidden;
-  box-shadow:0 10px 24px -10px rgba(79,70,229,.7),0 1px 0 rgba(255,255,255,.35) inset;
+  box-shadow:0 10px 24px -10px rgba(28,28,28,.7),0 1px 0 rgba(255,255,255,.35) inset;
   transition:transform .2s var(--ease),box-shadow .25s var(--ease),filter .2s var(--ease);
 }
 .go::after{
   content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);
   transform:translateX(-120%);transition:transform .7s var(--ease);
 }
-.go:hover:not(:disabled){background:var(--grad);filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 16px 30px -12px rgba(79,70,229,.8)}
+.go:hover:not(:disabled){background:var(--grad);filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 16px 30px -12px rgba(28,28,28,.8)}
 .go:hover:not(:disabled)::after{transform:translateX(120%)}
 .go:active:not(:disabled){transform:translateY(0) scale(.99)}
 .btn{transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),transform .18s var(--ease),box-shadow .2s var(--ease)}
 .btn:hover{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-tx);transform:translateY(-1px)}
 .btn:active{transform:translateY(0)}
-.seg button.on{background:var(--grad);box-shadow:0 6px 16px -8px rgba(79,70,229,.8)}
+.seg button.on{background:var(--grad);box-shadow:0 6px 16px -8px rgba(28,28,28,.8)}
 .seg button{transition:background .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease),transform .2s var(--ease)}
 .seg button:hover:not(:disabled):not(.on){background:var(--acc-soft);color:var(--acc-tx)}
 
 /* ================= form fields ================= */
 input,textarea,select{transition:border-color .18s var(--ease),box-shadow .2s var(--ease),background .18s var(--ease)}
-input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:0 0 0 4px rgba(79,70,229,.14)}
+input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:0 0 0 4px rgba(28,28,28,.14)}
 .dropzone{transition:border-color .2s var(--ease),background .2s var(--ease),transform .2s var(--ease)}
 .dropzone:hover,.dropzone:focus-visible{border-color:var(--acc-line);background:var(--acc-soft)}
 label .muted,label .opt{font-weight:400;color:var(--ink4);font-size:12px}
@@ -164,7 +160,7 @@ a{color:var(--acc-tx)}
 .list-empty{border-radius:var(--r-sm)}
 
 /* ================= setup window ================= */
-.setup-rail{background:linear-gradient(160deg,#1a1740 0%,#1c1c1c 60%,#12332f 130%)}
+.setup-rail{background:linear-gradient(160deg,#2a2a28 0%,#1c1c1c 60%,#0e0e0e 130%)}
 .setup-steps li.on{background:#fff}
 .setup-steps li.on .ss-n{background:var(--grad);border-color:transparent}
 .setup-steps li{transition:background .25s var(--ease),color .25s var(--ease),transform .25s var(--ease)}
