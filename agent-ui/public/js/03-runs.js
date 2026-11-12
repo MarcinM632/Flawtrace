@@ -13,11 +13,10 @@ const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',autotest:'#aListCount',f
    report, so it is never a link in this chain — "push to next phase" simply does not exist there. */
 const FLOW_NEXT={planning:'analysis',analysis:'design',design:'implementation',implementation:'execution',execution:'completion'};
 const FLOW_LABEL={planning:'Planning',analysis:'Analysis',design:'Design',implementation:'Implementation',execution:'Execution',completion:'Completion'};
-/* Default is one prompt through the whole chain. "Pause after each phase" turns the automatic
-   hand-over off, so each next phase starts only when the tester pushes it. */
+/* One prompt runs the whole chain: each finished phase is handed to the next one automatically; the
+   Push button on a report stays available for re-running a single step. */
 let flowMode='auto',flowAutoSince=0;
 try{
-  if(localStorage.getItem('flow.step')==='1')flowMode='manual';
   flowAutoSince=Number(localStorage.getItem('flow.autoSince'))||0;
 }catch(_){}
 /* Arms the automatic hand-over from this moment only, so runs finished long before are never pushed on. */
@@ -57,12 +56,6 @@ async function autoPushCheck(list){
     finally{flowPushing.delete(r.id)}
   }
 }
-$('#flStep').checked=flowMode==='manual';
-$('#flStep').onchange=e=>{
-  flowMode=e.target.checked?'manual':'auto';
-  try{localStorage.setItem('flow.step',e.target.checked?'1':'0')}catch(_){}
-  if(flowMode==='auto')armFlow();
-};
 const LIST_EMPTY={
   runs:'No analyses yet. Run the first one above.',
   qamcp:'No test processes run yet. Describe one above.',

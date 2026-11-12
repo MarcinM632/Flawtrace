@@ -1910,3 +1910,14 @@ body.modal-open{overflow:hidden}
 .fl-s.done .st{color:var(--ok)}
 .fl-s.running .st{color:var(--warn)}
 .fl-s.failed .st{color:var(--bad)}
+
+/* ================= one field: the prompt box holds text, links, files and the run button ================= */
+.composer{display:flex;flex-wrap:wrap;align-items:center}
+.composer textarea{flex:1 0 100%;min-height:120px}
+.composer .dropzone{flex:1;min-width:0;border:0;background:transparent;padding:8px 10px}
+.composer .dropzone:hover{background:transparent}
+.composer .dz-or{display:none}
+.composer .dz-empty{color:var(--ink3)}
+.composer .go{flex:0 0 auto;width:auto;height:34px;margin:0 8px 8px 0;padding:0 14px}
+.field:has(.composer)>label,.kbd-hint,.fl-step{display:none}
+.panel-b:has(.composer) .qenv:empty{display:none}
