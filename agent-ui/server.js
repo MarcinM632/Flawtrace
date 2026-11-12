@@ -19,6 +19,7 @@ const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
 const { cancelSuiteRun, listSuite, startSuiteRun, suite, suiteFileOk, suiteSummary } = require('./lib/suite');
 const { collectCheck, discardStaged, saveStaged } = require('./lib/autotest-repo');
+const { isProject: isProjectStack, stackOf } = require('./lib/stacks');
 const toolsLib = require('./lib/tools');
 const bugsLib = require('./lib/bugs');
 const suiteLib = require('./lib/suite');
@@ -384,7 +385,10 @@ const server = http.createServer(async (req, res) => {
       }
       if ([...runs.values()].some((r) => r.meta.status === 'running' && r.meta.agent === b.agent && r.meta.ticket === ticket)) return json(res, 409, { error: 'This analysis is already running' });
       const extra = {};
-      if (a.mode === 'autotest') {
+      if (a.mode === 'autotest' && isProjectStack(b.stack)) {
+        extra.stack = b.stack;
+        extra.layer = stackOf(b.stack).layer;
+      } else if (a.mode === 'autotest') {
         extra.layer = b.layer === 'ui' ? 'ui' : 'api';
         extra.folder = String(b.folder || '').trim().replace(/[^\w/-]/g, '');
         // Testy UI żyją pod tests/ui/, testy API poza nim: zakładka pytest nie może pisać do tests/ui/ i odwrotnie.

@@ -2000,3 +2000,11 @@ main{max-width:1680px;padding:20px 28px 40px;gap:16px}
 input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:0 0 0 4px rgba(41,181,232,.16)}
 .setup-steps li.on .ss-n,.src-chip.on::before,.setup-src span.on i{background:var(--acc);border-color:var(--acc)}
 .setup-banner{background:var(--acc)}
+
+/* ================= Autotests: language and tool tiles ================= */
+.at-stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.at-stack button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:10px 12px}
+.at-stack button b{font-weight:600}
+.at-stack button small{font-size:11px;opacity:.75}
+#view-autotest>.col[data-pane="write"]>.at-stack{grid-column:1/-1}
+.seg[hidden]{display:none}

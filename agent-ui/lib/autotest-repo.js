@@ -54,7 +54,7 @@ function collectCheck(files, repo = AUTOTEST_REPO) {
 function stageRepo(dest) {
   fs.cpSync(AUTOTEST_REPO, dest, {
     recursive: true,
-    filter: (src) => { const n = path.basename(src); return n !== '__pycache__' && n !== '.pytest_cache' && n !== '.git' && n !== 'test-results'; },
+    filter: (src) => { const n = path.basename(src); return n !== '__pycache__' && n !== '.pytest_cache' && n !== '.git' && n !== 'test-results' && n !== 'node_modules' && n !== 'target' && n !== 'playwright-report'; },
   });
 }
 const sha = (file) => crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex');
@@ -74,6 +74,7 @@ function saveStaged(r) {
   const st = m.staging;
   if (!st || st.state !== 'pending') throw Object.assign(new Error('Nothing waiting to be saved for this run'), { code: 409 });
   if (m.status === 'running') throw Object.assign(new Error('Wait until the run has finished'), { code: 409 });
+  if (m.stack) return saveProject(r);
   if (!m.verify || m.verify.state !== 'passed') throw Object.assign(new Error('Only tests that passed on the environment can be saved'), { code: 409 });
   if (!fs.existsSync(st.dir)) throw Object.assign(new Error('The staged copy is gone, so there is nothing to save. Run the case again.'), { code: 410 });
   const files = (m.files || []).filter((f) => /^(tests|utils)\//.test(f.path));
@@ -84,6 +85,25 @@ function saveStaged(r) {
     if (now !== (st.base[f.path] || null)) conflicts.push(f.path);
   }
   if (conflicts.length) throw Object.assign(new Error('These files changed in autotests/ after this run started, so saving would overwrite that work: ' + conflicts.join(', ')), { code: 409 });
+  for (const f of files) {
+    const to = path.join(AUTOTEST_REPO, f.path);
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(path.join(st.dir, f.path), to);
+  }
+  st.state = 'saved'; st.savedAt = Date.now();
+  try { fs.rmSync(st.dir, { recursive: true, force: true }); } catch (_) { /* poczekalnia już niepotrzebna */ }
+  persist(r);
+  return files;
+}
+/** Stos inny niż Python: kopiuje pliki projektu do autotests/<folder>/, nie nadpisując niczego, co już tam jest i różni się treścią. */
+function saveProject(r) {
+  const m = r.meta;
+  const st = m.staging;
+  const files = m.files || [];
+  if (!files.length) throw Object.assign(new Error('There are no files to save'), { code: 409 });
+  if (!fs.existsSync(st.dir)) throw Object.assign(new Error('The staged copy is gone, so there is nothing to save. Run the case again.'), { code: 410 });
+  const conflicts = files.filter((f) => { const real = path.join(AUTOTEST_REPO, f.path); return fs.existsSync(real) && sha(real) !== sha(path.join(st.dir, f.path)); }).map((f) => f.path);
+  if (conflicts.length) throw Object.assign(new Error('These files already exist in autotests/ with different content, so saving would overwrite them: ' + conflicts.join(', ')), { code: 409 });
   for (const f of files) {
     const to = path.join(AUTOTEST_REPO, f.path);
     fs.mkdirSync(path.dirname(to), { recursive: true });

@@ -15,7 +15,7 @@ function savedBlock(m){
     const cls=c.ok===true?'ok':c.ok===false?'bad':'';
     h+='<div class="chk '+cls+'">'+(c.ok===true?'pytest accepts the new tests: ':c.ok===false?'':'')+esc(c.summary||'')+(c.detail?'<pre>'+esc(c.detail)+'</pre>':'')+'</div>';
   }
-  if(v){
+  if(v&&!m.stack){
     const lab={passed:'VERIFIED',flaky:'FLAKY',defect:'POSSIBLE DEFECT',failing:'FAILING',unverified:'NOT RUN'}[v.state]||v.state;
     const cls=v.state==='passed'?'ok':(v.state==='unverified'?'warn':'bad');
     const att=(v.attempts||[]).map(a=>'<div class="at"><b>'+(a.repeat?'Repeat run, all tests':a.only?'Run '+(a.round+1)+', only the '+a.only.length+' that failed':'Run '+(a.round+1))+':</b> '+a.passed+' passed, '+a.failed+' failed'
@@ -24,11 +24,12 @@ function savedBlock(m){
       +'<div class="chk '+cls+' vf"><b>'+lab+'</b> · '+esc(v.summary||'')+att+(v.output?'<details><summary>pytest output</summary><pre>'+esc(v.output)+'</pre></details>':'')+'</div>';
   }
   if(st==='pending'){
-    const ok=v&&v.state==='passed';
+    const proj=!!m.stack;
+    const ok=proj?f.length>0:v&&v.state==='passed';
     h+='<div class="stg"><div class="stg-act">'
       +(ok?'<button class="btn" id="stSave">'+ico('check',13)+' Save to repo</button>':'')
       +'<button class="btn sm" id="stDiscard">Discard</button></div>'
-      +'<div class="stg-note">'+(ok?'These tests passed twice on the environment. They are added to autotests/ only when you click Save.'
+      +'<div class="stg-note">'+(ok?proj?'This is a ready project folder. The app does not run it, so run it yourself with the command above. It is added to autotests/ only when you click Save.':'These tests passed twice on the environment. They are added to autotests/ only when you click Save.'
         :'Only tests that pass on the environment can be saved, so there is no Save button for this result. Nothing was added to autotests/.')+'</div></div>';
   }
   return h;

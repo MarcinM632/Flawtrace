@@ -107,6 +107,26 @@ backend returns for the same filter.`,
     hint:''},
 };
 let AT_META=null, AT_API_HINT='';
+/* Language and tool of the tests the agent writes. Python keeps the full flow (the app runs the tests itself);
+   the other stacks produce a ready project folder with the command to run it. */
+const STACK_UI={
+  python:{label:'Python',layer:null},
+  'ts-playwright':{label:'TypeScript · Playwright',layer:'ui',title:'Write a Playwright test (TypeScript)'},
+  'java-restassured':{label:'Java · REST Assured',layer:'api',title:'Write an API test (Java, REST Assured)'},
+  'java-selenium':{label:'Java · Selenium',layer:'ui',title:'Write a UI test (Java, Selenium)'},
+  'js-cypress':{label:'JavaScript · Cypress',layer:'ui',title:'Write a UI test (JavaScript, Cypress)'},
+};
+let aStack='python'; try{const k=localStorage.getItem('at.stack');if(STACK_UI[k])aStack=k}catch(_){}
+function setAStack(k){
+  aStack=STACK_UI[k]?k:'python';
+  try{localStorage.setItem('at.stack',aStack)}catch(_){}
+  document.querySelectorAll('#aStack button').forEach(b=>{const on=b.dataset.k===aStack;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  const py=aStack==='python';
+  $('#aLayer').hidden=!py;
+  if(!py)setALayer(STACK_UI[aStack].layer);else setALayer(aLayer);
+  if(!py)$('#aTitle').textContent=STACK_UI[aStack].title;
+}
+$('#aStack').onclick=e=>{const b=e.target.closest('button[data-k]');if(b&&b.dataset.k!==aStack)setAStack(b.dataset.k)};
 
 const runItem=r=>`
     <div class="item ${current&&current.id===r.id?'on':''}" data-id="${r.id}" title="${esc(String(r.ticket).slice(0,300))}">
@@ -201,7 +221,7 @@ async function init(){
     return setTimeout(init,4000);
   }
   applyAvailability();
-  setALayer(aLayer);
+  setALayer(aLayer);setAStack(aStack);
   /* Preferuj agenta, który faktycznie ma czym wystartować; gdy żaden nie ma, renderAgents()
      wyjaśni dlaczego, zamiast zostawić pierwszego z listy wyglądającego na wybranego. */
   sel=(analysisAgents().find(a=>a.available)||analysisAgents()[0]||agents[0]).key; bSel=sel;
@@ -357,7 +377,7 @@ $('#aLayer').onclick=e=>{const b=e.target.closest('button[data-l]');if(b&&b.data
 $('#aGo').onclick=async()=>{
   $('#aErr').textContent='';$('#aGo').disabled=true;
   try{
-    const m=await post('/api/runs',{agent:'autotest',layer:aLayer,ticket:$('#aCase').value,notes:$('#aNotes').value,folder:$('#aFolder').value,dataFiles:FILES.autotest});
+    const m=await post('/api/runs',{agent:'autotest',layer:aLayer,stack:aStack,ticket:$('#aCase').value,notes:$('#aNotes').value,folder:$('#aFolder').value,dataFiles:FILES.autotest});
     await open(m.id);
     FILE_UI.autotest.clear();
   }catch(e){$('#aErr').textContent=e.message}
@@ -405,7 +425,7 @@ async function open(id){
   RUN_TABS.forEach(t=>{if(t!==tab)renderOverview(t,tabRuns(t))});
   const t=String(m.ticket);
   const req=[];
-  if(tab==='autotest')req.push(['Type',runLayer(m)==='ui'?'Playwright · UI test':'pytest · API test']);
+  if(tab==='autotest')req.push(['Type',m.stack&&STACK_UI[m.stack]?STACK_UI[m.stack].label:runLayer(m)==='ui'?'Playwright · UI test':'pytest · API test']);
   if(t.length>70)req.push(['Input',esc(t)]);
   if(m.notes)req.push(['Context',esc(m.notes)]);
   if(m.folder)req.push(['Area',`<span class="mono">tests/${esc(m.folder)}</span>`]);
