@@ -1988,3 +1988,15 @@ main{max-width:1680px;padding:20px 28px 40px;gap:16px}
 .rp-row{display:flex;gap:14px;align-items:baseline;justify-content:space-between;padding:8px 12px;font-size:12.5px}
 .rp-row+.rp-row{border-top:1px solid var(--line)}
 .rp-row .note{color:var(--ink3);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ================= selected and hovered tiles stay light: blue tint, never black ================= */
+.btn:hover:not(:disabled),.icon-btn:hover,.navchips a:hover{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc-tx);box-shadow:none}
+.nav button.on{box-shadow:none}
+.seg button.on,.seg button.on b,.seg button.on small,.seg button.on span{color:var(--acc-tx)}
+.seg button.on{background:var(--acc-soft);border-color:var(--acc-line);box-shadow:none}
+.mark{background:var(--acc)}
+::selection{background:var(--hi);color:var(--ink)}
+:focus-visible{outline:2px solid var(--acc-line)}
+input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:0 0 0 4px rgba(41,181,232,.16)}
+.setup-steps li.on .ss-n,.src-chip.on::before,.setup-src span.on i{background:var(--acc);border-color:var(--acc)}
+.setup-banner{background:var(--acc)}
