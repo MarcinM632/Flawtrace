@@ -135,11 +135,11 @@ function paint(m){
     try{
       const next=await post('/api/runs/'+m.id+'/push',{});
       toast('Pushed to '+FLOW_LABEL[next.agent]);
-      showTab(next.agent);
+      showTab('flow');
       await open(next.id);
     }catch(e){toast(e.message,'bad');$('#pushNext').disabled=false}
   };
-  if($('#pushedTag'))$('#pushedTag').onclick=()=>{const t=RUNS.find(r=>r.id===m.pushedTo);showTab(t?t.agent:FLOW_NEXT[m.agent]);open(m.pushedTo)};
+  if($('#pushedTag'))$('#pushedTag').onclick=()=>{const t=RUNS.find(r=>r.id===m.pushedTo);showTab('flow');open(m.pushedTo)};
   if($('#toSummary'))$('#toSummary').onclick=()=>rsAutoOpen(m.ticket);
   if($('#toTests'))$('#toTests').onclick=()=>askComment(m);
   if($('#toQa'))$('#toQa').onclick=()=>{

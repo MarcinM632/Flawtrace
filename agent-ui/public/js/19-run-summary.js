@@ -47,7 +47,7 @@ async function rsShow(ticket){
     </div>
     <ol class="rs-timeline">${d.phases.map(rsPhaseCard).join('')}</ol>`;
   $('#rsBody').querySelectorAll('[data-rs-open]').forEach(b=>{
-    b.onclick=()=>{showTab(b.dataset.rsOpen);open(b.dataset.rsId)};
+    b.onclick=()=>{showTab('flow');open(b.dataset.rsId)};
   });
 }
 

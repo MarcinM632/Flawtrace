@@ -56,22 +56,12 @@
     <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
     <button data-tab="autotest"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">Autotests</span><span class="live" id="nb-autotest" hidden></span><span class="live" id="nb-suiterun" hidden></span></button>
     <div class="nav-group">Test Flow</div>
-    <div class="seg flow-mode" id="flowMode" role="radiogroup" aria-label="Test Flow mode" title="Manual mode waits for you to start each phase. Auto mode starts the next phase as soon as the previous one finishes.">
-      <button type="button" role="radio" data-m="manual" aria-checked="true"><svg width="12" height="12"><use href="#i-check"/></svg>Manual</button>
-      <button type="button" role="radio" data-m="auto" aria-checked="false"><svg width="12" height="12"><use href="#i-bolt"/></svg>Auto</button>
-    </div>
-    <button data-tab="planning"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">1. Planning</span><span class="live" id="nb-planning" hidden></span></button>
-    <button data-tab="tfmonitor"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">2. Monitoring &amp; control</span></button>
-    <button data-tab="analysis"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">3. Analysis</span><span class="live" id="nb-analysis" hidden></span></button>
-    <button data-tab="design"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">4. Design</span><span class="live" id="nb-design" hidden></span></button>
-    <button data-tab="implementation"><svg width="16" height="16"><use href="#i-layers"/></svg><span class="lbl">5. Implementation</span><span class="live" id="nb-implementation" hidden></span></button>
-    <button data-tab="execution"><svg width="16" height="16"><use href="#i-play"/></svg><span class="lbl">6. Execution</span><span class="live" id="nb-execution" hidden></span></button>
-    <button data-tab="completion"><svg width="16" height="16"><use href="#i-check"/></svg><span class="lbl">7. Completion</span><span class="live" id="nb-completion" hidden></span></button>
-    <button data-tab="runsummary"><svg width="16" height="16"><use href="#i-chart"/></svg><span class="lbl">8. Run Summary</span></button>
+    <button data-tab="flow"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Test Flow</span><span class="live" id="nb-flow" hidden></span></button>
     <div class="nav-group">Metrics</div>
     <button data-tab="bugs"><svg width="16" height="16"><use href="#i-bug"/></svg><span class="lbl">Bug registry</span><span class="count" id="bugCount">0</span></button>
     <button data-tab="risk"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Risk</span></button>
     <button data-tab="metricsgen"><svg width="16" height="16"><use href="#i-chart"/></svg><span class="lbl">Metrics generation</span></button>
+    <button data-tab="tfmonitor"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Release monitoring</span></button>
     <div class="nav-group">Reference</div>
     <button data-tab="tools"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">Tools</span></button>
     <button data-tab="doc"><svg width="16" height="16"><use href="#i-book"/></svg><span class="lbl">Manual testing</span></button>
@@ -244,111 +234,34 @@
   <section class="panel detail" id="qDetail"></section>
 </main>
 
-<main id="view-planning" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-flask"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>1</em>  Planning</b><span>Assesses risk, entry and exit criteria and feasibility before a task is implemented.</span></div></div>
+<main id="view-flow" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-spark"/></svg></span>
+    <div class="ph-tx"><b>Test Flow</b><span>One prompt runs the whole process: Planning, Analysis, Design, Implementation, Execution and Completion.</span></div></div>
   <div class="col">
     <section class="panel">
-      <div class="panel-h"><h2>Phase 1. Planning</h2></div>
+      <div class="panel-h"><h2>New flow</h2></div>
       <div class="panel-b">
+        <div class="qenv" id="flEnv"></div>
         <div class="field">
-          <label for="pfTask">Backlog task</label>
-          <div class="composer"><textarea id="pfTask" placeholder="Ticket key or task description. Add any context you want the agent to consider."></textarea><div class="dropzone" id="pfFileDrop" tabindex="0"><input type="file" id="pfFileInput" hidden><div class="dz-empty" id="pfFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="pfFileList" hidden></div></div></div><div class="err" id="pfFileErr"></div>
-          <div class="hint" id="pfHint"></div>
+          <label for="flTask">Backlog task</label>
+          <div class="composer"><textarea id="flTask" placeholder="Ticket key or task description. Add any context you want the agents to consider."></textarea><div class="dropzone" id="flFileDrop" tabindex="0"><input type="file" id="flFileInput" hidden><div class="dz-empty" id="flFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="flFileList" hidden></div></div></div><div class="err" id="flFileErr"></div>
+          <div class="hint" id="flHint"></div>
         </div>
-        <textarea id="pfNotes" hidden></textarea>
-        <button class="go" id="pfGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run planning check</button>
+        <label class="fl-step"><input type="checkbox" id="flStep"> Pause after each phase <span class="muted-note">I start the next phase myself</span></label>
+        <button class="go" id="flGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run the whole flow</button>
         <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="pfErr"></div>
+        <div class="err" id="flErr"></div>
       </div>
     </section>
     <section class="panel">
-      <div class="panel-h"><h2>History</h2><span class="meta-r" id="pfListCount"></span></div>
-      <div class="list" id="pfList"></div>
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="flListCount"></span></div>
+      <div class="list" id="flList"></div>
     </section>
   </div>
-  <section class="panel detail" id="pfDetail"></section>
-</main>
-
-<main id="view-analysis" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-term"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>3</em>  Analysis</b><span>Selects a test strategy, measures the coverage gap and checks the impact on other repositories.</span></div></div>
-  <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Phase 3. Analysis</h2></div>
-      <div class="panel-b">
-        <div class="field">
-          <label for="anTask">Backlog task</label>
-          <div class="composer"><textarea id="anTask" placeholder="Ticket key or task description. Add any context you want the agent to consider."></textarea><div class="dropzone" id="anFileDrop" tabindex="0"><input type="file" id="anFileInput" hidden><div class="dz-empty" id="anFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="anFileList" hidden></div></div></div><div class="err" id="anFileErr"></div>
-          <div class="hint" id="anHint"></div>
-        </div>
-        <textarea id="anNotes" hidden></textarea>
-        <button class="go" id="anGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run analysis check</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="anErr"></div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-h"><h2>History</h2><span class="meta-r" id="anListCount"></span></div>
-      <div class="list" id="anList"></div>
-    </section>
+  <div class="fl-right">
+    <div class="fl-steps" id="flSteps"></div>
+    <section class="panel detail" id="flDetail"></section>
   </div>
-  <section class="panel detail" id="anDetail"></section>
-</main>
-
-<main id="view-execution" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-play"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>6</em>  Execution</b><span>Runs the procedure from Implementation, verifies the results and retests every defect before reporting it.</span></div></div>
-  <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Phase 6. Execution</h2></div>
-      <div class="panel-b">
-        <div class="qenv" id="exEnv"></div>
-        <div class="field">
-          <label for="exProcess">Procedure from Phase 5</label>
-          <div class="composer"><textarea id="exProcess" placeholder="Paste the procedure to run. Add any context you want the agent to consider."></textarea><div class="dropzone" id="exFileDrop" tabindex="0"><input type="file" id="exFileInput" hidden><div class="dz-empty" id="exFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="exFileList" hidden></div></div></div><div class="err" id="exFileErr"></div>
-          <div class="hint" id="exHint"></div>
-          <div class="cnt" id="exCnt" style="margin-top:6px;text-align:right"></div>
-        </div>
-        <textarea id="exNotes" hidden></textarea>
-        <select id="exScope" hidden><option value="auto" selected>auto</option></select>
-        <button class="go" id="exGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run execution</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="exErr"></div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-h"><h2>History</h2><span class="meta-r" id="exListCount"></span></div>
-      <div class="list" id="exList"></div>
-    </section>
-  </div>
-  <section class="panel detail" id="exDetail"></section>
-</main>
-
-<main id="view-completion" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-check"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>7</em>  Completion</b><span>A short explanation of how a finished task works, saved to the knowledge base.</span></div></div>
-  <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Phase 7. Completion</h2></div>
-      <div class="panel-b">
-        <div class="field">
-          <label for="cpTask">Completed task</label>
-          <div class="composer"><textarea id="cpTask" placeholder="Ticket key of a finished task. Add any context you want the explanation to cover."></textarea><div class="dropzone" id="cpFileDrop" tabindex="0"><input type="file" id="cpFileInput" hidden><div class="dz-empty" id="cpFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="cpFileList" hidden></div></div></div><div class="err" id="cpFileErr"></div>
-          <div class="hint" id="cpHint"></div>
-        </div>
-        <textarea id="cpNotes" hidden></textarea>
-        <button class="go" id="cpGo"><svg width="13" height="13"><use href="#i-play"/></svg> Explain this task</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="cpErr"></div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-h"><h2>Knowledge base</h2><span class="meta-r" id="cpListCount"></span></div>
-      <div class="list" id="cpList"></div>
-    </section>
-  </div>
-  <section class="panel detail" id="cpDetail"></section>
 </main>
 
 <main id="view-runsummary" hidden>
@@ -369,58 +282,6 @@
     </div>
   </section>
   <section id="rsBody"></section>
-</main>
-
-<main id="view-design" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-code"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>4</em>  Design</b><span>Turns test conditions into concrete test cases based on the code and the bug registry.</span></div></div>
-  <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Phase 4. Design</h2></div>
-      <div class="panel-b">
-        <div class="field">
-          <label for="dsTask">Scope to design</label>
-          <div class="composer"><textarea id="dsTask" placeholder="Ticket key or requirement. Add any context you want the agent to consider."></textarea><div class="dropzone" id="dsFileDrop" tabindex="0"><input type="file" id="dsFileInput" hidden><div class="dz-empty" id="dsFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="dsFileList" hidden></div></div></div><div class="err" id="dsFileErr"></div>
-          <div class="hint" id="dsHint"></div>
-        </div>
-        <textarea id="dsNotes" hidden></textarea>
-        <button class="go" id="dsGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run test design</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="dsErr"></div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-h"><h2>History</h2><span class="meta-r" id="dsListCount"></span></div>
-      <div class="list" id="dsList"></div>
-    </section>
-  </div>
-  <section class="panel detail" id="dsDetail"></section>
-</main>
-
-<main id="view-implementation" hidden>
-  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-layers"/></svg></span>
-    <div class="ph-tx"><b>Phase <em>5</em>  Implementation</b><span>Combines the test designs into one prioritised and estimated procedure.</span></div></div>
-  <div class="col">
-    <section class="panel">
-      <div class="panel-h"><h2>Phase 5. Implementation</h2></div>
-      <div class="panel-b">
-        <div class="field">
-          <label for="imTask">Test design from Phase 4</label>
-          <div class="composer"><textarea id="imTask" placeholder="Ticket key or test design report. Add any context you want the agent to consider."></textarea><div class="dropzone" id="imFileDrop" tabindex="0"><input type="file" id="imFileInput" hidden><div class="dz-empty" id="imFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="imFileList" hidden></div></div></div><div class="err" id="imFileErr"></div>
-          <div class="hint" id="imHint"></div>
-        </div>
-        <textarea id="imNotes" hidden></textarea>
-        <button class="go" id="imGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run implementation</button>
-        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
-        <div class="err" id="imErr"></div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-h"><h2>History</h2><span class="meta-r" id="imListCount"></span></div>
-      <div class="list" id="imList"></div>
-    </section>
-  </div>
-  <section class="panel detail" id="imDetail"></section>
 </main>
 
 <main id="view-tfmonitor" hidden class="wide viz">

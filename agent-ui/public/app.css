@@ -620,6 +620,7 @@ pre.errpre{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background
 /* Scoping --phase/--phase-soft per #view-X (not overriding the shared --acc) means every other
    --acc-dependent control in that view — inputs, links, the kbd hint — stays exactly as it looks
    everywhere else; only the phase banner and heading pick up the phase color. */
+#view-flow{--phase:var(--acc);--phase-soft:var(--acc-soft)}
 #view-planning{--phase:var(--ph-planning);--phase-soft:var(--info-soft)}
 #view-tfmonitor{--phase:var(--ph-tfmonitor);--phase-soft:var(--acc-soft)}
 #view-analysis{--phase:var(--ph-analysis);--phase-soft:color-mix(in srgb,var(--app-1) 10%,transparent)}
@@ -1890,3 +1891,22 @@ body.modal-open{overflow:hidden}
 .setup-stage .row2+.row2,.setup-stage .row2+.field{margin-top:16px}
 
 .setup-head-acts{display:flex;gap:8px;align-items:center}
+
+/* ================= Test Flow: one tab, six phases ================= */
+.fl-right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.fl-step{display:flex;align-items:center;gap:8px;margin:2px 0 14px;font-size:13px;cursor:pointer}
+.fl-step .muted-note{margin-left:2px}
+.fl-steps{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch}
+.fl-steps:empty{display:none}
+.fl-s{flex:1 1 120px;min-width:0;display:flex;flex-direction:column;gap:3px;padding:9px 11px;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;
+  transition:border-color .2s var(--ease),background .2s var(--ease)}
+.fl-s:hover:not(:disabled){border-color:var(--line2)}
+.fl-s:disabled{cursor:default;opacity:.55}
+.fl-s.on{border-color:var(--acc);background:var(--acc-soft)}
+.fl-s .n{font-size:11px;color:var(--muted)}
+.fl-s b{font-size:13px;font-weight:600}
+.fl-s .st{font-size:11px;color:var(--muted)}
+.fl-s.done .st{color:var(--ok)}
+.fl-s.running .st{color:var(--warn)}
+.fl-s.failed .st{color:var(--bad)}

@@ -34,7 +34,7 @@ document.addEventListener('keydown',e=>{
 /* Shows what is running right now (prompt-engineer jobs and agent runs, whichever tab started them)
    and what finished in the last few minutes, so the status never depends on which tab you are on. */
 const PIPE_JOB={replicate:'Writing QA MCP process',autotests:'Writing test specification'};
-const PIPE_TABS=['runs','qamcp','autotest','planning','analysis','design','execution'];
+const PIPE_TABS=['runs','qamcp','autotest','flow'];
 const PIPE_RECENT=5*60*1000;
 let pipeSig='';
 function pipeItems(){

@@ -2,34 +2,28 @@
 /* ---------- runs: shared plumbing for Analyses, QA MCP and Autotests ---------- */
 /* Each tab keeps its own history; the Analyses list holds everything that is neither. */
 const OWN_TABS=['qamcp','autotest','planning','analysis','design','implementation','execution','completion'];
-const TAB_OF=a=>OWN_TABS.includes(a)?a:'runs';
-const RUN_TABS=['runs','qamcp','autotest','planning','analysis','design','implementation','execution','completion'];
-const PANEL={runs:'#detail',qamcp:'#qDetail',autotest:'#aDetail',planning:'#pfDetail',analysis:'#anDetail',design:'#dsDetail',implementation:'#imDetail',execution:'#exDetail',completion:'#cpDetail'};
-const LIST={runs:'#list',qamcp:'#qList',autotest:'#aList',planning:'#pfList',analysis:'#anList',design:'#dsList',implementation:'#imList',execution:'#exList',completion:'#cpList'};
-const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',autotest:'#aListCount',planning:'#pfListCount',analysis:'#anListCount',design:'#dsListCount',implementation:'#imListCount',execution:'#exListCount',completion:'#cpListCount'};
+const FLOW_PHASES=['planning','analysis','design','implementation','execution','completion'];
+const TAB_OF=a=>FLOW_PHASES.includes(a)?'flow':OWN_TABS.includes(a)?a:'runs';
+const RUN_TABS=['runs','qamcp','autotest','flow'];
+const PANEL={runs:'#detail',qamcp:'#qDetail',autotest:'#aDetail',flow:'#flDetail'};
+const LIST={runs:'#list',qamcp:'#qList',autotest:'#aList',flow:'#flList'};
+const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',autotest:'#aListCount',flow:'#flListCount'};
 /* ---------- Test Flow chaining ---------- */
 /* Which phase's finished report feeds which phase's input. Monitoring & control has no per-ticket
    report, so it is never a link in this chain — "push to next phase" simply does not exist there. */
 const FLOW_NEXT={planning:'analysis',analysis:'design',design:'implementation',implementation:'execution',execution:'completion'};
 const FLOW_LABEL={planning:'Planning',analysis:'Analysis',design:'Design',implementation:'Implementation',execution:'Execution',completion:'Completion'};
-let flowMode='manual',flowAutoSince=0;
+/* Default is one prompt through the whole chain. "Pause after each phase" turns the automatic
+   hand-over off, so each next phase starts only when the tester pushes it. */
+let flowMode='auto',flowAutoSince=0;
 try{
-  if(localStorage.getItem('flow.mode')==='auto')flowMode='auto';
+  if(localStorage.getItem('flow.step')==='1')flowMode='manual';
   flowAutoSince=Number(localStorage.getItem('flow.autoSince'))||0;
 }catch(_){}
-function setFlowMode(v){
-  const next=v==='auto'?'auto':'manual';
-  /* Turning auto on arms it from this moment only — otherwise every phase run ever finished without
-     being manually pushed (effectively the whole run history, across every ticket) would all fire
-     their "push to next phase" at once the instant auto mode switches on, which looked like several
-     unrelated tabs suddenly starting to run on their own. */
-  if(next==='auto'&&flowMode!=='auto'){
-    flowAutoSince=Date.now();
-    try{localStorage.setItem('flow.autoSince',String(flowAutoSince))}catch(_){}
-  }
-  flowMode=next;
-  try{localStorage.setItem('flow.mode',flowMode)}catch(_){}
-  document.querySelectorAll('#flowMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===flowMode));
+/* Arms the automatic hand-over from this moment only, so runs finished long before are never pushed on. */
+function armFlow(){
+  flowAutoSince=Date.now();
+  try{localStorage.setItem('flow.autoSince',String(flowAutoSince))}catch(_){}
 }
 /* Auto mode: when the run-status poll below sees a chainable run finish, push it on its own —
    no click needed — and follow it by switching to the phase it just started, so the whole
@@ -44,8 +38,7 @@ async function autoPushCheck(list){
       if(r.status!=='done'||flowSummarized.has(r.id))continue;
       if(!r.finishedAt||r.finishedAt<flowAutoSince)continue;
       flowSummarized.add(r.id);
-      if(current&&current.id===r.id)rsAutoOpen(r.ticket);
-      else toast('Completion for '+String(r.ticket).slice(0,60)+' has finished. The Run Summary is ready.');
+      toast('The whole flow for '+String(r.ticket).slice(0,60)+' has finished. Open Summary above the report.');
       continue;
     }
     if(r.status!=='done'||r.pushedTo||!FLOW_NEXT[r.agent]||flowPushing.has(r.id)||flowFailed.has(r.id))continue;
@@ -58,24 +51,23 @@ async function autoPushCheck(list){
     try{
       const next=await post('/api/runs/'+r.id+'/push',{auto:true});
       r.pushedTo=next.id;
-      if(watching){showTab(next.agent);await open(next.id)}
+      if(watching){showTab('flow');await open(next.id)}
       else toast(FLOW_LABEL[r.agent]+' for '+String(r.ticket).slice(0,60)+' finished and moved on to '+FLOW_LABEL[next.agent]+'.');
     }catch(e){flowFailed.add(r.id)}
     finally{flowPushing.delete(r.id)}
   }
 }
-$('#flowMode').onclick=e=>{const b=e.target.closest('[data-m]');if(b)setFlowMode(b.dataset.m)};
-setFlowMode(flowMode);
+$('#flStep').checked=flowMode==='manual';
+$('#flStep').onchange=e=>{
+  flowMode=e.target.checked?'manual':'auto';
+  try{localStorage.setItem('flow.step',e.target.checked?'1':'0')}catch(_){}
+  if(flowMode==='auto')armFlow();
+};
 const LIST_EMPTY={
   runs:'No analyses yet. Run the first one above.',
   qamcp:'No test processes run yet. Describe one above.',
   autotest:'No autotests written yet. Describe a case above.',
-  planning:'No planning checks run yet. Enter a backlog task above.',
-  analysis:'No analysis checks run yet. Enter a backlog task above.',
-  design:'No test designs written yet. Enter a ticket or requirement above.',
-  implementation:'No implementation procedures written yet. Enter a test design above.',
-  execution:'No executions run yet. Paste a Phase 5 procedure above.',
-  completion:'No tasks explained yet. Enter a completed task above.',
+  flow:'No flows run yet. Enter a backlog task above.',
 };
 const GUIDE={
   runs:[
@@ -94,35 +86,10 @@ const GUIDE={
     ['Choose a folder','If left empty, the folder is chosen by topic.'],
     ['Review the tests','Each test checks one thing and has a short scenario and a descriptive name.'],
   ],
-  planning:[
-    ['Enter the task','Enter a Jira key or the task description.'],
-    ['Feasibility check','The agent reads the relevant code first to find impossible or conflicting assumptions.'],
-    ['Review the plan','Product and project risks with their sources, entry and exit criteria and a verdict on readiness.'],
-  ],
-  analysis:[
-    ['Enter the task','Enter a Jira key or the task description.'],
-    ['Test strategy','The agent selects one strategy and justifies it with the history and risk of the task.'],
-    ['Review the analysis','Current coverage, dependent repositories and a prioritised scope for Design.'],
-  ],
-  design:[
-    ['Enter the scope','Enter a Jira key or the requirement.'],
-    ['Evidence first','The agent reads the code, the latest specification and the bug registry before writing any check.'],
-    ['Review the design','Numbered test cases, each traceable to its source.'],
-  ],
-  implementation:[
-    ['Enter the test design','Enter a ticket key or paste the test design report.'],
-    ['Priorities and estimates','Each point receives a priority based on risk and a time estimate.'],
-    ['Review the procedure','A ready procedure traced back to every test design point.'],
-  ],
-  execution:[
-    ['Enter the procedure','Paste the procedure from Implementation.'],
-    ['The agent runs it','Every failure is repeated once before it is reported.'],
-    ['Review the report','Confirmed defects with retest evidence and a short verdict.'],
-  ],
-  completion:[
-    ['Enter a finished task','Enter the Jira key of a completed ticket.'],
-    ['The agent explains it','A short explanation of what the change does and why, based on the ticket.'],
-    ['Knowledge base','The explanation is kept in the history and can be searched later.'],
+  flow:[
+    ['Enter the task','Enter a Jira key or describe the task. Attach any data files the agents should read.'],
+    ['One prompt, six phases','Planning, Analysis, Design, Implementation, Execution and Completion run one after another. Each phase receives the report of the one before it.'],
+    ['Follow and review','The bar above the report shows where the flow is. Click a phase to read its report, or open the summary for the whole ticket.'],
   ],
 };
 
@@ -176,6 +143,7 @@ async function refreshAll(){
     nb.hidden=!live; nb.textContent=live; nb.title=live?`${live} running`:'';
     if(!current||TAB_OF(current.agent)!==t)renderOverview(t,rs);
   }
+  renderFlowSteps();
 }
 RUN_TABS.forEach(t=>{
   $(LIST[t]).onclick=e=>{const it=e.target.closest('.item');if(it)open(it.dataset.id)};
@@ -216,13 +184,17 @@ function renderOverview(t,rs){
 
 /* ---------- analyses ---------- */
 /* Run buttons follow the availability of each agent; the hint under the field says what is missing. */
-const AVAIL={qamcp:['#qGo','#qHint'],planning:['#pfGo','#pfHint'],analysis:['#anGo','#anHint'],design:['#dsGo','#dsHint'],implementation:['#imGo','#imHint'],execution:['#exGo','#exHint'],completion:['#cpGo','#cpHint']};
+const AVAIL={qamcp:['#qGo','#qHint'],planning:['#flGo','#flHint']};
 function applyAvailability(){
   for(const [mode,[go,hint]] of Object.entries(AVAIL)){
     const a=agents.find(x=>x.mode===mode);if(!a||!$(go))continue;
     $(go).disabled=!a.available;
     const h=$(hint);if(h)h.innerHTML=a.available?'':esc(a.reason||'Not available.')+(/Sources/.test(a.reason||'')?' <a href="#sources" data-tab-link="sources">Open Sources</a>':'');
   }
+  /* The flow button follows Planning; a later phase that cannot run is named in the hint instead of failing mid-chain. */
+  const missing=FLOW_PHASES.map(k=>agents.find(a=>a.mode===k)).filter(a=>a&&!a.available&&a.mode!=='planning');
+  const fh=$('#flHint');
+  if(missing.length&&fh&&!fh.textContent)fh.innerHTML='The flow will stop before '+esc(missing[0].label)+': '+esc(missing[0].reason||'not available.')+(/Sources/.test(missing[0].reason||'')?' <a href="#sources" data-tab-link="sources">Open Sources</a>':'');
   const at=agents.find(a=>a.mode==='autotest');
   if(at){AT_API_HINT=at.hint||''; if(!at.available)$('#aGo').disabled=true}
 }
@@ -315,89 +287,40 @@ $('#qProcess').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#qGo').click()}
 });
 
-/* ---------- Test Flow: Phase 1 Planning ---------- */
-$('#pfGo').onclick=async()=>{
-  $('#pfErr').textContent='';$('#pfGo').disabled=true;
+/* ---------- Test Flow: one prompt starts Planning; the chain does the rest ---------- */
+$('#flGo').onclick=async()=>{
+  $('#flErr').textContent='';$('#flGo').disabled=true;
   try{
-    const m=await post('/api/runs',{agent:'planning',ticket:$('#pfTask').value,notes:$('#pfNotes').value,dataFiles:FILES.planning});
+    const m=await post('/api/runs',{agent:'planning',ticket:$('#flTask').value,notes:'',dataFiles:FILES.flow});
+    if(flowMode==='auto')armFlow();
     await open(m.id);
-    FILE_UI.planning.clear();
-  }catch(e){$('#pfErr').textContent=e.message}
-  $('#pfGo').disabled=false;
+    FILE_UI.flow.clear();
+  }catch(e){$('#flErr').textContent=e.message}
+  $('#flGo').disabled=false;
 };
-$('#pfTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#pfGo').click()}
+$('#flTask').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#flGo').click()}
 });
 
-/* ---------- Test Flow: Phase 3 Analysis ---------- */
-$('#anGo').onclick=async()=>{
-  $('#anErr').textContent='';$('#anGo').disabled=true;
-  try{
-    const m=await post('/api/runs',{agent:'analysis',ticket:$('#anTask').value,notes:$('#anNotes').value,dataFiles:FILES.analysis});
-    await open(m.id);
-    FILE_UI.analysis.clear();
-  }catch(e){$('#anErr').textContent=e.message}
-  $('#anGo').disabled=false;
+/* The bar above the report: the six phases of one ticket and where each stands. */
+const FL_ST={done:'Done',running:'Running…',failed:'Failed',cancelled:'Cancelled'};
+function renderFlowSteps(){
+  const el=$('#flSteps');if(!el)return;
+  const fr=RUNS.filter(r=>TAB_OF(r.agent)==='flow');
+  const ticket=current&&TAB_OF(current.agent)==='flow'?current.ticket:(fr.slice().sort((a,b)=>b.startedAt-a.startedAt)[0]||{}).ticket;
+  if(ticket==null){el.innerHTML='';return}
+  const latest=k=>fr.filter(r=>r.agent===k&&r.ticket===ticket).sort((a,b)=>b.startedAt-a.startedAt)[0];
+  el.innerHTML=FLOW_PHASES.map((k,i)=>{
+    const r=latest(k);
+    return `<button type="button" class="fl-s ${r?r.status:''} ${current&&r&&current.id===r.id?'on':''}" ${r?`data-fl-open="${r.id}"`:'disabled'}><span class="n">${i+1}</span><b>${esc(FLOW_LABEL[k])}</b><span class="st">${r?(FL_ST[r.status]||esc(r.status)):'Waiting'}</span></button>`;
+  }).join('')+`<button type="button" class="fl-s" data-fl-summary="1"><span class="n">&Sigma;</span><b>Summary</b><span class="st">All phases</span></button>`;
+  el.dataset.ticket=ticket;
+}
+$('#flSteps').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.flOpen)open(b.dataset.flOpen);
+  else if(b.dataset.flSummary)rsAutoOpen($('#flSteps').dataset.ticket);
 };
-$('#anTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#anGo').click()}
-});
-
-/* ---------- Test Flow: Phase 5 Implementation ---------- */
-$('#imGo').onclick=async()=>{
-  $('#imErr').textContent='';$('#imGo').disabled=true;
-  try{
-    const m=await post('/api/runs',{agent:'implementation',ticket:$('#imTask').value,notes:$('#imNotes').value,dataFiles:FILES.implementation});
-    await open(m.id);
-    FILE_UI.implementation.clear();
-  }catch(e){$('#imErr').textContent=e.message}
-  $('#imGo').disabled=false;
-};
-$('#imTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#imGo').click()}
-});
-
-/* ---------- Test Flow: Phase 6 Execution ---------- */
-$('#exGo').onclick=async()=>{
-  $('#exErr').textContent='';$('#exGo').disabled=true;
-  try{
-    const m=await post('/api/runs',{agent:'execution',ticket:$('#exProcess').value,notes:$('#exNotes').value,scope:$('#exScope').value,dataFiles:FILES.execution});
-    await open(m.id);
-    FILE_UI.execution.clear();
-  }catch(e){$('#exErr').textContent=e.message}
-  $('#exGo').disabled=false;
-};
-$('#exProcess').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#exGo').click()}
-});
-
-/* ---------- Test Flow: Phase 7 Completion ---------- */
-$('#cpGo').onclick=async()=>{
-  $('#cpErr').textContent='';$('#cpGo').disabled=true;
-  try{
-    const m=await post('/api/runs',{agent:'completion',ticket:$('#cpTask').value,notes:$('#cpNotes').value,dataFiles:FILES.completion});
-    await open(m.id);
-    FILE_UI.completion.clear();
-  }catch(e){$('#cpErr').textContent=e.message}
-  $('#cpGo').disabled=false;
-};
-$('#cpTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#cpGo').click()}
-});
-
-/* ---------- Test Flow: Phase 4 Design (existing Test Design agent, exposed here instead of the Analyses picker) ---------- */
-$('#dsGo').onclick=async()=>{
-  $('#dsErr').textContent='';$('#dsGo').disabled=true;
-  try{
-    const m=await post('/api/runs',{agent:'design',ticket:$('#dsTask').value,notes:$('#dsNotes').value,dataFiles:FILES.design});
-    await open(m.id);
-    FILE_UI.design.clear();
-  }catch(e){$('#dsErr').textContent=e.message}
-  $('#dsGo').disabled=false;
-};
-$('#dsTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#dsGo').click()}
-});
 
 /* ---------- Autotests ---------- */
 /* Areas are read from tests/ itself, so the suggestions cannot drift from what is there. */
@@ -462,7 +385,7 @@ function bindCount(inputSel,cntSel,max){
   const upd=()=>{const n=el.value.trim().length;c.textContent=n?n+' / '+max+' chars':'';c.classList.toggle('over',n>max)};
   el.addEventListener('input',upd);upd();
 }
-bindCount('#qProcess','#qCnt',8000);bindCount('#aCase','#aCnt',8000);bindCount('#exProcess','#exCnt',8000);
+bindCount('#qProcess','#qCnt',8000);bindCount('#aCase','#aCnt',8000);
 
 /* ---------- run detail ---------- */
 const KIND={endpoint:['ep','API'],tool:['tool','TOOL'],text:['say','MSG'],status:['st','SYS']};
@@ -537,6 +460,6 @@ async function open(id){
     es.onmessage=e=>{if(skip>0){skip--;return}add(JSON.parse(e.data))};
     es.onerror=()=>{es&&es.close()};
   }
-  refreshAll();
+  refreshAll();renderFlowSteps();
 }
 async function reload(id){const d=await api('/api/runs/'+id);current=d.meta;current.view=d.view;current.chat=d.chat;current.batteries=d.batteries;current.quality=d.quality;current.eps=d.events.filter(e=>e.type==='endpoint').length;paint(d.meta);refreshAll();if(es){es.close();es=null}}

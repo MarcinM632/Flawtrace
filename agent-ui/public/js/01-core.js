@@ -296,7 +296,7 @@ $('#envBtn').onclick=async()=>{
     ENV_STATE=await post('/api/environment',{key:next.key});
     renderEnvBtn();
     if(!$('#view-qamcp').hidden)loadPlatStatus();
-    if(!$('#view-execution').hidden)loadPlatStatus('#exEnv');
+    if(!$('#view-flow').hidden)loadPlatStatus('#flEnv');
     toast(`Environment switched to ${ENV_STATE.current}`,'ok');
   }catch(e){toast(e.message,'err')}
 };
@@ -379,12 +379,7 @@ wireFileField('runs',{drop:'#fileDrop',input:'#fileInput',empty:'#fileEmpty',lis
 wireFileField('qamcp',{drop:'#qFileDrop',input:'#qFileInput',empty:'#qFileEmpty',list:'#qFileList',err:'#qFileErr',
   warnBinary:'QA MCP cannot read binary files. Attach a text or CSV export instead.'});
 wireFileField('autotest',{drop:'#aFileDrop',input:'#aFileInput',empty:'#aFileEmpty',list:'#aFileList',err:'#aFileErr'});
-wireFileField('planning',{drop:'#pfFileDrop',input:'#pfFileInput',empty:'#pfFileEmpty',list:'#pfFileList',err:'#pfFileErr'});
-wireFileField('design',{drop:'#dsFileDrop',input:'#dsFileInput',empty:'#dsFileEmpty',list:'#dsFileList',err:'#dsFileErr'});
-wireFileField('analysis',{drop:'#anFileDrop',input:'#anFileInput',empty:'#anFileEmpty',list:'#anFileList',err:'#anFileErr'});
-wireFileField('implementation',{drop:'#imFileDrop',input:'#imFileInput',empty:'#imFileEmpty',list:'#imFileList',err:'#imFileErr'});
-wireFileField('execution',{drop:'#exFileDrop',input:'#exFileInput',empty:'#exFileEmpty',list:'#exFileList',err:'#exFileErr'});
-wireFileField('completion',{drop:'#cpFileDrop',input:'#cpFileInput',empty:'#cpFileEmpty',list:'#cpFileList',err:'#cpFileErr'});
+wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpty',list:'#flFileList',err:'#flFileErr'});
 
 /* ---------- theme ---------- */
 /* Light theme only. */
@@ -392,20 +387,15 @@ document.documentElement.dataset.theme='light';
 try{localStorage.removeItem('theme')}catch(e){}
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','runs','qamcp','autotest','planning','tfmonitor','analysis','design','implementation','execution','completion','runsummary','bugs','risk','metricsgen','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','runs','qamcp','autotest','flow','runsummary','bugs','risk','metricsgen','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
   qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
   autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
-  planning:['Test Flow','1. Planning','Risk, entry and exit criteria and a feasibility check before a task is implemented.'],
-  tfmonitor:['Test Flow','2. Monitoring & control','Release progress, status and priority for each project, read from Jira.'],
-  analysis:['Test Flow','3. Analysis','Test strategy, coverage gap and impact on other repositories.'],
-  design:['Test Flow','4. Design','Concrete test cases based on the code and the bug registry.'],
-  implementation:['Test Flow','5. Implementation','One prioritised and estimated procedure built from the test designs.'],
-  execution:['Test Flow','6. Execution','Runs the procedure on the test environment and reports confirmed defects.'],
-  completion:['Test Flow','7. Completion','A short explanation of a finished task, saved to the knowledge base.'],
-  runsummary:['Test Flow','8. Run Summary','All phases of one ticket on a single page, built from the latest runs.'],
+  flow:['Test Flow','Test Flow','One prompt runs the whole process on a ticket: planning, analysis, design, implementation, execution and completion.'],
+  tfmonitor:['Metrics','Release monitoring','Release progress, status and priority for each project, read from Jira.'],
+  runsummary:['Test Flow','Run summary','All phases of one ticket on a single page, built from the latest runs.'],
   bugs:['Metrics','Bug registry','Record findings and see where defects concentrate.'],
   risk:['Metrics','Risk','Defect density by service, calculated from the bug registry.'],
   metricsgen:['Metrics','Metrics generation','Build and save charts from the bug registry, run history and Jira releases.'],
@@ -425,7 +415,7 @@ $('#jiraFull').onclick=async()=>{if(!confirm('This fetches all bugs and task com
 addEventListener('focus',()=>{if(!$('#view-bugs').hidden)loadBugs().catch(()=>{});else if(!$('#view-risk').hidden)loadBugs().then(renderRisk).catch(()=>{})});
 function showTab(t){
   document.querySelectorAll('.nav [data-tab]').forEach(x=>{
-    const on=x.dataset.tab===t; x.classList.toggle('on',on);
+    const on=x.dataset.tab===(t==='runsummary'?'flow':t); x.classList.toggle('on',on);
     on?x.setAttribute('aria-current','page'):x.removeAttribute('aria-current');
   });
   VIEWS.forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=v!==t});
@@ -439,15 +429,10 @@ function showTab(t){
   if(t==='risk')loadBugs().then(renderRisk).catch(()=>{});
   if(t==='metricsgen')loadMetricsGen();
   if(t==='qamcp'){loadPlatStatus();refreshAll();qPendingSync()}
-  if(t==='execution'){loadPlatStatus('#exEnv');refreshAll();qPendingSync()}
+  if(t==='flow'){loadPlatStatus('#flEnv');refreshAll();qPendingSync()}
   if(t==='autotest'){loadAutotestMeta();refreshAll();qPendingSync();atSetSub(AT_SUB)}
   if(t==='runs')refreshAll();
-  if(t==='planning')refreshAll();
   if(t==='tfmonitor')loadMonitor();
-  if(t==='analysis')refreshAll();
-  if(t==='design')refreshAll();
-  if(t==='implementation')refreshAll();
-  if(t==='completion')refreshAll();
   if(t==='runsummary')loadRunSummary();
   if(t==='tools')loadTools();
   if(t==='sources')loadSources();
