@@ -277,7 +277,7 @@ $('#qGo').onclick=async()=>{
   $('#qGo').disabled=false;
 };
 $('#qProcess').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#qGo').click()}
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#qGo').click()}
 });
 
 /* ---------- Test Flow: one prompt starts Planning; the chain does the rest ---------- */
@@ -292,7 +292,7 @@ $('#flGo').onclick=async()=>{
   $('#flGo').disabled=false;
 };
 $('#flTask').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#flGo').click()}
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#flGo').click()}
 });
 
 /* The bar above the report: the six phases of one ticket and where each stands. */
@@ -364,12 +364,12 @@ $('#aGo').onclick=async()=>{
   $('#aGo').disabled=false;
 };
 $('#aCase').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#aGo').click()}
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#aGo').click()}
 });
 
 $('#ticket').addEventListener('keydown',e=>{
   const ff=(agents.find(a=>a.key===sel)||{}).freeform;
-  if(e.key==='Enter'&&(e.ctrlKey||!ff)){e.preventDefault();$('#go').click()}
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#go').click()}
 });
 
 /* Live character count under the long free-text fields; the server limit is 8000. */
@@ -456,3 +456,9 @@ async function open(id){
   refreshAll();renderFlowSteps();
 }
 async function reload(id){const d=await api('/api/runs/'+id);current=d.meta;current.view=d.view;current.chat=d.chat;current.batteries=d.batteries;current.quality=d.quality;current.eps=d.events.filter(e=>e.type==='endpoint').length;paint(d.meta);refreshAll();if(es){es.close();es=null}}
+
+/* Prompt boxes start as one line and grow with the text (CSS field-sizing where supported, this elsewhere). */
+if(!(window.CSS&&CSS.supports('field-sizing','content')))document.querySelectorAll('.composer textarea').forEach(t=>{
+  const fit=()=>{t.style.height='auto';if(!t.scrollHeight)return;t.style.height=Math.min(t.scrollHeight,Math.round(innerHeight*.5))+'px'};
+  t.addEventListener('input',fit);fit();
+});
