@@ -276,7 +276,7 @@ async function loadPlatStatus(sel='#qEnv'){
 $('#qGo').onclick=async()=>{
   $('#qErr').textContent='';$('#qGo').disabled=true;
   try{
-    const m=await post('/api/runs',{agent:'qamcp',url:$('#qUrl').value.trim(),ticket:$('#qProcess').value,notes:$('#qNotes').value,scope:$('#qScope').value,dataFiles:FILES.qamcp});
+    const m=await post('/api/runs',{agent:'qamcp',url:(($('#qProcess').value.match(/https?:\/\/[^\s<>"')]+/)||[''])[0]),ticket:$('#qProcess').value,notes:$('#qNotes').value,scope:$('#qScope').value,dataFiles:FILES.qamcp});
     $('#qBrief').innerHTML='';
     await open(m.id);
     FILE_UI.qamcp.clear();

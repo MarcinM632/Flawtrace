@@ -208,14 +208,10 @@
       <div class="panel-b">
         <div class="qenv" id="qEnv"></div>
         <div class="field">
-          <label for="qUrl">Page link <span class="opt">optional</span></label>
-          <input id="qUrl" type="url" inputmode="url" placeholder="https://example.com/login" autocomplete="off" spellcheck="false">
-          <div class="hint">With a link the agent also opens the page in its own browser and does the process on it. Afterwards <b>Create autotests</b> turns that run into a Playwright test.</div>
-        </div>
-        <div class="field">
           <label for="qProcess">Test process</label>
-          <div class="composer"><textarea id="qProcess" placeholder="Describe the test process. Add any context you want the agent to consider."></textarea><div class="dropzone" id="qFileDrop" tabindex="0"><input type="file" id="qFileInput" hidden><div class="dz-empty" id="qFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="qFileList" hidden></div></div></div><div class="err" id="qFileErr"></div>
+          <div class="composer"><textarea id="qProcess" placeholder="Describe the test process. Paste links, drop screenshots or files, add any context. Everything goes in this one box."></textarea><div class="dropzone" id="qFileDrop" tabindex="0"><input type="file" id="qFileInput" hidden><div class="dz-empty" id="qFileEmpty"><svg width="14" height="14"><use href="#i-clip"/></svg> Attach files <span class="dz-or">or drop them here</span></div><div class="dz-list" id="qFileList" hidden></div></div></div><div class="err" id="qFileErr"></div>
           <div class="hint" id="qHint"></div>
+          <div class="hint">Paste a page link anywhere in the text and the agent also opens that page in its own browser. Afterwards <b>Create autotests</b> turns the run into a Playwright test.</div>
           <div class="cnt" id="qCnt" style="margin-top:6px;text-align:right"></div>
           <div id="qBrief"></div>
         </div>
