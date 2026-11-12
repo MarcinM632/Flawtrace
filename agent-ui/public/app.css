@@ -1921,3 +1921,11 @@ body.modal-open{overflow:hidden}
 .composer .go{flex:0 0 auto;width:auto;height:34px;margin:0 8px 8px 0;padding:0 14px}
 .field:has(.composer)>label,.kbd-hint,.fl-step{display:none}
 .panel-b:has(.composer) .qenv:empty{display:none}
+
+/* ================= layout: big prompt on top, history and overview underneath ================= */
+#view-runs>.col,#view-qamcp>.col,#view-flow>.col,#view-autotest>.col[data-pane="write"]{display:contents}
+#view-autotest>.col[data-pane="write"][hidden]{display:none}
+#view-runs>.col>section:first-of-type,#view-qamcp>.col>section:first-of-type,#view-flow>.col>section:first-of-type,
+#view-autotest>.col[data-pane="write"]>section:first-of-type,#view-autotest>.col[data-pane="write"]>.at-tabs{grid-column:1/-1}
+#view-runs .composer textarea,#view-qamcp .composer textarea,#view-flow .composer textarea,#view-autotest .composer textarea{min-height:230px}
+@media(max-width:900px){#view-runs,#view-qamcp,#view-flow,#view-autotest{grid-template-columns:minmax(0,1fr)}}
