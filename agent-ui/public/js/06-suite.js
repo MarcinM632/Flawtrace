@@ -42,19 +42,21 @@ const AT_SUB_DESC={
   smoke:'A short set of checks that confirms the environment is ready for testing. Run it after every new build.',
   system:'End to end tests of the complete system. Run them before a release to confirm that everything still works together.',
   suite:'Select and run any test from the repository.',
+  report:'How healthy the suite is: pass rate, unstable tests, failures to investigate and what to improve next.',
 };
 const PACKS={
   SMOKE:{listId:'#smList',goId:'#smGo',countId:'#smCount',detailId:'#smDetail',nbId:'#nb-smoke',label:'smoke'},
   SYSTEM:{listId:'#sysList',goId:'#sysGo',countId:'#sysCount',detailId:'#sysDetail',nbId:'#nb-system',label:'system'},
 };
 function atSetSub(sub){
-  if(!['write','smoke','system','suite'].includes(sub))sub='write';
+  if(!['write','smoke','system','suite','report'].includes(sub))sub='write';
   AT_SUB=sub;
   document.querySelectorAll('#atSub [data-s]').forEach(b=>{const on=b.dataset.s===sub;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});
   document.querySelectorAll('#view-autotest .at-pane').forEach(el=>{el.hidden=el.dataset.pane!==sub});
   $('#atSubDesc').textContent=AT_SUB_DESC[sub]||'';
   try{history.replaceState(null,'','#autotest/'+sub)}catch(e){}
   if(sub==='write')return;
+  if(sub==='report'){loadHealth();return}
   if(!SU.loaded){loadSuite();return} // loadSuite()'s own renderSuite() call reaches atRefreshActivePane()
   atRefreshActivePane();
 }
@@ -269,3 +271,53 @@ function renderSuite(){atRefreshActivePane()}
   $('#suFailed').onclick=()=>{SU.sel.clear();SU.tests.filter(t=>['failed','error'].includes(suOutcome(t.id).o)).forEach(t=>SU.sel.add(t.id));renderSuiteList()};
   $('#suGo').onclick=()=>{const t=suTargets();if(t.length)suStart(t)};
 })();
+
+
+/* ---------- Report: suite health from the run history (TAE: reporting and continuous improvement) ---------- */
+async function loadHealth(){
+  const box=$('#rpPane');
+  if(!box.innerHTML)box.innerHTML='<div class="panel-b"><div class="sk"></div><div class="sk"></div></div>';
+  try{renderHealth(await api('/api/suite/health'))}
+  catch(e){box.innerHTML='<div class="panel-b"><div class="err">'+esc(e.message)+'</div></div>'}
+}
+function renderHealth(h){
+  const box=$('#rpPane');
+  if(!h.runs){
+    box.innerHTML='<div class="panel-b">'+emptyBox('chart','No test runs yet','Run the Smoke pack, the System pack or any tests from the Suite runner. This page then shows how healthy the suite is.')+'</div>';
+    return;
+  }
+  const kpi=(l,v,c='')=>`<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`;
+  const sc=h.score==null?'—':h.score, scc=h.score==null?'':h.score>=85?'ok':h.score>=60?'warn':'bad';
+  const max=Math.max(1,...h.trend.map(t=>t.total));
+  const bars=h.trend.map(t=>{
+    const ph=Math.round((t.passed/max)*100), fh=Math.round((t.failed/max)*100);
+    return `<div class="rp-bar" title="${esc(fmtFull(t.at))}: ${t.passed} passed, ${t.failed} failed${t.seconds!=null?', '+fmtSecs(t.seconds):''}"><span class="f" style="height:${fh}%"></span><span class="p" style="height:${ph}%"></span></div>`;
+  }).join('');
+  const short=id=>esc(id.replace(/^tests\//,''));
+  const list=(items,fn,empty)=>items.length?`<div class="rp-list">${items.map(fn).join('')}</div>`:`<div class="muted-note">${empty}</div>`;
+  const tips=[];
+  if(h.flaky.length)tips.push(`<b>${h.flaky.length}</b> unstable test${h.flaky.length===1?'':'s'} pass and fail with no code change. Remove fixed waits, isolate the data they use or retry only the racing check.`);
+  if(h.alwaysFailing.length)tips.push(`<b>${h.alwaysFailing.length}</b> test${h.alwaysFailing.length===1?'':'s'} failed in every run. Either the product has a defect (report it in the Bug registry) or the test is out of date.`);
+  if(h.tests&&h.everRun<h.tests)tips.push(`<b>${h.tests-h.everRun}</b> of ${h.tests} tests were never run from this app. Run them in the Suite runner.`);
+  const lv=h.levels.filter(l=>l.tests);
+  if(h.tests&&!lv.some(l=>l.level==='SMOKE'))tips.push('No test is tagged <span class="mono">SMOKE</span>, so there is no quick check that the environment is ready.');
+  if(!tips.length)tips.push('Nothing needs attention right now.');
+  box.innerHTML=`<div class="panel-h"><h2>Suite health</h2><span class="meta-r">${h.runs} run${h.runs===1?'':'s'} in history</span></div>
+  <div class="panel-b rp">
+    <div class="kpis">
+      ${kpi('Health score',sc,scc)}
+      ${kpi('Last pass rate',h.lastPassRate==null?'—':h.lastPassRate+'%')}
+      ${kpi('Unstable tests',h.flaky.length,h.flaky.length?'warn':'ok')}
+      ${kpi('Always failing',h.alwaysFailing.length,h.alwaysFailing.length?'bad':'ok')}
+      ${kpi('Failing now',h.failingNow.length,h.failingNow.length?'bad':'ok')}
+      ${kpi('Tests run',h.tests?h.everRun+' / '+h.tests:'—')}
+    </div>
+    <div class="rp-cols">
+      <div><h4>Results per run <span class="opt">oldest to newest</span></h4><div class="rp-chart">${bars}</div></div>
+      <div><h4>By test level</h4>${lv.length?`<table class="dtbl"><thead><tr><th>Level</th><th class="r">Tests</th><th class="r">Passed</th><th class="r">Failed</th><th class="r">Not run</th></tr></thead><tbody>${lv.map(l=>`<tr><td>${l.level}</td><td class="r mono">${l.tests}</td><td class="r mono">${l.passed}</td><td class="r mono">${l.failed}</td><td class="r mono">${l.notRun}</td></tr>`).join('')}</tbody></table>`:'<div class="muted-note">No tests carry a level marker.</div>'}</div>
+    </div>
+    <h4>What to improve next</h4><ul class="rp-tips">${tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+    <h4>Failing now</h4>${list(h.failingNow,f=>`<div class="rp-row"><span class="mono">${short(f.id)}</span><span class="note">${esc(f.message||'')}</span></div>`,'Every test that ran last passed.')}
+    <h4>Unstable tests</h4>${list(h.flaky,f=>`<div class="rp-row"><span class="mono">${short(f.id)}</span><span class="note">failed ${f.fails} of ${f.runs} runs, changed result ${f.flips} times</span></div>`,'No test changed its result between runs.')}
+  </div>`;
+}

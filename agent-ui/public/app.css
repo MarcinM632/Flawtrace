@@ -1973,3 +1973,18 @@ main{max-width:1680px;padding:20px 28px 40px;gap:16px}
 .fl-s.on{border-color:var(--acc-line);background:var(--acc-soft)}
 .seg button.on{background:var(--acc-soft);color:var(--acc-tx);border-color:var(--acc-line)}
 .list-empty,.ov-empty{padding:18px 20px}
+
+/* ================= Autotests: Report ================= */
+.rp h4{margin:18px 0 8px;font-size:13px;font-weight:600;color:var(--ink2)}
+.rp h4 .opt{font-weight:400;color:var(--ink4);margin-left:6px}
+.rp-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;margin-top:6px}
+@media(max-width:900px){.rp-cols{grid-template-columns:1fr}}
+.rp-chart{display:flex;align-items:flex-end;gap:4px;height:120px;padding:8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface2)}
+.rp-bar{flex:1;min-width:4px;max-width:28px;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+.rp-bar .p{background:var(--ok);border-radius:3px 3px 0 0;min-height:2px}
+.rp-bar .f{background:var(--bad);border-radius:3px 3px 0 0}
+.rp-tips{margin:0;padding-left:18px;font-size:13px;line-height:1.7}
+.rp-list{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.rp-row{display:flex;gap:14px;align-items:baseline;justify-content:space-between;padding:8px 12px;font-size:12.5px}
+.rp-row+.rp-row{border-top:1px solid var(--line)}
+.rp-row .note{color:var(--ink3);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

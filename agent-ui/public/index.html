@@ -289,6 +289,7 @@
     <button role="tab" data-s="smoke" aria-selected="false"><svg width="14" height="14"><use href="#i-bolt"/></svg>Smoke<span class="live" id="nb-smoke" hidden></span></button>
     <button role="tab" data-s="system" aria-selected="false"><svg width="14" height="14"><use href="#i-layers"/></svg>System<span class="live" id="nb-system" hidden></span></button>
     <button role="tab" data-s="suite" aria-selected="false"><svg width="14" height="14"><use href="#i-check"/></svg>Suite runner<span class="live" id="nb-suitepane" hidden></span></button>
+    <button role="tab" data-s="report" aria-selected="false"><svg width="14" height="14"><use href="#i-chart"/></svg>Report</button>
   </div>
   <p class="at-sub-desc" id="atSubDesc"></p>
 
@@ -362,6 +363,7 @@
     </section>
   </div>
   <section class="panel detail at-pane" data-pane="suite" id="sDetail" hidden></section>
+  <section class="panel at-pane" data-pane="report" id="rpPane" hidden style="grid-column:1/-1"></section>
 </main>
 
 <main id="view-sources" class="wide" hidden>

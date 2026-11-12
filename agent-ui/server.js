@@ -437,6 +437,7 @@ const server = http.createServer(async (req, res) => {
       const { proc, ...rest } = suiteLib.suiteRun;
       return json(res, 200, { run: { ...rest, output: rest.output.slice(-12000) } });
     }
+    if (req.method === 'GET' && p === '/api/suite/health') return json(res, 200, require('./lib/suite-health').buildHealth(suite, (await listSuite().catch(() => ({ tests: [] }))).tests || []));
     if (req.method === 'GET' && p === '/api/suite/history') return json(res, 200, suite.runs.map(({ results, messages, output, ...s }) => s));
     if ((m = p.match(/^\/api\/suite\/history\/([\w-]+)$/)) && req.method === 'GET') {
       const h = suite.runs.find((x) => x.id === m[1]);
