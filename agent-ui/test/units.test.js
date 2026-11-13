@@ -2,6 +2,10 @@
 // z atrapą bramki, poczekalnia. Pracują na KOPII repo autotestów (QA_AUTOTEST_REPO), więc prawdziwe autotests/ jest nietknięte.
 //   node --test test/units.test.js
 const { test, before, after } = require('node:test');
+// The public copy of autotests/ has no test files, HTTP client or environment config (see autotests/README.md),
+// so tests that need the real suite are skipped there. They run where tests/smoke exists.
+const NO_PRIVATE_TESTS = !require('fs').existsSync(require('path').join(__dirname, '..', '..', 'autotests', 'tests', 'smoke'))
+  && 'needs the private autotests/ suite';
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
@@ -105,7 +109,7 @@ test('staging: copy has no caches and the real repo stays untouched until Save',
   assert.ok(!fs.existsSync(path.join(AUTOTEST_REPO, 'tests', '_unit')), 'nothing leaks into the repo');
 });
 
-test('verify: a failing test is sent to the agent, fixed, and must pass twice', async () => {
+test('verify: a failing test is sent to the agent, fixed, and must pass twice', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-fix');
   fs.writeFileSync(file, BAD);
   let calls = 0; let promptSeen = '';
@@ -120,7 +124,7 @@ test('verify: a failing test is sent to the agent, fixed, and must pass twice', 
   assert.ok(!JSON.stringify(v).includes(process.env.PLAT_MANAGER_TOKEN) || process.env.PLAT_MANAGER_TOKEN.length < 4);
 });
 
-test('verify: an agent that blames the environment and changes nothing yields "defect"', async () => {
+test('verify: an agent that blames the environment and changes nothing yields "defect"', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-defect');
   fs.writeFileSync(file, BAD);
   const v = await repo.verifyAutotests(r, before, async () => ({ finalText: 'ROZSTRZYGNIĘCIE: DEFEKT ŚRODOWISKA\n--- TREŚĆ ---\nping zwraca 404', cost: 0 }));
@@ -156,7 +160,7 @@ test('verify: the fix agent\'s step-by-step answer is parsed into cases', () => 
   assert.deepEqual(repo.parseFixNote('zła ścieżka w helperze'), [], 'free text yields no cases, the UI shows it as text');
 });
 
-test('verify: the fix prompt asks for steps and the cases are kept on the attempt', async () => {
+test('verify: the fix prompt asks for steps and the cases are kept on the attempt', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-steps');
   r.flow = 'ZASADY...\n=== PRZEBIEG QA MCP ===\n1. manager_read_get_account_positions {"clientId":"1001"}\n   → {"positions":[]}';
   fs.writeFileSync(file, BAD);
@@ -171,7 +175,7 @@ test('verify: the fix prompt asks for steps and the cases are kept on the attemp
   assert.equal(v.attempts[0].note, LONG, 'the answer is no longer cut at 900 characters');
 });
 
-test('verify: stops after two fixes and reports failing', async () => {
+test('verify: stops after two fixes and reports failing', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-fail');
   fs.writeFileSync(file, BAD);
   let calls = 0;
@@ -182,7 +186,7 @@ test('verify: stops after two fixes and reports failing', async () => {
   assert.equal(v.state, 'failing'); assert.equal(calls, 2);
 });
 
-test('verify: a fix that changes nothing ends the loop without another pytest run', async () => {
+test('verify: a fix that changes nothing ends the loop without another pytest run', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-nochange');
   fs.writeFileSync(file, BAD);
   let calls = 0;
@@ -192,7 +196,7 @@ test('verify: a fix that changes nothing ends the loop without another pytest ru
   assert.match(v.summary, /changed nothing/);
 });
 
-test('verify: after a fix only the failed tests run, then everything once more', async () => {
+test('verify: after a fix only the failed tests run, then everything once more', { skip: NO_PRIVATE_TESTS }, async () => {
   const { r, before, file } = newRun('verify-only');
   const second = (src) => src.split('\n\n\n')[1].replace('test_ping_is_served', 'test_ping_is_served_again');
   fs.writeFileSync(file, GOOD + '\n\n' + second(BAD));
@@ -504,7 +508,7 @@ test('Test design: checks are written on the AUTOTEST accounts in lots, not on p
   assert.match(require('../lib/prompts').OVERRIDE_DESIGN, /OPIS NA PRZYKŁADZIE AUTOTEST/);
 });
 
-test('Test design gets the list of existing autotests and the tester text as its order', () => {
+test('Test design gets the list of existing autotests and the tester text as its order', { skip: NO_PRIVATE_TESTS }, () => {
   const { writeAutotestCoverage } = require('../lib/run-agent');
   const d = path.join(tmp, 'cov'); fs.mkdirSync(d, { recursive: true });
   writeAutotestCoverage(d);

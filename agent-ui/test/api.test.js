@@ -2,6 +2,10 @@
 // i nie wołają modelu, więc nic nie kosztują ani nie dotykają prawdziwych runów i rejestru błędów.
 //   node --test test/            (z katalogu agent-ui)
 const { test, before, after } = require('node:test');
+// The public copy of autotests/ has no test files, HTTP client or environment config (see autotests/README.md),
+// so tests that need the real suite are skipped there. They run where tests/smoke exists.
+const NO_PRIVATE_TESTS = !require('fs').existsSync(require('path').join(__dirname, '..', '..', 'autotests', 'tests', 'smoke'))
+  && 'needs the private autotests/ suite';
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const net = require('node:net');
@@ -70,14 +74,14 @@ test('/api/agents lists every app with its fields', async () => {
   assert.equal(body.find((a) => a.key === 'autotest').available, true);
 });
 
-test('/api/plat-status and /api/autotest-meta describe the environment and the repo', async () => {
+test('/api/plat-status and /api/autotest-meta describe the environment and the repo', { skip: NO_PRIVATE_TESTS }, async () => {
   const s = await j('/api/plat-status');
   assert.equal(s.status, 200); assert.ok('environment' in s.body && Array.isArray(s.body.hosts) && 'endpoints' in s.body);
   const m = await j('/api/autotest-meta');
   assert.equal(m.body.available, true); assert.ok(m.body.folders.includes('smoke')); assert.ok(m.body.tests >= 1);
 });
 
-test('/api/autotest-meta splits pytest areas from Playwright areas under tests/ui/', async () => {
+test('/api/autotest-meta splits pytest areas from Playwright areas under tests/ui/', { skip: NO_PRIVATE_TESTS }, async () => {
   const m = (await j('/api/autotest-meta')).body;
   assert.ok(!m.folders.includes('ui'), 'tests/ui is not offered as a pytest area');
   assert.ok(m.ui.folders.includes('ui/prj_risk')); assert.ok(m.ui.tests >= 1);
@@ -88,7 +92,7 @@ test('POST /api/runs: a pytest autotest cannot be written into tests/ui/', async
   assert.equal(r.status, 400); assert.match(r.body.error, /Playwright/);
 });
 
-test('/api/runs: slim list, ETag, full on request; detail and 404', async () => {
+test('/api/runs: slim list, ETag, full on request; detail and 404', { skip: NO_PRIVATE_TESTS }, async () => {
   const list = await j('/api/runs');
   assert.equal(list.status, 200);
   const r = list.body.find((x) => x.id === '20260101000000-aaaa');
@@ -104,7 +108,7 @@ test('/api/runs: slim list, ETag, full on request; detail and 404', async () => 
   assert.equal((await send('POST', '/api/runs/nope/cancel', {})).status, 404);
 });
 
-test('POST /api/runs validates before any model is called', async () => {
+test('POST /api/runs validates before any model is called', { skip: NO_PRIVATE_TESTS }, async () => {
   assert.equal((await send('POST', '/api/runs', { agent: 'nonexistent', ticket: 'x' })).status, 400);
   const short = await send('POST', '/api/runs', { agent: 'qamcp', ticket: 'x' });
   assert.equal(short.status, 400);
@@ -134,7 +138,7 @@ test('/api/jobs and the prompt engineer validate input', async () => {
   assert.equal((await send('POST', '/api/prompt-engineer', { target: 'nope', text: 'x' })).status, 400);
 });
 
-test('test suite: list, validation, history, file read and write guard', async () => {
+test('test suite: list, validation, history, file read and write guard', { skip: NO_PRIVATE_TESTS }, async () => {
   const s = await j('/api/suite');
   assert.equal(s.status, 200); assert.equal(s.body.error, null);
   assert.ok(s.body.tests.length >= 5);
