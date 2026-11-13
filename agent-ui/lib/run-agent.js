@@ -19,6 +19,7 @@ const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, QA_URL_PROMPT, mcpC
 const { extractReport, isBrowser, isEndpoint, summarizeTool } = require('./run-format');
 const { auditDesignBugs, auditDesignBusiness, auditDesignConcrete, auditDesignFlow, auditEvidence, auditQamcp, correctionPrompt } = require('./report-format');
 const bugsLib = require('./bugs');
+const verifierLib = require('./verifier');
 const metricsLib = require('./metrics');
 
 // Twardy zakaz zapisu do repo (deny ma pierwszeństwo nad allow).
@@ -534,22 +535,41 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     }
     return ev;
   };
+  // Drugi, niezależny agent (lib/verifier.js) sprawdza raport ze źródłami: odwołania, brak własnych słów, proste zdania.
+  // Jego zarzuty dołączają do kontroli aplikacji i trafiają do tej samej jednej tury korekty autora.
+  const verifyKind = auditKind || (agent.mode === 'completion' ? 'completion' : null);
+  const runVerifier = async () => {
+    if (!verifyKind || !verifierLib.enabled()) return verifierLib.verifyReport({ report: meta.report, kind: verifyKind, task: '', workDir });
+    emit(r, { type: 'status', text: 'Verifier: a second agent is checking the report against the sources…' });
+    const v = await verifierLib.verifyReport({ report: meta.report, kind: verifyKind, task: `${ticket}
+${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => meta.status === 'cancelled' });
+    meta.costUsd = (meta.costUsd || 0) + (v.costUsd || 0);
+    emit(r, { type: 'status', text: v.ran ? `Verifier: checked ${v.checked || '?'} claims, ${v.issues.length} problem(s)${v.dropped ? `, ${v.dropped} dropped (quote not in the report)` : ''}` : `Verifier did not run: ${v.error || 'unknown reason'}` });
+    return v;
+  };
+  const verifierMeta = (v) => ({ ran: v.ran, checked: v.checked, problems: v.issues.length, dropped: v.dropped, error: v.error || null });
   const auditReport = async (res) => {
-    if (!auditKind || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
+    if (!verifyKind || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
     try {
-      const first = runAudit();
-      meta.audit = { ...first, corrected: false };
-      if (!first.issues.length || !res.sessionId) return;
-      emit(r, { type: 'status', text: `Report check: ${first.issues.map((i) => i.text).join('; ').slice(0, 300)}. Asking the agent to correct the report…` });
-      const fix = await launch(correctionPrompt(auditKind, first.issues), ['--resume', res.sessionId]).done;
+      const first = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
+      const v1 = await runVerifier();
+      if (meta.status === 'cancelled') return;
+      const all1 = [...first.issues, ...v1.issues];
+      meta.audit = { ...first, issues: all1, corrected: false, verifier: verifierMeta(v1) };
+      if (!all1.length || !res.sessionId) return;
+      emit(r, { type: 'status', text: `Report check: ${all1.map((i) => i.text).join('; ').slice(0, 300)}. Asking the agent to correct the report…` });
+      const fix = await launch(correctionPrompt(auditKind || 'completion', all1) + (v1.issues.length ? '\n\n' + verifierLib.correctionText(v1.issues) : ''), ['--resume', res.sessionId]).done;
       if (fix && fix.cost) meta.costUsd = (meta.costUsd || 0) + fix.cost;
       addUsage(meta, fix);
       if (meta.status === 'cancelled') return;
       const again = extractReport((fix && (fix.finalText || fix.lastText)) || '');
       if (again.report) { meta.report = again.report; meta.reportStatus = again.status || meta.reportStatus; meta.finalText = fix.finalText || meta.finalText; }
-      const second = runAudit();
-      meta.audit = { ...second, corrected: !!again.report, before: first.issues };
-      emit(r, { type: 'status', text: second.issues.length ? `Report check after correction: ${second.issues.length} issue(s) left` : 'Report check after correction: clean' });
+      const second = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
+      const v2 = again.report ? await runVerifier() : v1;
+      if (meta.status === 'cancelled') return;
+      const all2 = [...second.issues, ...v2.issues];
+      meta.audit = { ...second, issues: all2, corrected: !!again.report, before: all1, verifier: verifierMeta(v2) };
+      emit(r, { type: 'status', text: all2.length ? `Report check after correction: ${all2.length} issue(s) left` : 'Report check after correction: clean' });
     } catch (e) { meta.audit = { checked: null, issues: [], error: String(e && e.message || e) }; }
   };
 
