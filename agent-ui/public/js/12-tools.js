@@ -42,7 +42,7 @@ function tlReport(){
 function renderTools(){
   const box=$('#tlList');if(!box)return;
   const d=TL.data;
-  $('#tlSt').textContent=TL.error?'':d?`${d.total} endpoints in ${d.groups.length} ${d.groups.length===1?'group':'groups'}${d.baseUrl?' · '+d.baseUrl:''} · last scanned ${tlAgo(d.scannedAt)}`:'Loading…';
+  $('#tlSt').textContent=TL.error?'':d?`Last scanned ${tlAgo(d.scannedAt)}`:'Loading…';
   const go=$('#tlFull');go.disabled=TL.busy;go.textContent=TL.busy?'Scanning…':'Rescan specifications';
   $('#tlReport').innerHTML=TL.busy?'<div class="tl-rep">Downloading the specifications and comparing every endpoint…</div>':tlReport();
   if(TL.error){box.innerHTML=`<div class="chk bad">${esc(TL.error)}</div>`;return}
