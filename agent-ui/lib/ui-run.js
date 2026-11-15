@@ -24,9 +24,11 @@ import base from './playwright.config';
 export default defineConfig({
   ...base,
   retries: 0,
+  timeout: 20000,            // a failing test should fail in seconds, not wait 30 s per step
+  expect: { timeout: 5000 },
   outputDir: 'test-results',
   reporter: [['list'], ['json', { outputFile: 'flawtrace-results.json' }], ['html', { outputFolder: 'flawtrace-report', open: 'never' }]],
-  use: { ...base.use, screenshot: 'on', video: 'on', trace: 'on' },
+  use: { ...base.use, actionTimeout: 8000, screenshot: 'on', video: 'on', trace: 'on' },
 });
 `;
 
@@ -89,6 +91,7 @@ function startTestRun(r, creds) {
   if (!m.url) throw httpErr(400, 'This run has no page address.');
   if (active.has(m.id)) throw httpErr(409, 'The test is already running.');
   const secrets = creds && creds.password ? [creds.password] : [];
+  m.testFix = null; // a new run starts a new question; an older patch no longer belongs to it
   const tr = m.testRun = { state: 'preparing', startedAt: Date.now(), finishedAt: null, stats: null, tests: [], tail: '', error: null, hasReport: false, withLogin: !!(creds && (creds.username || creds.password)) };
   const entry = { proc: null, cancelled: false };
   active.set(m.id, entry);
@@ -188,4 +191,4 @@ function serveReport(req, res, meta, rel) {
   return true;
 }
 
-module.exports = { CONFIG_SOURCE, cancelTestRun, parseResults, reconcile, reportFile, serveReport, startTestRun, testEnv };
+module.exports = { CONFIG_SOURCE, cancelTestRun, exec, parseResults, reconcile, reportFile, serveReport, startTestRun, testEnv };

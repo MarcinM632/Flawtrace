@@ -16,6 +16,7 @@ const { SEVERITIES, jira, jiraSync, saveBugs, syncBugs } = require('./lib/bugs')
 const { loadAll, persist, runs } = require('./lib/store');
 const uiTestLib = require('./lib/uitest');
 const uiRun = require('./lib/ui-run');
+const uiFix = require('./lib/ui-fix');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -488,6 +489,16 @@ const server = http.createServer(async (req, res) => {
         return json(res, 202, uiRun.startTestRun(src, creds));
       } catch (e) { return json(res, e.code || 500, { error: e.message }); }
     }
+    // UI Tests: repair of a failing test. The agent proposes, the app checks the patch and proves it, the user decides.
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-fix(?:\/(apply|reject))?$/)) && req.method === 'POST') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      try {
+        if (m[2] === 'apply') return json(res, 200, uiFix.applyFix(src));
+        if (m[2] === 'reject') return json(res, 200, uiFix.rejectFix(src));
+        const b = await body(req);
+        return json(res, 202, uiFix.startFix(src, { username: String(b.username || '').slice(0, 200), password: String(b.password || '').slice(0, 200) }));
+      } catch (e) { return json(res, e.code || 500, { error: e.message }); }
+    }
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-report(\/.*)?$/)) && req.method === 'GET') {
       const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
       if (!m[2]) { res.writeHead(302, { Location: p + '/' }); return res.end(); }
@@ -579,6 +590,7 @@ const server = http.createServer(async (req, res) => {
     if ((m = p.match(/^\/api\/runs\/([\w-]+)$/)) && req.method === 'GET') {
       const r = runs.get(m[1]); if (!r) return json(res, 404, { error: 'Not found' });
       uiRun.reconcile(r.meta);
+      uiFix.reconcile(r.meta);
       // Raport rozłożony na karty dla widoku; stare raporty też (parser rozumie dawny format). null = UI pokaże tekst.
       const mode = (AGENTS[r.meta.agent] || {}).mode || 'qa';
       const view = parseReport(mode, r.meta.report, r.meta.reportStatus);

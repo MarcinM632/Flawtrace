@@ -31,7 +31,7 @@ test('testEnv gives the tests the page origin and the login, drops CI, and does 
 
 test('the run config keeps the base config and turns on screenshots, video and trace without retries', () => {
   assert.match(ur.CONFIG_SOURCE, /import base from '\.\/playwright\.config'/);
-  for (const s of ["screenshot: 'on'", "video: 'on'", "trace: 'on'", 'retries: 0', "'html'"]) assert.ok(ur.CONFIG_SOURCE.includes(s), s);
+  for (const s of ["screenshot: 'on'", "video: 'on'", "trace: 'on'", 'retries: 0', 'timeout: 20000', 'actionTimeout: 8000', "'html'"]) assert.ok(ur.CONFIG_SOURCE.includes(s), s);
 });
 
 function reportFixture() {

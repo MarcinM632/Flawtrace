@@ -62,11 +62,43 @@ function tsRunBlock(m){
       +(tr.hasReport?'<div class="stg-act"><a class="btn" id="trReport" target="_blank" rel="noopener" href="/api/runs/'+encodeURIComponent(m.id)+'/test-report/">'+ico('chart',13)+' Open the report with screenshots and video</a></div>':'')
       +(tr.tail?'<details><summary>output</summary><pre>'+esc(tr.tail)+'</pre></details>':'')+'</div>';
   }
-  return h+'</div>';
+  return h+fixBlock(m)+'</div>';
+}
+/* A failing run: the agent says per test whether the test is outdated or the app changed; a patch is only proposed for the first kind. */
+const FIX_CLASS={SELECTOR:['Outdated locator','p-done'],APP_BUG:['Possible defect in the app','p-failed'],UNCLEAR:['Not enough evidence','p-cancelled']};
+const diffHtml=d=>String(d||'').split('\n').map(l=>'<span class="'+(l[0]==='+'?'df-add':l[0]==='-'?'df-del':l[0]==='@'?'df-hunk':'')+'">'+esc(l)+'</span>').join('');
+function fixBlock(m){
+  const tr=m.testRun,tf=m.testFix;
+  if(!tr||tr.state!=='failed')return '';
+  let h='<div class="sec-head" style="margin-top:20px"><h4>Why did it fail?</h4><span class="sec-meta">the agent reads the error and the page at the moment of failure and compares it with what was verified</span></div>';
+  if(!tf||tf.state==='error'||tf.state==='rejected'){
+    h+=(tf&&tf.state==='error'?'<div class="chk bad">'+esc(tf.error||'The analysis failed.')+'</div>':tf&&tf.state==='rejected'?'<div class="chk">You rejected the last patch. Nothing was changed.</div>':'')
+      +'<div class="hint">Enter the login above again if the page has one: it is used to run the patched test and prove the patch works. It is never sent to the agent.</div>'
+      +'<div class="stg-act"><button class="btn" id="tfGo">'+ico('spark',13)+' Analyse the failures</button></div>';
+    return h;
+  }
+  if(tf.state==='analyzing'||tf.state==='verifying')
+    return h+'<div class="chk warn"><b>'+(tf.state==='analyzing'?'The agent is analysing the failures':'Running the patched test to prove the patch works')+'</b> · '+Math.max(0,Math.round((Date.now()-tf.startedAt)/1000))+' s</div>';
+  h+=(tf.verdicts||[]).map(v=>{const c=FIX_CLASS[v.class]||[v.class,'p-cancelled'];
+    return '<div class="fc"><div class="fc-h"><span class="fc-t">'+esc(v.test)+'</span><span class="pill '+c[1]+'"><span class="d"></span>'+esc(c[0])+'</span></div>'
+      +(v.why?'<div class="fc-chk">'+esc(v.why)+'</div>':'')+(v.evidence?'<div class="fc-cause"><span>Evidence</span>'+esc(v.evidence)+'</div>':'')+'</div>'}).join('');
+  const files=tf.files||[],good=files.filter(f=>!f.problem);
+  if(files.length)h+='<div class="sec-head" style="margin-top:12px"><h4>Proposed change</h4><span class="sec-meta">made by the agent on a copy; nothing in the project changed yet</span></div>'
+    +files.map(f=>'<div class="chk '+(f.problem?'bad':'')+'"><b class="mono">'+esc(f.path)+'</b>'+(f.problem?'<div>Not allowed: '+esc(f.problem)+'</div>':'')+(f.diff?'<pre class="diff">'+diffHtml(f.diff)+'</pre>':'')+'</div>').join('');
+  else h+='<div class="chk">No change to the tests is proposed.'+((tf.verdicts||[]).some(v=>v.class==='APP_BUG')?' A test that fails because the app changed must not be edited to pass: check the app.':'')+'</div>';
+  if(tf.verify)h+='<div class="chk '+(tf.verify.fixed?'ok':'bad')+'"><b>'+(tf.verify.fixed?'The patch works':'The patch does not fix it')+'</b> · '+(tf.verify.error?esc(tf.verify.error):'with the patch: '+tf.verify.passed+' passed, '+tf.verify.failed+' failed')+'</div>';
+  else if(good.length)h+='<div class="chk warn">The patch was not run, because no login was given or the project was not installed. Apply it, then run the test.</div>';
+  if(tf.state==='applied')h+='<div class="chk ok"><b>Patch applied</b> to the project. Run the test again to see it pass.</div>';
+  else if(tf.state==='ready')h+='<div class="stg-act">'+(good.length?'<button class="btn" id="tfApply">'+ico('check',13)+' Apply the patch</button>':'')+'<button class="btn sm" id="tfReject">Reject</button></div>';
+  return h;
 }
 let trTimer=null;
 function bindTsRun(m){
-  const busy=!!m.testRun&&TR_BUSY.includes(m.testRun.state);
+  const busy=(!!m.testRun&&TR_BUSY.includes(m.testRun.state))||(!!m.testFix&&['analyzing','verifying'].includes(m.testFix.state));
+  const fx=(url,body)=>post('/api/runs/'+m.id+url,body||{}).then(()=>reload(m.id)).catch(e=>{toast(e.message,'bad');reload(m.id)});
+  if($('#tfGo'))$('#tfGo').onclick=()=>{$('#tfGo').disabled=true;fx('/test-fix',{username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''})};
+  if($('#tfApply'))$('#tfApply').onclick=()=>{$('#tfApply').disabled=true;fx('/test-fix/apply').then(()=>toast('Patch applied. Run the test again.'))};
+  if($('#tfReject'))$('#tfReject').onclick=()=>fx('/test-fix/reject');
   if(busy&&!trTimer)trTimer=setInterval(()=>{if(!current||current.id!==m.id){clearInterval(trTimer);trTimer=null;return}reload(m.id)},2000);
   if(!busy&&trTimer){clearInterval(trTimer);trTimer=null}
   if($('#trRun'))$('#trRun').onclick=async()=>{

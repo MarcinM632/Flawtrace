@@ -2012,3 +2012,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:
 /* UI Tests: user name and password side by side */
 .u-cred{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:560px){.u-cred{grid-template-columns:1fr}}
+
+/* UI Tests: patch diff */
+.diff{white-space:pre;overflow:auto;font-size:12px;line-height:1.5;margin:6px 0 0}
+.diff span{display:block;min-height:1.5em}
+.df-add{background:rgba(26,127,55,.12);color:#1a7f37}
+.df-del{background:rgba(207,34,46,.10);color:#cf222e}
+.df-hunk{color:#8a8a8a}
