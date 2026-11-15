@@ -737,6 +737,8 @@ function pruneWork() {
     };
     scan(path.join(base, d), 0);
     for (const s of snaps) { try { fs.rmSync(s, { recursive: true, force: true }); } catch (_) { /* nieistotne */ } }
+    // UI Tests: the dependencies of an old test run are tens of MB; the report stays, npm install brings them back.
+    try { fs.rmSync(path.join(base, d, 'ts-run', 'node_modules'), { recursive: true, force: true }); } catch (_) { /* nieistotne */ }
   });
 }
 

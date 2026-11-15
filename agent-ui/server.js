@@ -15,6 +15,7 @@ const { PE_TARGETS, autotestsFromRun, bgJobs, claudeOnce, parsePE, peBusyRuns, p
 const { SEVERITIES, jira, jiraSync, saveBugs, syncBugs } = require('./lib/bugs');
 const { loadAll, persist, runs } = require('./lib/store');
 const uiTestLib = require('./lib/uitest');
+const uiRun = require('./lib/ui-run');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -477,6 +478,22 @@ const server = http.createServer(async (req, res) => {
         return json(res, 200, { ok: true, summary: chk.summary || '' });
       }
     }
+    // UI Tests: run the written Playwright project on the page and keep the evidence (HTML report with screenshots, video, trace).
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-run$/)) && ['POST', 'DELETE'].includes(req.method)) {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      try {
+        if (req.method === 'DELETE') { uiRun.cancelTestRun(src); return json(res, 200, { ok: true }); }
+        const b = await body(req);
+        const creds = { username: String(b.username || '').slice(0, 200), password: String(b.password || '').slice(0, 200) };
+        return json(res, 202, uiRun.startTestRun(src, creds));
+      } catch (e) { return json(res, e.code || 500, { error: e.message }); }
+    }
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-report(\/.*)?$/)) && req.method === 'GET') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      if (!m[2]) { res.writeHead(302, { Location: p + '/' }); return res.end(); }
+      if (uiRun.serveReport(req, res, src.meta, m[2])) return;
+      return json(res, 404, { error: 'No such file in the report. Run the test first.' });
+    }
     // UI Tests: the user accepts a fully passed run, and only then the TypeScript Playwright test is written from it.
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/uitest-accept$/)) && req.method === 'POST') {
       const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
@@ -561,6 +578,7 @@ const server = http.createServer(async (req, res) => {
     }
     if ((m = p.match(/^\/api\/runs\/([\w-]+)$/)) && req.method === 'GET') {
       const r = runs.get(m[1]); if (!r) return json(res, 404, { error: 'Not found' });
+      uiRun.reconcile(r.meta);
       // Raport rozłożony na karty dla widoku; stare raporty też (parser rozumie dawny format). null = UI pokaże tekst.
       const mode = (AGENTS[r.meta.agent] || {}).mode || 'qa';
       const view = parseReport(mode, r.meta.report, r.meta.reportStatus);
