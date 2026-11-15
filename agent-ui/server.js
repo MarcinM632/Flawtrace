@@ -13,7 +13,8 @@ const { AGENTS_ROOT, AGENT_DIRS, AUTOTEST_REPO, HOST, MODEL, PORT, ROOT, RUNS_DI
 const { chatBatteries, chatCases, parseReport } = require('./lib/report-format');
 const { PE_TARGETS, autotestsFromRun, bgJobs, claudeOnce, parsePE, peBusyRuns, peRun, peSystem, startJob, stripTag, unknownToolsIn } = require('./lib/pe');
 const { SEVERITIES, jira, jiraSync, saveBugs, syncBugs } = require('./lib/bugs');
-const { loadAll, runs } = require('./lib/store');
+const { loadAll, persist, runs } = require('./lib/store');
+const uiTestLib = require('./lib/uitest');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -374,7 +375,7 @@ const server = http.createServer(async (req, res) => {
         // Komunikat ma mówić, co jest nie tak z TYM polem: Autotests i QA MCP nie mają ticketów, a powodem
         // odrzucenia jest najczęściej długość wklejonego opisu.
         const n = ticket.length;
-        const error = a.mode === 'autotest' || a.mode === 'qamcp' || a.mode === 'execution'
+        const error = a.mode === 'autotest' || a.mode === 'qamcp' || a.mode === 'execution' || a.mode === 'uitest'
           ? (n < 10 ? 'Describe it in a few words (at least 10 characters).'
             : `The description is ${n} characters; the limit is 8000. Shorten it, or split it into separate runs.`)
           : a.freeform
@@ -399,6 +400,14 @@ const server = http.createServer(async (req, res) => {
         let u; try { u = new URL(String(b.url).trim()); } catch (_) { return json(res, 400, { error: 'The page link is not a valid address.' }); }
         if (!/^https?:$/.test(u.protocol) || u.username || u.password) return json(res, 400, { error: 'Use an http(s) link without a user name or password in it.' });
         extra.url = u.href;
+      }
+      if (a.mode === 'uitest') {
+        // UI Tests: the page is required; the login (user name and password) is optional and lives only in memory of this run.
+        let u; try { u = new URL(String(b.url || '').trim()); } catch (_) { return json(res, 400, { error: 'Enter the address of the page to test, for example https://test.example.com/login.' }); }
+        if (!/^https?:$/.test(u.protocol) || u.username || u.password) return json(res, 400, { error: 'Use an http(s) link without a user name or password in it. Type the login in the fields below.' });
+        extra.url = u.href;
+        const username = String(b.username || '').slice(0, 200), password = String(b.password || '').slice(0, 200);
+        if (username || password) extra.credentials = { username, password };
       }
       if (a.mode === 'qamcp' || a.mode === 'execution') extra.scope = b.scope === 'all' ? 'all' : 'auto';
       // Data files dropped/pasted into the form (e.g. CSVs, or a PDF for Analyses/Autotests): data for the
@@ -467,6 +476,17 @@ const server = http.createServer(async (req, res) => {
         if (chk.ok === false) { fs.writeFileSync(abs, backup); return json(res, 422, { error: 'pytest cannot collect the tests with this change, so the file was not saved', detail: chk.detail || chk.summary }); }
         return json(res, 200, { ok: true, summary: chk.summary || '' });
       }
+    }
+    // UI Tests: the user accepts a fully passed run, and only then the TypeScript Playwright test is written from it.
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/uitest-accept$/)) && req.method === 'POST') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      const blocker = uiTestLib.acceptBlocker(src.meta);
+      if (blocker) return json(res, 409, { error: blocker });
+      if (!agentAvailable(AGENTS.autotest)) return json(res, 409, { error: 'autotests/ was not found next to the app (no README.md in ' + AGENTS.autotest.absDir + ')' });
+      const run = startRun('autotest', src.meta.ticket.slice(0, 300), '', { stack: 'ts-playwright', url: src.meta.url, source: src.meta.id, flow: uiTestLib.buildFlow(src.meta, src.events) });
+      src.meta.accepted = { at: Date.now(), testRun: run.id };
+      persist(src);
+      return json(res, 201, run);
     }
     // Zatwierdzenie wyniku Autotests: pliki ze zweryfikowanego runu z poczekalni do prawdziwego autotests/.
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/autotests\/(save|discard)$/)) && req.method === 'POST') {

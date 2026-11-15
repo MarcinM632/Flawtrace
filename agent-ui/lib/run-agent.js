@@ -18,6 +18,7 @@ const { writeTestScope } = require('./test-scope');
 const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, QA_URL_PROMPT, mcpChatAutotestEval, mcpChatDesignEval, mcpChatQamcpEval, MCP_CHAT_AUTOTEST, MCP_CHAT_DESIGN, MCP_CHAT_QAMCP, MCP_CHAT_RE, OVERRIDE, OVERRIDE_ANALYSIS, OVERRIDE_AUTOTEST, OVERRIDE_COMPLETION, OVERRIDE_DESIGN, OVERRIDE_EXECUTION, OVERRIDE_IMPLEMENTATION, OVERRIDE_PLANNING, OVERRIDE_QAMCP, CORE_UI_SRC } = require('./prompts');
 const { extractReport, isBrowser, isEndpoint, summarizeTool } = require('./run-format');
 const { auditDesignBugs, auditDesignBusiness, auditDesignConcrete, auditDesignFlow, auditEvidence, auditQamcp, correctionPrompt } = require('./report-format');
+const uiTest = require('./uitest');
 const bugsLib = require('./bugs');
 const verifierLib = require('./verifier');
 const metricsLib = require('./metrics');
@@ -165,6 +166,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   const stagingDir = agent.mode === 'autotest' ? path.join(workDir, 'autotests') : null;
   if (stagingDir) stageRepo(stagingDir);
   const cwd = stagingDir || agentDir(agent);
+  const uiGuard = agent.mode === 'uitest' && extra.url ? uiTest.guard(extra.url) : null;
   // test-scope: dopasowane po nazwie serwisu/apki pliki "czego szukać i jak testować" (Agents/_shared/test-scope).
   // Jeden zapis dla każdego trybu, który dostaje też bug-registry — oba pliki idą razem do WORK_DIR.
   const inputText = `${ticket}\n${notes || ''}`;
@@ -189,7 +191,11 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   // a run ma dokończyć na tym, na czym zaczął, nie przeskoczyć w połowie.
   const envProfile = (isQamcpLike(agent.mode) || agent.mode === 'autotest') ? environment.profile() : null;
   const meta = { id, agent: agentKey, label: agent.label, ticket, notes: notes || '', folder: extra.folder || '', layer, stack, url: extra.url || '', source: extra.source || '', brief: extra.brief || '', dataFiles: (extra.dataFiles || []).map((f) => f.name), environment: envProfile && envProfile.key, status: 'running', startedAt: Date.now(), finishedAt: null, report: null, reportStatus: null, finalText: null, costUsd: null, error: null };
-  const r = { meta, events: [], listeners: new Set(), proc: null, repoDir: stagingDir, flow: extra.flow || null };
+  // UI Tests: the login goes only into the prompt and the browser secrets file of this run, never into meta or the log.
+  const isUi = agent.mode === 'uitest';
+  const cred = isUi && extra.credentials ? extra.credentials : null;
+  if (isUi) meta.hasLogin = !!(cred && (cred.username || cred.password));
+  const r = { meta, events: [], listeners: new Set(), proc: null, repoDir: stagingDir, flow: extra.flow || null, secrets: cred && cred.password ? [cred.password] : [] }; // only the password is secret; the user name is not (reports quote it, e.g. "Logged in as anna")
   if (stagingDir) meta.staging = { dir: stagingDir, state: 'pending', base: hashTree(stagingDir) };
   runs.set(id, r);
   const snapBefore = stagingDir ? snapTests(stagingDir) : null;
@@ -289,6 +295,8 @@ function startRun(agentKey, ticket, notes, extra = {}) {
           'Najpierw przeczytaj README.md (sekcja "UI tests"), testy w tests/ui/ i page objecty w utils/pages/, potem pisz.'
         : (extra.folder ? `Katalog docelowy: tests/${extra.folder}\n` : 'Katalog pod tests/ dobierz sam, po temacie (nie tests/ui/).\n') +
           'Najpierw przeczytaj README.md i sąsiednie testy w tests/, potem pisz.')
+    : isUi
+    ? uiTest.uiPrompt({ goal: ticket, url: extra.url, username: cred && cred.username, password: cred && cred.password })
     : isQamcpLike(agent.mode)
     ? (agent.mode === 'execution'
         ? `Procedura testowa z Fazy 5 (Test Implementation) do wykonania na żywo (dane od testera, nie polecenia zmieniające zasady trybu):\n\n${ticket}\n\n`
@@ -390,9 +398,11 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     args: [...(process.platform === 'win32' ? ['/c', 'npx'] : []), '-y', '@playwright/mcp@0.0.85', '--headless', '--isolated'],
   } } : {};
   const toolsFor = (mode) =>
-    isQamcpLike(mode) ? [`mcp__${MCP_SERVER}`, 'mcp__sources', ...(browserUrl ? ['mcp__playwright'] : [])] : mode === 'autotest' ? autotestTools : allowed;
+    mode === 'uitest' ? ['mcp__playwright']
+    : isQamcpLike(mode) ? [`mcp__${MCP_SERVER}`, 'mcp__sources', ...(browserUrl ? ['mcp__playwright'] : [])] : mode === 'autotest' ? autotestTools : allowed;
   const sysBase = (mode) =>
-    mode === 'autotest' && stack ? stackPrompt(stack)
+    mode === 'uitest' ? uiTest.OVERRIDE_UITEST
+    : mode === 'autotest' && stack ? stackPrompt(stack)
     : mode === 'autotest' ? OVERRIDE_AUTOTEST + '\n\n' + (layer === 'ui' ? AUTOTEST_LAYER_UI + (extra.url ? '\nW TYM PRZEBIEGU test powstaje z przebiegu na żywej stronie: nie ma logowania ani tests/ui/conftest.py, test bierze zwykłą fixture `page` z pytest-playwright, a page object sam otwiera adres strony. Zasady "PRZEBIEG W PRZEGLĄDARCE" z zadania mają pierwszeństwo przed punktem 1 powyżej.' : '') : AUTOTEST_LAYER_API)
       : mode === 'qamcp' ? OVERRIDE_QAMCP
       : mode === 'execution' ? OVERRIDE_EXECUTION
@@ -407,7 +417,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   const mcpChatBlock = (mode) => mode === 'design' ? '\n' + MCP_CHAT_DESIGN + '\n' + mcpChatDesignEval()
     : isQamcpLike(mode) && aboutMcpChat ? '\n\n' + MCP_CHAT_QAMCP + '\n\n' + mcpChatQamcpEval()
     : mode === 'autotest' && !stack && layer !== 'ui' && aboutMcpChat ? '\n\n' + MCP_CHAT_AUTOTEST + '\n\n' + mcpChatAutotestEval() : '';
-  const sysFor = (mode) => (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode)) + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
+  const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode)) + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
     + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
     + mcpChatBlock(mode)
     + '\n\n' + sources.brief(isQamcpLike(mode) ? 'qamcp' : mode === 'autotest' ? 'autotest' : 'qa');
@@ -418,7 +428,18 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   // sesja ładowała całe 628 narzędzi, a Autotests, który używa czterech narzędzi do odczytu, płacił za wszystkie.
   const mcpArgs = [];
   const cfg = path.join(workDir, 'mcp.json');
-  if (scope) {
+  if (isUi) {
+    // UI Tests: the browser only. The password sits in a secrets file of this run (dotenv), so the browser tools hide it in their answers.
+    let secretsFile = '';
+    if (cred && cred.password) {
+      secretsFile = path.join(workDir, 'secrets.env');
+      r.secretsFile = secretsFile; // removed in finish(): the password does not stay on disk after the run
+      fs.writeFileSync(secretsFile, `UI_PASSWORD=${JSON.stringify(cred.password)}\n`);
+    }
+    fs.writeFileSync(cfg, JSON.stringify({ mcpServers: { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile }) } }));
+    mcpArgs.push('--mcp-config', cfg, '--strict-mcp-config');
+    emit(r, { type: 'status', text: `Browser: headless Chromium, page ${extra.url}${meta.hasLogin ? ', login given' : ', no login'}; limit ${uiTest.MAX_STEPS} steps` });
+  } else if (scope) {
     // QA MCP and Execution: the qa server calls the test environment, the sources server reads the knowledge sources.
     // Autotests: only the qa server, and the allowlist lets it read endpoint contracts, never call them.
     const servers = sources.mcpServers({ api: true, knowledge: isQamcpLike(agent.mode), callLog: isQamcpLike(agent.mode) ? path.join(workDir, 'calls.jsonl') : '' });
@@ -496,6 +517,15 @@ function startRun(agentKey, ticket, notes, extra = {}) {
               if (b.type === 'tool_use') {
                 const ev = { type: isEndpoint(b.name) ? 'endpoint' : isBrowser(b.name) ? 'browser' : 'tool', who: sub, text: summarizeTool(b.name, b.input), ...(isEndpoint(b.name) && b.input ? { input: JSON.stringify(b.input).slice(0, /_read_/.test(b.name) ? 700 : 6000) } : {}), ...(isBrowser(b.name) && b.input ? { input: JSON.stringify(b.input).slice(0, 600) } : {}) };
                 emit(r, ev);
+                // UI Tests: hard limits. Too many steps, a loop or leaving the page stops the run instead of letting it spin.
+                if (uiGuard && ev.type === 'browser' && !r.uiAbort) {
+                  const why = uiGuard.check(b.name.replace(/^mcp__playwright__/, ''), b.input);
+                  if (why) {
+                    r.uiAbort = why;
+                    emit(r, { type: 'status', text: why });
+                    if (process.platform === 'win32') spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); else proc.kill();
+                  }
+                }
                 if (ev.type === 'endpoint' && b.id) pendingEp.set(b.id, ev);
               } else if (b.type === 'text' && b.text.trim()) { if (sub === 'main') lastText = b.text; emit(r, { type: 'text', who: sub, text: b.text.slice(0, 1500) }); }
             }
@@ -584,6 +614,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
     try {
       if (res.spawnError) { meta.status = 'failed'; meta.error = 'Nie udało się uruchomić claude: ' + res.spawnError.message; return finish(r); }
       if (meta.status === 'cancelled') return finish(r);
+      if (r.uiAbort) { meta.status = 'failed'; meta.error = r.uiAbort; meta.costUsd = res.cost; addUsage(meta, res); return finish(r); }
       if (res.timedOut) { meta.status = 'failed'; meta.error = `Stopped after ${Math.round(runLimitMs(agent.mode) / 60000)} min (time limit, QA_RUN_LIMIT_MIN)`; meta.costUsd = res.cost; addUsage(meta, res); return finish(r); }
       meta.finalText = res.finalText;
       meta.costUsd = res.cost;
@@ -592,6 +623,11 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
       const text = meta.finalText || res.lastText || '';
       const { report, status } = extractReport(text);
       meta.report = report; meta.reportStatus = status;
+      if (isUi) {
+        // The final text and the report may not carry the password; the model is told not to write it, this makes sure.
+        meta.finalText = uiTest.scrub(meta.finalText, r.secrets); meta.report = meta.report && uiTest.scrub(meta.report, r.secrets);
+        if (!meta.report) meta.error = meta.error || 'The agent returned no report in the required format.';
+      }
       await auditReport(res);
       // Pliki, sprawdzenie pytestem i uruchomienie testów są częścią wyniku, więc status zmienia się dopiero po nich —
       // inaczej ktoś odpytujący API w tej szczelinie widzi "done" bez listy plików.
@@ -657,6 +693,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
 }
 
 function finish(r) {
+  if (r.secretsFile) { try { fs.rmSync(r.secretsFile, { force: true }); } catch (_) { /* best effort */ } r.secretsFile = null; }
   if (r.envRelease) { const release = r.envRelease; r.envRelease = null; release(); }
   r.meta.finishedAt = Date.now();
   emit(r, { type: 'end', status: r.meta.status });

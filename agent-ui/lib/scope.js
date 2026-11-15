@@ -93,13 +93,14 @@ const BUILTIN_TOOLS = {
   autotest: ['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Skill', 'ToolSearch'],
   qa: ['Bash', 'Read', 'Grep', 'Glob', 'Agent', 'Skill', 'Edit', 'Write', 'ToolSearch'],
 };
+BUILTIN_TOOLS.uitest = ['ToolSearch'];
 BUILTIN_TOOLS.design = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.planning = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.analysis = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.execution = BUILTIN_TOOLS.qamcp;
 BUILTIN_TOOLS.implementation = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.completion = BUILTIN_TOOLS.qa;
-const RUN_LIMIT_MIN = { design: 60, qa: 45, qamcp: 30, autotest: 20, planning: 50, analysis: 50, execution: 30, implementation: 40, completion: 15 };
+const RUN_LIMIT_MIN = { design: 60, qa: 45, qamcp: 30, autotest: 20, uitest: 20, planning: 50, analysis: 50, execution: 30, implementation: 40, completion: 15 };
 const runLimitMs = (mode) => (Number(process.env.QA_RUN_LIMIT_MIN) || RUN_LIMIT_MIN[mode] || 45) * 60000;
 
 module.exports = {

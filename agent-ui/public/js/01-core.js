@@ -387,11 +387,12 @@ document.documentElement.dataset.theme='light';
 try{localStorage.removeItem('theme')}catch(e){}
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','runs','qamcp','autotest','flow','runsummary','bugs','risk','metricsgen','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','runs','qamcp','uitest','autotest','flow','runsummary','bugs','risk','metricsgen','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
   qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
+  uitest:['Agents','UI Tests','Verify a web page through its interface, also behind a login, and turn a fully passed run into a Playwright test.'],
   autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
   flow:['Test Flow','Test Flow','One prompt runs the whole process on a ticket: planning, analysis, design, implementation, execution and completion.'],
   tfmonitor:['Metrics','Release monitoring','Release progress, status and priority for each project, read from Jira.'],
@@ -429,6 +430,7 @@ function showTab(t){
   if(t==='risk')loadBugs().then(renderRisk).catch(()=>{});
   if(t==='metricsgen')loadMetricsGen();
   if(t==='qamcp'){loadPlatStatus();refreshAll();qPendingSync()}
+  if(t==='uitest')refreshAll();
   if(t==='flow'){loadPlatStatus('#flEnv');refreshAll();qPendingSync()}
   if(t==='autotest'){loadAutotestMeta();refreshAll();qPendingSync();atSetSub(AT_SUB)}
   if(t==='runs')refreshAll();

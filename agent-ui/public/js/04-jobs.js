@@ -129,6 +129,7 @@ function paint(m){
     +(m.agent==='completion'&&m.status==='done'?`<button class="btn" id="toSummary" title="All Test Flow phases of this ticket on one page">${ico('chart',13)} Open Run Summary</button>`:'')
     +(canReplicate(m)?`<button class="btn" id="toQa" title="Turn this result into a process and run it in QA MCP">${ico('term')} Replicate in QA MCP</button>`:'')
     +((m.agent==='qamcp'||m.agent==='execution')&&m.status==='done'&&m.eps?`<button class="btn" id="toTests" title="Write automated tests that replicate this run">${ico('code')} Create autotests</button>`:'')
+    +(m.agent==='uitest'&&m.status==='done'?(m.accepted?`<button class="btn" id="uiAccepted" title="Open the Playwright test written from this run">${ico('check')} Accepted, open the test</button>`:/^VERIFIED/i.test(m.reportStatus||'')?`<button class="btn" id="uiAccept" title="Write a Playwright test in TypeScript from this fully passed run">${ico('code')} Accept and write the Playwright test</button>`:`<button class="btn" id="uiAccept" disabled title="Only a run with the status VERIFIED (every step and check passed) can be accepted">${ico('code')} Cannot accept: ${esc(m.reportStatus||'no verdict')}</button>`):'')
     +(m.status==='done'?`<button class="btn" id="toBug">${ico('bug')} Report a bug</button>`:'');
   if($('#pushNext'))$('#pushNext').onclick=async()=>{
     $('#pushNext').disabled=true;
@@ -142,6 +143,8 @@ function paint(m){
   if($('#pushedTag'))$('#pushedTag').onclick=()=>{const t=RUNS.find(r=>r.id===m.pushedTo);showTab('flow');open(m.pushedTo)};
   if($('#toSummary'))$('#toSummary').onclick=()=>rsAutoOpen(m.ticket);
   if($('#toTests'))$('#toTests').onclick=()=>askComment(m);
+  if($('#uiAccept')&&!$('#uiAccept').disabled)$('#uiAccept').onclick=()=>uiAccept(m);
+  if($('#uiAccepted'))$('#uiAccepted').onclick=()=>{if(typeof setALayer==='function')setALayer('ui');showTab('autotest');open(m.accepted.testRun)};
   if($('#toQa'))$('#toQa').onclick=()=>{
     if(repReady(m.id)){loadReplicate(jobOf('replicate',m.id),true);showTab('qamcp');$('#qProcess').focus();syncJobButtons(m);return}
     startJobFor('replicate',m,'The QA MCP process');

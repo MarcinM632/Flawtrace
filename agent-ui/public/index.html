@@ -54,6 +54,7 @@
     <div class="nav-group">Agents</div>
     <button data-tab="runs" class="on"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">Analyses</span><span class="live" id="nb-runs" hidden></span></button>
     <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
+    <button data-tab="uitest"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">UI Tests</span><span class="live" id="nb-uitest" hidden></span></button>
     <button data-tab="autotest"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">Autotests</span><span class="live" id="nb-autotest" hidden></span><span class="live" id="nb-suiterun" hidden></span></button>
     <div class="nav-group">Test Flow</div>
     <button data-tab="flow"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Test Flow</span><span class="live" id="nb-flow" hidden></span></button>
@@ -226,6 +227,39 @@
     </section>
   </div>
   <section class="panel detail" id="qDetail"></section>
+</main>
+
+<main id="view-uitest" hidden>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Check a page</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="uPage">Page address</label>
+          <input type="url" id="uPage" placeholder="https://test.example.com/login" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="uUser">Login (only if the page asks for one)</label>
+          <div class="u-cred"><input type="text" id="uUser" placeholder="User name" autocomplete="off" spellcheck="false"><input type="password" id="uPass" placeholder="Password" autocomplete="new-password"></div>
+          <div class="hint">Use an account of the test environment. The password is kept only for this run: it is not saved in the history and is hidden in the log and the report.</div>
+        </div>
+        <div class="field">
+          <label for="uGoal">What to verify</label>
+          <div class="composer"><textarea id="uGoal" placeholder="Describe what a user does and what must be true afterwards, e.g.
+
+Log in, open Settings, change the display name and save. The new name must appear in the header."></textarea><button class="go" id="uGo"><svg width="13" height="13"><use href="#i-play"/></svg> Verify the page</button></div>
+          <div class="hint">The agent does it in its own browser, step by step. Only a run where every step and check passed can be accepted, and only then the Playwright test is written.</div>
+        </div>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
+        <div class="err" id="uErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="uListCount"></span></div>
+      <div class="list" id="uList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="uDetail"></section>
 </main>
 
 <main id="view-flow" hidden>
@@ -2581,6 +2615,7 @@
 <script src="/js/19-run-summary.js"></script>
 <script src="/js/20-sources.js"></script>
 <script src="/js/21-setup.js"></script>
+<script src="/js/22-uitest.js"></script>
 <script src="/js/10-main.js"></script>
 </body>
 </html>

@@ -2008,3 +2008,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:
 .at-stack button small{font-size:11px;opacity:.75}
 #view-autotest>.col[data-pane="write"]>.at-stack{grid-column:1/-1}
 .seg[hidden]{display:none}
+
+/* UI Tests: user name and password side by side */
+.u-cred{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.u-cred{grid-template-columns:1fr}}

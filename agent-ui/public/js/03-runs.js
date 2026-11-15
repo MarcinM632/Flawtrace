@@ -1,13 +1,13 @@
 // QA Agents UI: runs. Klasyczny skrypt: wszystkie pliki z js/ dzielą jeden zakres globalny i ładują się po kolei (kolejność jest istotna).
 /* ---------- runs: shared plumbing for Analyses, QA MCP and Autotests ---------- */
 /* Each tab keeps its own history; the Analyses list holds everything that is neither. */
-const OWN_TABS=['qamcp','autotest','planning','analysis','design','implementation','execution','completion'];
+const OWN_TABS=['qamcp','uitest','autotest','planning','analysis','design','implementation','execution','completion'];
 const FLOW_PHASES=['planning','analysis','design','implementation','execution','completion'];
 const TAB_OF=a=>FLOW_PHASES.includes(a)?'flow':OWN_TABS.includes(a)?a:'runs';
-const RUN_TABS=['runs','qamcp','autotest','flow'];
-const PANEL={runs:'#detail',qamcp:'#qDetail',autotest:'#aDetail',flow:'#flDetail'};
-const LIST={runs:'#list',qamcp:'#qList',autotest:'#aList',flow:'#flList'};
-const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',autotest:'#aListCount',flow:'#flListCount'};
+const RUN_TABS=['runs','qamcp','uitest','autotest','flow'];
+const PANEL={runs:'#detail',qamcp:'#qDetail',uitest:'#uDetail',autotest:'#aDetail',flow:'#flDetail'};
+const LIST={runs:'#list',qamcp:'#qList',uitest:'#uList',autotest:'#aList',flow:'#flList'};
+const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',uitest:'#uListCount',autotest:'#aListCount',flow:'#flListCount'};
 /* ---------- Test Flow chaining ---------- */
 /* Which phase's finished report feeds which phase's input. Monitoring & control has no per-ticket
    report, so it is never a link in this chain — "push to next phase" simply does not exist there. */
@@ -59,6 +59,7 @@ async function autoPushCheck(list){
 const LIST_EMPTY={
   runs:'No analyses yet. Run the first one above.',
   qamcp:'No test processes run yet. Describe one above.',
+  uitest:'No pages checked yet. Enter a page and what to verify above.',
   autotest:'No autotests written yet. Describe a case above.',
   flow:'No flows run yet. Enter a backlog task above.',
 };
@@ -73,6 +74,11 @@ const GUIDE={
     ['The agent runs it','Every read and write is sent to the environment shown in the form.'],
     ['Check the evidence','The log lists every endpoint called and every value read. The result is a short verdict with replication steps.'],
     ['Create autotests','A finished run can be turned into API tests with pytest or UI tests with Playwright.'],
+  ],
+  uitest:[
+    ['Give the page','Enter the page address and what to verify. If the page needs a login, enter the user name and password.'],
+    ['The agent walks the page','It works in its own headless browser, logs in, does the scenario step by step and checks every expected result on the page.'],
+    ['Accept the result','Only a fully passed run (every step and check PASS) can be accepted. After you accept it, the agent writes a Playwright test in TypeScript from exactly what it verified.'],
   ],
   autotest:[
     ['Describe the case','Describe one behaviour as you would in a test plan.'],

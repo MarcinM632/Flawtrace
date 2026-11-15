@@ -58,6 +58,13 @@ const AGENTS = {
     hint: 'Ticket key of a finished task',
     pattern: /^[\s\S]{3,300}$/,
   },
+  // UI Tests: agent przechodzi stronę we własnej przeglądarce (Playwright MCP), także za logowaniem, i zwraca raport
+  // z krokami s1, s2... Dopiero po akceptacji użytkownika powstaje z niego test TypeScript Playwright.
+  uitest: {
+    label: 'UI Tests', absDir: ROOT, mode: 'uitest', freeform: true,
+    hint: 'What to check on the page',
+    pattern: /^[\s\S]{10,8000}$/,
+  },
   // Przepisuje przypadek testowy prozą na pytest w naszym repo `autotests/`.
   autotest: {
     label: 'Autotests', absDir: AUTOTEST_REPO, mode: 'autotest', freeform: true,
@@ -70,7 +77,9 @@ const AGENTS = {
 const agentDir = (a) => a.absDir || path.join(AGENTS_ROOT, a.dir);
 
 /** Czy agent ma z czego wystartować. QA MCP potrzebuje .mcp.json, reszta — CLAUDE.md u siebie. */
-const agentAvailable = (a) => (a.mode === 'qamcp' || a.mode === 'execution'
+const agentAvailable = (a) => (a.mode === 'uitest'
+  ? true // przeglądarka Playwright MCP startuje przez npx, nie potrzeba API środowiska
+  : a.mode === 'qamcp' || a.mode === 'execution'
   ? require('./sources').apiReady()
   // Autotests nie ma CLAUDE.md — jego instrukcją jest README.md repo (to samo sprawdza /api/autotest-meta).
   : a.mode === 'autotest'

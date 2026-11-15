@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { RUNS_DIR } = require('./config');
 
+const scrubSecrets = (text, secrets) => { let s = text; for (const v of secrets) if (v && v.length >= 3) s = s.split(v).join('***'); return s; };
 const runs = new Map(); // id -> { meta, events[], listeners:Set, proc }
 
 function runFile(id) { return path.join(RUNS_DIR, id + '.json'); }
@@ -19,6 +20,8 @@ function loadAll() {
 
 function emit(r, ev) {
   ev.t = Date.now();
+  // UI Tests: a password typed by the agent must not reach the log, the live stream or the saved run.
+  if (r.secrets && r.secrets.length) for (const k of ['text', 'input', 'output']) if (typeof ev[k] === 'string') ev[k] = scrubSecrets(ev[k], r.secrets);
   r.events.push(ev);
   for (const res of r.listeners) res.write(`data: ${JSON.stringify(ev)}\n\n`);
 }
