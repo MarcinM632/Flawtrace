@@ -16,7 +16,7 @@ Next steps in order: (1) agent runner interface with the Claude Code runner as i
 **Status of the steps**
 
 - (1) and (2) done in structure: `lib/acp.js` is a dependency-free ACP client (wire format checked against the official v1 schema); `lib/llm` has the "Your own coding agent (ACP)" provider with presets for the Claude Code and Codex adapters (npm packages `@agentclientprotocol/claude-agent-acp`, `@zed-industries/codex-acp`) and a custom command; `lib/run-agent.js` runs **UI Tests** on it when selected. Other agents say in the run log that they still run on Claude Code.
-- Tested against a fake ACP agent that speaks the real protocol (tool calls, permission requests, cancel, timeout), including a full run through the server. **Not yet tried with a real adapter**: the first real run (Settings > AI provider > your own agent > Claude Code or Codex, then UI Tests) is the open check.
+- Tested against a fake ACP agent that speaks the real protocol (tool calls, permission requests, cancel, timeout), including a full run through the server. **Tried once with a real adapter** (2026-11-16, Claude Code through `@agentclientprotocol/claude-agent-acp`, UI Tests on the Flawtrace page itself): the run finished VERIFIED, the browser tool calls were recognised and no tool was wrongly denied; the agent reported its cost (about 0.08 USD). Not yet tried with the Codex adapter or a custom agent.
 - Known limits of the ACP runner: no session to resume, so the one automatic correction turn is skipped; cost is shown only if the agent reports it; permission decisions rely on the tool names the agent reports (an allowlisted MCP server name, or a read-only kind).
 
 ---
