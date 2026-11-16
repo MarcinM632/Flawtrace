@@ -1,4 +1,20 @@
-# Flawtrace as a service: plan
+# Flawtrace: plan (local / self-hosted first)
+
+**Decision 2 (2026-11-16): the product is a LOCAL, self-hosted application.** The customer runs Flawtrace on their own machine or server, with their own data, their own database and their own AI. The owner hosts nothing and pays nothing for anybody. Everything below about accounts, organisations, Stripe and a hosted multi-tenant cloud is **deferred** (kept as a later option), not the next step.
+
+What this changes:
+
+- No hosted accounts, e-mail sending, shared Postgres or per-customer isolation are needed. A single customer installs it; data stays on their side.
+- Optional local protection: a password to open the app, off by default on localhost, required when it is exposed to a network.
+- Storage can stay as local files, or a local database later if volume requires it. Postgres is only needed again for the hosted option.
+- **The AI is the customer's own agent.** Every agent of Flawtrace must be able to run on the customer's AI, not only on Claude Code. Route chosen: **ACP (Agent Client Protocol)**: Flawtrace starts the customer's own coding agent (Claude Code, Codex, Gemini CLI or another ACP agent) and hands it the task and the tools. Package names of the adapters differ between sources; confirm them in the official ACP registry before building. A pure API-key agent loop (no installed agent) stays as a second route.
+- Delivery: `docker compose up` or `npx`/installer, plus a first-run wizard (already present: setup window, tour, Settings).
+- Business: licence or paid support for the self-hosted app; no usage metering, because the owner has no token cost.
+
+Next steps in order: (1) agent runner interface with the Claude Code runner as it is today, (2) ACP runner, tried first on UI Tests, (3) port the other agents, (4) Docker packaging and installation guide, (5) optional local password.
+
+---
+
 
 Decisions taken (2026-11-16):
 
