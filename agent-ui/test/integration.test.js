@@ -56,3 +56,13 @@ test('starting tests validates input through the app and unknown run is 404', as
   assert.equal((await call('/api/v1/runs/nope', { headers: auth })).status, 404);
   assert.equal((await call('/api/v1/nothing', { headers: auth })).status, 404);
 });
+
+test('connection info gives the key to a direct local request only', async () => {
+  const direct = await call('/api/integration');
+  assert.equal(direct.status, 200);
+  assert.equal(direct.body.key, KEY);
+  assert.ok(direct.body.mcpScript.endsWith('flawtrace-server.js'));
+  const relayed = await call('/api/integration', { headers: { 'x-forwarded-for': '203.0.113.9' } });
+  assert.equal(relayed.body.key, null);
+  assert.equal(relayed.body.keyHidden, true);
+});

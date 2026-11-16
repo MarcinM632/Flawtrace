@@ -382,9 +382,7 @@ wireFileField('autotest',{drop:'#aFileDrop',input:'#aFileInput',empty:'#aFileEmp
 wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpty',list:'#flFileList',err:'#flFileErr'});
 
 /* ---------- theme ---------- */
-/* Light theme only. */
-document.documentElement.dataset.theme='light';
-try{localStorage.removeItem('theme')}catch(e){}
+/* Light, dark or auto (follows the system). The saved choice is applied before first paint by the script in <head>; settings (23-settings.js) change it. */
 
 /* ---------- navigation ---------- */
 const VIEWS=['workspace','sources','runs','qamcp','uitest','autotest','flow','runsummary','bugs','risk','metricsgen','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];

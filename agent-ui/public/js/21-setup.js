@@ -98,4 +98,4 @@ $('#srcTry').addEventListener('click',()=>{if(SETUP.open&&setupApiReady())closeS
 
 /* First visit: the wizard replaces the old redirect to Sources. */
 srcFirstRun=function(){};
-srcStatus.then(s=>{let seen=false;try{seen=!!localStorage.getItem('setup.seen')}catch(_){}if(s&&!s.api&&!seen)openSetup(0)});
+srcStatus.then(s=>{let seen=false;try{seen=!!localStorage.getItem('setup.seen')}catch(_){}if(s&&!s.api&&!seen&&!(window.tourStart&&tourStart()))openSetup(0)});

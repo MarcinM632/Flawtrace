@@ -1,0 +1,97 @@
+/* Flawtrace — dark theme and the styles of Settings and the welcome tour.
+   Loaded last. The dark block wins over the earlier :root blocks by specificity (:root[data-theme]),
+   not by order, so it keeps working however app.css and polish.css are rearranged. */
+
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1620; --bg2:#101c28;
+  --surface:#142130; --surface2:#182739; --surface3:#1d2f43; --glass:#142130; --field:#0f1b28;
+  --ink:#e6eef6; --ink2:#c3d0dd; --ink3:#93a6b9; --ink4:#6c8197;
+  --line:#243649; --line2:#30465c;
+  --acc:#2f9fd8; --acc-h:#52b4e6; --acc-ink:#04131d; --acc-tx:#6cc2ee;
+  --acc-soft:#14344a; --acc-line:#2f9fd8; --hi:#1d4560;
+  --ok:#4cc38a; --ok-soft:#12332a; --warn:#e0a94a; --warn-soft:#3a2d12; --bad:#f0746b; --bad-soft:#3d1a1a;
+  --info:#6cc2ee; --info-soft:#14344a;
+  --app-1:#8a9cf0; --app-2:#b08cf0; --app-3:#6cc2ee; --app-3-soft:#14344a;
+  --m-get:#6cc2ee; --m-get-soft:#14344a; --m-post:#4cc38a; --m-post-soft:#12332a;
+  --m-put:#e0a94a; --m-put-soft:#3a2d12; --m-del:#f0746b; --m-del-soft:#3d1a1a;
+  --ph-planning:#6cc2ee; --ph-tfmonitor:#6cc2ee; --ph-analysis:#8a9cf0; --ph-design:#4cc38a;
+  --ph-implementation:#e0a94a; --ph-execution:#b08cf0; --ph-completion:#4cc3c3; --ph-runsummary:#6cc2ee;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px -12px rgba(0,0,0,.6);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.4),0 18px 40px -18px rgba(0,0,0,.7);
+  --shadow-lg:0 24px 60px -20px rgba(0,0,0,.7);
+  --grad:linear-gradient(135deg,#2f9fd8 0%,#1f7fb3 100%);
+  --grad-soft:linear-gradient(135deg,#182739 0%,#142130 100%);
+  --glow:0 8px 22px -8px rgba(47,159,216,.5);
+}
+:root[data-theme="dark"] body{background:radial-gradient(1200px 420px at 70% -120px,#13293b 0,transparent 70%),var(--bg);background-attachment:fixed}
+:root[data-theme="dark"] body::before{display:none}
+:root[data-theme="dark"] .sidebar,
+:root[data-theme="dark"] header.topbar{background:rgba(20,33,48,.92)}
+:root[data-theme="dark"] .env-switch,
+:root[data-theme="dark"] .side-foot{background:var(--surface2)}
+:root[data-theme="dark"] .phase-hero{background:linear-gradient(100deg,var(--acc-soft),var(--surface) 85%)}
+:root[data-theme="dark"] .modal{background:rgba(3,8,14,.66)}
+:root[data-theme="dark"] .nav button:hover{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .nav button.on{background:var(--acc-soft);color:var(--acc-tx);box-shadow:none}
+:root[data-theme="dark"] .nav button.on svg{color:var(--acc-tx)}
+:root[data-theme="dark"] .nav button.on .count{background:var(--acc);color:var(--acc-ink)}
+:root[data-theme="dark"] .btn:hover:not(:disabled){background:var(--surface3);border-color:var(--line2);color:var(--ink)}
+:root[data-theme="dark"] .btn:hover:not(:disabled) svg{color:var(--ink)}
+:root[data-theme="dark"] .go,
+:root[data-theme="dark"] .btn.primary{color:var(--acc-ink)}
+:root[data-theme="dark"] .setup-banner{background:var(--acc-soft);color:var(--ink)}
+:root[data-theme="dark"] .setup-banner a{color:var(--acc-tx)}
+:root[data-theme="dark"] .setup-rail{background:#0a121b}
+:root[data-theme="dark"] .setup-steps li.on{background:var(--surface3);color:var(--ink)}
+:root[data-theme="dark"] .setup-steps li.on .ss-n{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] textarea:focus,
+:root[data-theme="dark"] select:focus{border-color:var(--acc-line);box-shadow:0 0 0 4px rgba(47,159,216,.18)}
+:root[data-theme="dark"] .seg button.on{background:var(--acc-soft);color:var(--acc-tx)}
+
+/* ================= Settings ================= */
+.settings{padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 32px);font-family:var(--sans);font-weight:400;font-size:14px}
+.st-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 6px}
+.st-head h2{margin:0;font-size:18px;font-weight:600}
+.st-tabs{display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--line)}
+.st-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;margin-bottom:-1px;color:var(--ink3);font:inherit;font-weight:500;cursor:pointer}
+.st-tabs button:hover{color:var(--ink)}
+.st-tabs button.on{color:var(--acc-tx);border-bottom-color:var(--acc)}
+.st-body{padding:18px 24px 24px;overflow:auto;line-height:1.6}
+.st-lead{margin:0 0 14px;color:var(--ink2)}
+.st-h{margin:22px 0 8px;font-size:15px;font-weight:600}
+.st-themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.st-theme{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surface2);color:var(--ink);font:inherit;cursor:pointer}
+.st-theme small{color:var(--ink3)}
+.st-theme:hover{border-color:var(--acc-line)}
+.st-theme.on{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.st-sw{display:block;width:100%;height:46px;border-radius:var(--r-sm);border:1px solid var(--line2);margin-bottom:6px}
+.st-sw-light{background:linear-gradient(135deg,#f2f8fc 50%,#fff 50%)}
+.st-sw-dark{background:linear-gradient(135deg,#0d1620 50%,#142130 50%)}
+.st-sw-auto{background:linear-gradient(115deg,#f2f8fc 50%,#0d1620 50%)}
+.st-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.st-step{display:flex;gap:12px;align-items:flex-start}
+.st-step>div{min-width:0;flex:1}
+.st-step p{margin:4px 0 8px;color:var(--ink2)}
+.st-n{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--acc-soft);color:var(--acc-tx);border:1px solid var(--acc-line)}
+.st-step code,.st-foot code,.st-lead code{font-family:var(--mono);font-size:12.5px;background:var(--surface3);padding:1px 5px;border-radius:4px}
+.st-code{position:relative;margin:6px 0 8px}
+.st-code pre{margin:0;padding:12px 78px 12px 12px;background:var(--surface3);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--mono);font-size:12px;line-height:1.5;overflow:auto;white-space:pre;color:var(--ink)}
+.st-copy{position:absolute;top:6px;right:6px}
+.st-key{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+.st-key code{padding:6px 10px;font-size:13px;word-break:break-all}
+.st-res .ok-t{color:var(--ok)}
+.st-res .bad-t{color:var(--bad)}
+.st-foot{margin:18px 0 0;color:var(--ink3)}
+.st-help{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+
+#tourModal [hidden],.st-tabs [hidden]{display:none!important}
+/* ================= Welcome tour ================= */
+.tour{width:min(520px,100%);font-family:var(--sans);font-weight:400;font-size:14px}
+.tour h2{margin:10px 0 8px;font-size:20px;font-weight:600}
+.tour p{margin:0;color:var(--ink2);line-height:1.65;min-height:96px}
+.tour-dots{display:flex;gap:6px}
+.tour-dots i{width:22px;height:4px;border-radius:99px;background:var(--line2)}
+.tour-dots i.on{background:var(--acc)}
+@media (max-width:640px){.st-themes{grid-template-columns:1fr}}

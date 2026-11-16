@@ -155,8 +155,28 @@ const ROUTES = [
 ];
 function started(r) { return r.status === 201 ? { status: 202, data: slimRun(r.data) } : r; }
 
-/** Returns true when the request belonged to /api/v1 (and was answered). */
+/** True only for a request made on this machine and not relayed by a proxy or tunnel. */
+function isLocalDirect(req) {
+  const a = String(req.socket.remoteAddress || '');
+  const local = a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
+  const relayed = ['x-forwarded-for', 'x-forwarded-host', 'forwarded', 'x-real-ip'].some((h) => req.headers[h]);
+  return local && !relayed;
+}
+
+/** Facts the "How to connect" page shows. The key itself goes only to a direct local request. */
+function info(req) {
+  const origin = process.env.QA_PUBLIC_URL || `http://${req.headers.host || '127.0.0.1:' + PORT}`;
+  const local = isLocalDirect(req);
+  return {
+    url: origin, publicUrlSet: !!process.env.QA_PUBLIC_URL, keyFromEnv: !!process.env.QA_API_KEY, keyFile: KEY_FILE,
+    key: local ? apiKey() : null, keyHidden: !local,
+    mcpScript: path.resolve(__dirname, '..', 'mcp', 'flawtrace-server.js'),
+  };
+}
+
+/** Returns true when the request belonged to /api/v1 or /api/integration (and was answered). */
 async function handle(req, res, p, { body, json }) {
+  if (p === '/api/integration' && req.method === 'GET') return json(res, 200, info(req)), true;
   if (p !== '/api/v1' && !p.startsWith('/api/v1/')) return false;
   const url = new URL(req.url, 'http://x');
   const sub = p.slice('/api/v1'.length) || '/';
@@ -179,4 +199,4 @@ async function handle(req, res, p, { body, json }) {
   return json(res, 404, { error: 'Unknown /api/v1 route' }), true;
 }
 
-module.exports = { TOOLS, KEY_FILE, anthropic, apiKey, authorized, handle, mcp, openai, openapi, pathParams, slimRun, wasGenerated: () => generated };
+module.exports = { info, isLocalDirect, TOOLS, KEY_FILE, anthropic, apiKey, authorized, handle, mcp, openai, openapi, pathParams, slimRun, wasGenerated: () => generated };
