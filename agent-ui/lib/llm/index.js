@@ -47,7 +47,10 @@ function runnerFor(mode) {
   const a = acpCommand();
   if (!a.command) return { kind: 'claude-cli', note: 'No agent command set under Settings > AI provider, so this run uses Claude Code.' };
   if (!ACP_MODES.has(mode)) return { kind: 'claude-cli', note: 'This agent is not available on your own agent (ACP) yet, so it runs on Claude Code.' };
-  return { kind: 'acp', command: a.command, args: a.args, label: a.label };
+  // Only the Claude Code adapter lets Flawtrace limit the agent's built-in tools (Bash, Write, ...), the way the CLI
+  // path does. For any other agent the limits are whatever that agent enforces itself.
+  return { kind: 'acp', command: a.command, args: a.args, label: a.label, limitsTools: a.preset === 'claude',
+    ...(a.preset === 'claude' ? {} : { note: 'Note: for this agent Flawtrace cannot limit its built-in tools; its own permission settings apply.' }) };
 }
 
 const mask = (k) => (k ? (k.length > 10 ? k.slice(0, 3) + '…' + k.slice(-4) : '••••') : '');

@@ -28,6 +28,7 @@ const textOf = (content) => {
  * opts: { command, args, cwd, env, mcpServers (ACP array), systemPrompt, prompt, timeoutMs,
  *   allow(toolCall) -> boolean   decides a permission request,
  *   onToolUse({id,name,title,kind,input}), onToolResult({id,text,error}), onText(text), onStatus(text),
+ *   sessionMeta: agent-specific session options sent as `_meta` (the Claude adapter takes `claudeCode.options.tools`),
  *   isCancelled() -> boolean }
  * Resolves { text, lastText, stopReason, usage, stderr, timedOut, cancelled, proc }.
  */
@@ -114,7 +115,7 @@ function runAcp(opts) {
     (async () => {
       try {
         await request('initialize', { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: false, writeTextFile: false }, terminal: false }, clientInfo: { name: 'flawtrace', version: '1.0.0' } });
-        const s = await request('session/new', { cwd: opts.cwd, mcpServers: opts.mcpServers || [] });
+        const s = await request('session/new', { cwd: opts.cwd, mcpServers: opts.mcpServers || [], ...(opts.sessionMeta ? { _meta: opts.sessionMeta } : {}) });
         sessionId = s.sessionId;
         const text = (opts.systemPrompt ? opts.systemPrompt + '\n\n---\n\n' : '') + opts.prompt;
         const r = await request('session/prompt', { sessionId, prompt: [{ type: 'text', text }] });

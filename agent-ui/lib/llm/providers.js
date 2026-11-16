@@ -53,6 +53,6 @@ const ACP_PRESETS = {
   custom: { label: 'Other agent (type the command)', command: '', args: [] },
 };
 // Agents already ported to the ACP runner. The others still run on Claude Code and say so in the run log.
-const ACP_MODES = new Set(['uitest']);
+const ACP_MODES = new Set(['uitest', 'qamcp', 'execution']);
 
 module.exports = { ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS };

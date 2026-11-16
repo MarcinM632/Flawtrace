@@ -448,7 +448,8 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     // Autotests: only the qa server, and the allowlist lets it read endpoint contracts, never call them.
     const servers = sources.mcpServers({ api: true, knowledge: isQamcpLike(agent.mode), callLog: isQamcpLike(agent.mode) ? path.join(workDir, 'calls.jsonl') : '' });
     if (servers.qa && MCP_SERVER !== 'qa') { servers[MCP_SERVER] = servers.qa; delete servers.qa; }
-    fs.writeFileSync(cfg, JSON.stringify({ mcpServers: { ...servers, ...playwrightServers } }));
+    acpServers = { ...servers, ...playwrightServers };
+    fs.writeFileSync(cfg, JSON.stringify({ mcpServers: acpServers }));
     mcpArgs.push('--mcp-config', cfg, '--strict-mcp-config');
     const st = sources.status();
     emit(r, { type: 'status', text: `API: ${st.endpoints} endpoints on ${sources.read().api.baseUrl || 'no environment'}` });
@@ -570,6 +571,8 @@ function startRun(agentKey, ticket, notes, extra = {}) {
       command: runner.command, args: runner.args, cwd,
       env: { ...process.env, QA_REPOS_DIR: path.join(DATA_DIR, 'repos').split(path.sep).join('/'), WORK_DIR: workDir.split(path.sep).join('/') },
       mcpServers: toAcpServers(acpServers), systemPrompt: sysFor(agent.mode), prompt: promptText,
+      // The Claude adapter takes the same built-in tool list as the CLI path (--tools), so Bash and Write stay unavailable.
+      sessionMeta: runner.limitsTools ? { claudeCode: { options: { tools: BUILTIN_TOOLS[agent.mode] || BUILTIN_TOOLS.qa, allowDangerouslySkipPermissions: false } } } : undefined,
       allow: allowPolicy(toolsFor(agent.mode)), timeoutMs: runLimitMs(agent.mode),
       isCancelled: () => meta.status === 'cancelled' || !!r.uiAbort,
       onStatus: (text) => emit(r, { type: 'status', text }),

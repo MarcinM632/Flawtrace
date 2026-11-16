@@ -6,7 +6,7 @@ rl.on('line', async (line) => {
   const m = JSON.parse(line);
   if (m.id != null && !m.method) { const w = waiting.get(m.id); if (w) w(m.result); return; }
   if (m.method === 'initialize') return send({ id: m.id, result: { protocolVersion: 1, agentCapabilities: {} } });
-  if (m.method === 'session/new') { session = { cwd: m.params.cwd, mcp: m.params.mcpServers }; return send({ id: m.id, result: { sessionId: 's1' } }); }
+  if (m.method === 'session/new') { session = { cwd: m.params.cwd, mcp: m.params.mcpServers, meta: m.params._meta }; return send({ id: m.id, result: { sessionId: 's1' } }); }
   if (m.method === 'session/cancel') return;
   if (m.method === 'session/prompt') {
     const text = m.params.prompt[0].text;
@@ -21,7 +21,7 @@ rl.on('line', async (line) => {
       const allowed = outcome.outcome.outcome === 'selected' && outcome.outcome.optionId === 'a';
       upd({ sessionUpdate: 'tool_call_update', toolCallId: tool, status: allowed ? 'completed' : 'failed', content: [{ type: 'content', content: { type: 'text', text: allowed ? 'ok ' + tool : 'denied' } }] });
     }
-    upd({ sessionUpdate: 'agent_message_chunk', messageId: 'm2', content: { type: 'text', text: 'REPORT: done. mcp=' + JSON.stringify(session.mcp) } });
+    upd({ sessionUpdate: 'agent_message_chunk', messageId: 'm2', content: { type: 'text', text: 'REPORT: done. mcp=' + JSON.stringify(session.mcp) + ' meta=' + JSON.stringify(session.meta || null) } });
     send({ id: m.id, result: { stopReason: 'end_turn' } });
   }
 });

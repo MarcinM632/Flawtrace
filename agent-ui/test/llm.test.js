@@ -76,8 +76,9 @@ test('missing key or model gives a clear message, and bad input is rejected', as
 
 test('your own agent (ACP): presets, a custom command with a quoted path, and the runner per agent', () => {
   llm.update({ provider: 'acp', acpPreset: 'claude' });
-  assert.deepEqual(llm.runnerFor('uitest'), { kind: 'acp', command: 'npx', args: ['-y', '@agentclientprotocol/claude-agent-acp'], label: 'Claude Code' });
-  const other = llm.runnerFor('qamcp');
+  assert.deepEqual(llm.runnerFor('uitest'), { kind: 'acp', command: 'npx', args: ['-y', '@agentclientprotocol/claude-agent-acp'], label: 'Claude Code', limitsTools: true });
+  assert.equal(llm.runnerFor('qamcp').kind, 'acp');
+  const other = llm.runnerFor('autotest');
   assert.equal(other.kind, 'claude-cli');
   assert.match(other.note, /not available on your own agent/);
   llm.update({ provider: 'acp', acpPreset: 'custom', acpCommand: '"C:/Program Files/x/agent.exe" --acp' });

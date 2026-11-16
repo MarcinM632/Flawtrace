@@ -9,13 +9,14 @@ const AGENT = { command: process.execPath, args: [path.join(__dirname, 'fixtures
 test('a task runs end to end: system prompt first, MCP servers passed, events streamed, permissions enforced', async () => {
   const uses = [], results = [], status = [];
   const mcp = toAcpServers({ playwright: { command: 'npx', args: ['-y', 'x'], env: { A: '1' } } });
-  const r = await runAcp({ ...AGENT, mcpServers: mcp, systemPrompt: 'SYSTEM', prompt: 'TASK', allow: allowPolicy(['mcp__playwright__browser_navigate']),
+  const r = await runAcp({ ...AGENT, sessionMeta: { claudeCode: { options: { tools: ['ToolSearch'] } } }, mcpServers: mcp, systemPrompt: 'SYSTEM', prompt: 'TASK', allow: allowPolicy(['mcp__playwright__browser_navigate']),
     onToolUse: (t) => uses.push(t.name), onToolResult: (t) => results.push([t.id, t.error]), onStatus: (s) => status.push(s) });
   assert.equal(r.error, null);
   assert.equal(r.stopReason, 'end_turn');
   assert.ok(r.lastText.startsWith('REPORT: done.'), r.lastText);
   assert.ok(r.text.includes('Looking at the page.'));
   assert.ok(r.lastText.includes('"name":"playwright"') && r.lastText.includes('{"name":"A","value":"1"}'), 'servers reach the agent in the ACP shape');
+  assert.ok(r.lastText.includes('"tools":["ToolSearch"]'), 'session options reach the agent');
   assert.deepEqual(uses, ['mcp__playwright__browser_navigate', 'Write file']);
   assert.deepEqual(results, [['mcp__playwright__browser_navigate', false], ['Write file', true]], 'the allowlisted tool ran, the write was denied');
   assert.ok(status.some((s) => /Denied/.test(s)));
