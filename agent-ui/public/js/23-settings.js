@@ -54,7 +54,9 @@ function stHelp(){
     <button type="button" class="btn" id="stTour">${ico('play',13)}Replay the welcome tour</button>
     <button type="button" class="btn" id="stSetup2">${ico('play',13)}Open the setup window</button>
     <button type="button" class="btn" id="stGuide">${ico('book',13)}Read the full guide</button>
-  </div>`;
+  </div>
+  <h3 class="st-h">Where is what</h3>
+  ${TOUR.slice(1,6).map(x=>`<h4 class="st-sub">${esc(x.t)}</h4>${tourItems(x.items)}`).join('')}`;
 }
 
 function stRender(){
@@ -88,6 +90,7 @@ $('#stBody').addEventListener('click',async e=>{
   else if(t.id==='stKeyShow'){const c=$('#stKey');const hid=c.textContent.startsWith('•');c.textContent=hid?c.dataset.key:'•'.repeat(24);t.textContent=hid?'Hide':'Show'}
   else if(t.id==='stOpenSetup'||t.id==='stSetup2'){closeSettings();openSetup(0)}
   else if(t.id==='stGuide'){closeSettings();$('#srcGuide').click()}
+  else if(t.dataset.go){closeSettings();showTab(t.dataset.go)}
   else if(t.id==='stTour'){closeSettings();tourStart(true)}
   else if(t.id==='stTest'){
     $('#stTestRes').textContent='Testing…';
@@ -100,18 +103,35 @@ $('#stBody').addEventListener('click',async e=>{
 });
 
 /* ---------- welcome tour ---------- */
+// items: [name, what it does, tab to open]. The same data feeds the tour and the "Where is what" list in Settings > Help.
 const TOUR=[
-  {t:'Welcome to Flawtrace',p:'Flawtrace is a workbench for testers. AI agents read your tickets, specifications and code, design tests, run them on your test environment and write the reports. This short tour shows where things are.'},
-  {t:'Find your way around',p:'The left menu groups the work: <b>Agents</b> run analyses, QA MCP checks and UI tests; <b>Metrics</b> tracks bugs, risk and releases; <b>Reference</b> holds testing guides. Every page has a one-line description under its title.'},
-  {t:'Your first test',p:'Open <b>UI Tests</b> to check a web page, or <b>QA MCP</b> to test the API: write in a sentence what to check and press Run. Watch the agent work, then read the report. Nothing runs until you press the button.'},
-  {t:'Connect your product first',p:'To run tests, Flawtrace needs the address of your test environment API. The setup window guides you step by step; Jira, Confluence and repositories are optional extras that make the agents more accurate.'},
-  {t:'Settings are always at hand',p:'The gear at the bottom of the menu opens <b>Settings</b>: light or dark theme, a step-by-step <b>How to connect</b> (including Claude and ChatGPT) and this tour again whenever you want it.'},
+  {t:'Welcome to Flawtrace',p:'Flawtrace is a workbench for testers. AI agents read your tickets, specifications and code, design tests, run them on your test environment and write the reports. You stay in control: nothing runs until you press a button, and every report names the sources it is based on.',
+   items:[['1. Connect','Give Flawtrace the address of your test environment (and, optionally, Jira, Confluence and your code).','sources'],['2. Ask','Pick an agent, write in a sentence what to check and press Run.','runs'],['3. Read','The report appears on the same page. Defects can go to the bug registry.','bugs']]},
+  {t:'Workspace: where you start',p:'Two pages at the top of the menu. They are about you and your connections, not about one test.',
+   items:[['Workspace','Your Jira tasks ranked by priority and by how risky their service is, each with a testing checklist, so you know what to test first.','workspace'],['Sources','Everything the agents learn from: the test environment API (required), Jira, Confluence, code repositories and your team rules for testing. Connect it first.','sources']]},
+  {t:'Agents: who does what',p:'Each agent has a different job. Pick the one that matches what you want to know.',
+   items:[['Analyses (CORE, SVC, mcp-server)','Finds defects in one change before it reaches testing. It reads the ticket, the code before and after the change and the specification, then reports concrete failing cases with evidence. The three tabs use the same method, each on its own part of the code.','runs'],
+          ['QA MCP','Runs a test process you describe on the live test environment, calling its API step by step. The report lists every call it made, so each value can be checked.','qamcp'],
+          ['UI Tests','Opens a web page in a browser, checks what you ask (also behind a login) and reports step by step. A run that fully passes and that you accept becomes a Playwright test.','uitest'],
+          ['Autotests','Turns a written test case into an automated pytest test in your suite, and runs the Smoke pack, the System pack or any test from the suite.','autotest']]},
+  {t:'Test Flow: the whole process on one ticket',p:'One prompt walks a ticket through seven phases. Each phase is its own agent and passes its report to the next, so the chain is traceable from risk to closing.',
+   items:[['1 Planning','Risk, entry and exit criteria and a static check, before the task goes to implementation.',null],['2 Monitoring','Progress and status of the release, read from Jira (page Release monitoring).','tfmonitor'],['3 Analysis','Chooses and justifies the test strategy, finds coverage gaps and the blast radius of the change.',null],['4 Test design','Designs the test cases from the requirement, using the recognised techniques.',null],['5 Implementation','Merges the cases into one execution procedure, prioritised by risk, with a time estimate.',null],['6 Execution','Runs that procedure live on the test environment.',null],['7 Completion','Explains simply how the finished task works, with the known defects of that area.',null],['Run summary','All phases of one ticket on a single page.','runsummary']]},
+  {t:'Metrics: how it is going',p:'Pages that show the state of quality. They read from the bug registry, your run history and Jira.',
+   items:[['Bug registry','Record findings, see where defects concentrate. Defects found by agents can be added here.','bugs'],['Risk','Defect density by service, calculated from the bug registry. Tells you where to test more.','risk'],['Metrics generation','Build and save charts from the registry, run history and Jira releases.','metricsgen'],['Release monitoring','Progress, status and priority of each release, from Jira.','tfmonitor']]},
+  {t:'Reference: the testing know-how',p:'Short, practical guides that the agents also follow. Read them when you want to know why a test was designed the way it was.',
+   items:[['Tools','The endpoints of your test environment, imported from its API specification.','tools'],['Manual testing','Test levels, design techniques and how to choose between them.','doc'],['AI testing','Testing AI systems and testing with generative AI.','ai'],['Automated testing','How a test automation suite is structured.','autodoc'],['Tests procedure','The seven activities of the test process and the strategy behind them.','testproc']]},
+  {t:'Connect your product first',p:'To run any test Flawtrace needs the address of your test environment API: the base address, the authorization header if it needs a login, and the Swagger / OpenAPI page. The setup window guides you step by step. Jira, Confluence and repositories are optional and make the agents more accurate. Reports always separate what a source confirmed from what stays an open question.'},
+  {t:'Settings are always at hand',p:'The gear at the bottom of the menu opens Settings.',
+   items:[['Appearance','Light, dark or automatic theme.',null],['How to connect','Step by step: connect Flawtrace to your product, and connect Claude or ChatGPT to Flawtrace, with a connection test.',null],['Help','Replay this tour, see where everything is, or open the full guide.',null]]},
 ];
+function tourItems(items){
+  return `<div class="tour-items">${items.map(([n,d,tab])=>`<div class="tour-item"><b>${esc(n)}</b><span>${esc(d)}</span>${tab?`<button type="button" class="btn sm" data-go="${tab}">Open</button>`:''}</div>`).join('')}</div>`;
+}
 const TOUR_S={i:0,open:false};
 const tourSeen=()=>{try{return !!localStorage.getItem('tour.seen')}catch(_){return false}};
 function tourRender(){
   const s=TOUR[TOUR_S.i],last=TOUR_S.i===TOUR.length-1;
-  $('#tourTitle').textContent=s.t;$('#tourText').innerHTML=s.p;
+  $('#tourTitle').textContent=s.t;$('#tourText').innerHTML=s.p+(s.items?tourItems(s.items):'');$('#tourCount').textContent=`${TOUR_S.i+1} of ${TOUR.length}`;$('#tourBody').scrollTop=0;
   $('#tourDots').innerHTML=TOUR.map((_,i)=>`<i class="${i===TOUR_S.i?'on':''}"></i>`).join('');
   $('#tourBack').hidden=TOUR_S.i===0;$('#tourSkip').hidden=last;
   $('#tourNext').textContent=last?(setupApiReady()?'Done':'Connect now'):'Next';
@@ -128,6 +148,7 @@ function tourEnd(openWizard){
 $('#tourNext').onclick=()=>{if(TOUR_S.i===TOUR.length-1)return tourEnd(true);TOUR_S.i++;tourRender()};
 $('#tourBack').onclick=()=>{TOUR_S.i--;tourRender()};
 $('#tourSkip').onclick=()=>tourEnd(false);
+$('#tourModal').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;tourEnd(false);showTab(b.dataset.go)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TOUR_S.open){e.stopPropagation();tourEnd(false)}},true);
 // Everyone who has not seen the tour gets it once, also when the API is already connected.
 srcStatus.then(()=>{if(!tourSeen())tourStart()});

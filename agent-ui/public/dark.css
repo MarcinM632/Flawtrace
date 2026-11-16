@@ -88,10 +88,23 @@
 
 #tourModal [hidden],.st-tabs [hidden]{display:none!important}
 /* ================= Welcome tour ================= */
-.tour{width:min(520px,100%);font-family:var(--sans);font-weight:400;font-size:14px}
-.tour h2{margin:10px 0 8px;font-size:20px;font-weight:600}
-.tour p{margin:0;color:var(--ink2);line-height:1.65;min-height:96px}
-.tour-dots{display:flex;gap:6px}
-.tour-dots i{width:22px;height:4px;border-radius:99px;background:var(--line2)}
+.tour{width:min(940px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;padding:30px 36px 24px;font-family:var(--sans);font-weight:400;font-size:17px}
+.tour-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.tour-count{font-size:13px;color:var(--ink3);font-family:var(--mono)}
+.tour-body{overflow:auto;padding:4px 6px 6px 0;margin-top:6px;min-height:340px}
+.tour h2{margin:12px 0 10px;font-size:28px;line-height:1.25;font-weight:600}
+.tour-text{color:var(--ink2);line-height:1.7;font-size:17px}
+.tour-dots{display:flex;gap:6px;flex:1}
+.tour-dots i{flex:1;max-width:44px;height:5px;border-radius:99px;background:var(--line2)}
 .tour-dots i.on{background:var(--acc)}
-@media (max-width:640px){.st-themes{grid-template-columns:1fr}}
+.tour-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.tour-item{display:flex;flex-direction:column;gap:5px;align-items:flex-start;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface2)}
+.tour-item b{font-size:16px;color:var(--ink);font-weight:600}
+.tour-item span{font-size:15px;line-height:1.55;color:var(--ink2)}
+.tour-item .btn{margin-top:4px}
+.tour .modal-act{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.tour .modal-act .btn,.tour .modal-act .go{height:42px;padding:0 26px;font-size:13px;width:auto;flex:none;min-width:120px}
+.st-sub{margin:16px 0 4px;font-size:14px;font-weight:600;color:var(--ink2)}
+.settings .tour-items{margin-top:8px}
+.settings .tour-item b{font-size:14px}.settings .tour-item span{font-size:13px}
+@media (max-width:760px){.tour-items{grid-template-columns:1fr}.tour{padding:22px 18px 18px}.tour h2{font-size:23px}}
