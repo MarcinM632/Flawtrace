@@ -45,6 +45,7 @@ function runAcp(opts) {
 
     try { proc = spawn(cmd, argv, { cwd: opts.cwd, env: opts.env || process.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }); }
     catch (e) { return resolve({ ...state, error: 'Could not start the agent: ' + e.message }); }
+    if (opts.onProc) opts.onProc(proc);
     proc.on('error', (e) => done({ error: 'Could not start the agent: ' + e.message }));
     proc.on('close', (code) => done({ error: state.stopReason ? null : (state.error || `The agent exited (code ${code}) before finishing.`) }));
     proc.stderr.on('data', (c) => { state.stderr = (state.stderr + c.toString('utf8')).slice(-4000); });

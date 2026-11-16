@@ -6,6 +6,8 @@
 const PROVIDERS = {
   'claude-cli': { label: 'Claude Code (your own login)', needsKey: false, needsModel: false, baseUrl: false, agents: true,
     note: 'Uses the Claude Code CLI signed in on this machine. Runs every agent.' },
+  acp: { label: 'Your own coding agent (ACP): Claude Code, Codex, Gemini CLI, ...', needsKey: false, needsModel: false, baseUrl: false, agents: true, acp: true,
+    note: 'Flawtrace starts the agent you already have and gives it the task. It uses your own login or key; nothing goes through anybody else.' },
   anthropic: { label: 'Anthropic API (Claude)', needsKey: true, needsModel: true, baseUrl: 'https://api.anthropic.com', agents: false, modelHint: 'claude-sonnet-5-5' },
   openai: { label: 'OpenAI API (ChatGPT)', needsKey: true, needsModel: true, baseUrl: 'https://api.openai.com/v1', agents: false, modelHint: 'model id from your OpenAI console' },
   gemini: { label: 'Google Gemini API', needsKey: true, needsModel: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', agents: false, modelHint: 'model id from Google AI Studio' },
@@ -44,4 +46,13 @@ const CALLS = {
 };
 CALLS['openai-compatible'] = CALLS.openai;
 
-module.exports = { CALLS, PROVIDERS };
+// Adapters that make a coding agent speak ACP (package names confirmed on npm). "custom" is any command the user gives.
+const ACP_PRESETS = {
+  claude: { label: 'Claude Code', command: 'npx', args: ['-y', '@agentclientprotocol/claude-agent-acp'] },
+  codex: { label: 'Codex', command: 'npx', args: ['-y', '@zed-industries/codex-acp'] },
+  custom: { label: 'Other agent (type the command)', command: '', args: [] },
+};
+// Agents already ported to the ACP runner. The others still run on Claude Code and say so in the run log.
+const ACP_MODES = new Set(['uitest']);
+
+module.exports = { ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS };

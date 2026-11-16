@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { DATA_DIR } = require('../config');
-const { CALLS, PROVIDERS } = require('./providers');
+const { ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS } = require('./providers');
 
 const FILE = path.join(DATA_DIR, 'llm.json');
 const ENV_KEYS = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY', 'openai-compatible': 'OPENAI_COMPATIBLE_API_KEY' };
@@ -30,6 +30,26 @@ function current() {
   };
 }
 
+/** The agent command for ACP: a preset, or the user's own command line (split on spaces). */
+function acpCommand() {
+  const c = load();
+  const preset = ACP_PRESETS[c.acpPreset] ? c.acpPreset : 'claude';
+  if (preset !== 'custom') return { preset, ...ACP_PRESETS[preset] };
+  // Words split on spaces; a part in double quotes may contain spaces (paths on Windows).
+  const parts = [...String(c.acpCommand || '').matchAll(/"([^"]*)"|(\S+)/g)].map((m) => m[1] != null ? m[1] : m[2]);
+  return { preset, label: ACP_PRESETS.custom.label, command: parts[0] || '', args: parts.slice(1) };
+}
+
+/** Who runs the agent of this mode: the Claude Code CLI as always, or the customer's own agent through ACP. */
+function runnerFor(mode) {
+  const c = current();
+  if (c.id !== 'acp') return { kind: 'claude-cli' };
+  const a = acpCommand();
+  if (!a.command) return { kind: 'claude-cli', note: 'No agent command set under Settings > AI provider, so this run uses Claude Code.' };
+  if (!ACP_MODES.has(mode)) return { kind: 'claude-cli', note: 'This agent is not available on your own agent (ACP) yet, so it runs on Claude Code.' };
+  return { kind: 'acp', command: a.command, args: a.args, label: a.label };
+}
+
 const mask = (k) => (k ? (k.length > 10 ? k.slice(0, 3) + '…' + k.slice(-4) : '••••') : '');
 
 function view() {
@@ -37,7 +57,8 @@ function view() {
   return {
     selected: c.id, model: c.model, baseUrl: c.baseUrl, keySet: !!c.key, keyHint: mask(c.key),
     providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, needsKey: p.needsKey, needsModel: p.needsModel, baseUrlEditable: p.baseUrl !== false, baseUrlRequired: !!p.baseUrlRequired, agents: p.agents, note: p.note || '', modelHint: p.modelHint || '', defaultBaseUrl: p.baseUrl || '' })),
-    agentsNote: c.def.agents ? '' : 'Agents (Analyses, QA MCP, UI Tests, Autotests) still run on Claude Code. This provider serves the single-step features until the agent loop is built.',
+    acp: c.id === 'acp' ? { preset: acpCommand().preset, command: load().acpCommand || '', presets: Object.entries(ACP_PRESETS).map(([id, p]) => ({ id, label: p.label })), ported: [...ACP_MODES] } : null,
+    agentsNote: c.id === 'acp' ? `Ported to your own agent so far: ${[...ACP_MODES].join(', ')}. The other agents still run on Claude Code and the run log says so.` : c.def.agents ? '' : 'Agents (Analyses, QA MCP, UI Tests, Autotests) still run on Claude Code. This provider serves the single-step features until the agent loop is built.',
   };
 }
 
@@ -56,6 +77,10 @@ function update(b) {
       cfg.baseUrls[id] = p.href.replace(/\/+$/, '');
     } else delete cfg.baseUrls[id];
   }
+  if (id === 'acp') {
+    if (ACP_PRESETS[b.acpPreset]) cfg.acpPreset = b.acpPreset;
+    if (typeof b.acpCommand === 'string') cfg.acpCommand = b.acpCommand.trim().slice(0, 500);
+  }
   cfg.keys = cfg.keys || {};
   if (typeof b.key === 'string' && b.key.trim()) cfg.keys[id] = b.key.trim().slice(0, 500);
   if (b.clearKey) delete cfg.keys[id];
@@ -70,6 +95,7 @@ async function complete(system, input, { timeoutMs = 240000 } = {}) {
     const { claudeCliOnce } = require('../claude-once');
     return { ...(await claudeCliOnce(system, input, timeoutMs)), provider: c.id };
   }
+  if (c.id === 'acp') throw new Error('Your own agent (ACP) runs the agents, not single steps. Pick another provider for single-step features, or Claude Code.');
   if (c.def.needsKey && !c.key) throw new Error(`No API key for ${c.def.label}. Add it in Settings > AI provider.`);
   if (c.def.needsModel && !c.model) throw new Error('Choose a model name in Settings > AI provider.');
   if (!c.baseUrl) throw new Error('Enter the address of the endpoint in Settings > AI provider.');
@@ -83,4 +109,4 @@ async function complete(system, input, { timeoutMs = 240000 } = {}) {
   }
 }
 
-module.exports = { complete, current, mask, update, view };
+module.exports = { acpCommand, complete, current, mask, runnerFor, update, view };

@@ -33,7 +33,7 @@ test('the default is Claude Code and needs no key', () => {
   const v = llm.view();
   assert.equal(v.selected, 'claude-cli');
   assert.ok(v.providers.find((p) => p.id === 'claude-cli').agents);
-  assert.ok(!v.providers.filter((p) => p.id !== 'claude-cli').some((p) => p.agents), 'API providers do not drive agents yet');
+  assert.ok(!v.providers.filter((p) => !['claude-cli', 'acp'].includes(p.id)).some((p) => p.agents), 'API providers do not drive agents yet');
 });
 
 test('each provider sends its own request shape with the user key and reads text and usage', async () => {
@@ -72,4 +72,20 @@ test('missing key or model gives a clear message, and bad input is rejected', as
   await assert.rejects(() => llm.complete('S', 'I'), /model name/);
   assert.throws(() => llm.update({ provider: 'nope' }), /Unknown provider/);
   assert.throws(() => llm.update({ provider: 'openai', baseUrl: 'ftp://x' }), /http/);
+});
+
+test('your own agent (ACP): presets, a custom command with a quoted path, and the runner per agent', () => {
+  llm.update({ provider: 'acp', acpPreset: 'claude' });
+  assert.deepEqual(llm.runnerFor('uitest'), { kind: 'acp', command: 'npx', args: ['-y', '@agentclientprotocol/claude-agent-acp'], label: 'Claude Code' });
+  const other = llm.runnerFor('qamcp');
+  assert.equal(other.kind, 'claude-cli');
+  assert.match(other.note, /not available on your own agent/);
+  llm.update({ provider: 'acp', acpPreset: 'custom', acpCommand: '"C:/Program Files/x/agent.exe" --acp' });
+  const r = llm.runnerFor('uitest');
+  assert.equal(r.command, 'C:/Program Files/x/agent.exe');
+  assert.deepEqual(r.args, ['--acp']);
+  llm.update({ provider: 'acp', acpPreset: 'custom', acpCommand: '' });
+  assert.match(llm.runnerFor('uitest').note, /No agent command/);
+  llm.update({ provider: 'claude-cli' });
+  assert.deepEqual(llm.runnerFor('uitest'), { kind: 'claude-cli' });
 });

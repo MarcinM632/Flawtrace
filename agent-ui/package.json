@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/api.test.js test/units.test.js test/verifier.test.js test/jira.test.js test/app-model.test.js test/uitest.test.js test/integration.test.js test/llm.test.js test/ui-run.test.js test/ui-fix.test.js",
+    "test": "node --test test/api.test.js test/units.test.js test/verifier.test.js test/jira.test.js test/app-model.test.js test/uitest.test.js test/integration.test.js test/llm.test.js test/acp.test.js test/acp-run.test.js test/ui-run.test.js test/ui-fix.test.js",
     "ui-smoke": "node scripts/ui-smoke.js",
     "ui-interact": "node scripts/ui-interact.js",
     "tool-groups": "node scripts/build-tool-groups.mjs"

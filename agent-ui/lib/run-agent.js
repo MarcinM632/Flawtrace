@@ -6,6 +6,8 @@ const { spawn } = require('child_process');
 const sources = require('./sources');
 const { syncBugs } = require('./bugs');
 const { AGENTS, agentAvailable, agentDir } = require('./agents');
+const { allowPolicy, runAcp, toAcpServers } = require('./acp');
+const llmLib = require('./llm');
 const { AUTOTEST_REPO, DATA_DIR, MCP_SERVER, MODEL, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
 const envLock = require('./env-lock');
 const environment = require('./environment');
@@ -427,6 +429,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   // Oba tryby z MCP dostają własną, ścisłą konfigurację: tylko serwer PLAT i tylko wybrane grupy (PLAT_GROUPS). Bez tego
   // sesja ładowała całe 628 narzędzi, a Autotests, który używa czterech narzędzi do odczytu, płacił za wszystkie.
   const mcpArgs = [];
+  let acpServers = null; // MCP servers of this run in the app's own shape, for the ACP runner
   const cfg = path.join(workDir, 'mcp.json');
   if (isUi) {
     // UI Tests: the browser only. The password sits in a secrets file of this run (dotenv), so the browser tools hide it in their answers.
@@ -436,7 +439,8 @@ function startRun(agentKey, ticket, notes, extra = {}) {
       r.secretsFile = secretsFile; // removed in finish(): the password does not stay on disk after the run
       fs.writeFileSync(secretsFile, `UI_PASSWORD=${JSON.stringify(cred.password)}\n`);
     }
-    fs.writeFileSync(cfg, JSON.stringify({ mcpServers: { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile }) } }));
+    acpServers = { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile }) };
+    fs.writeFileSync(cfg, JSON.stringify({ mcpServers: acpServers }));
     mcpArgs.push('--mcp-config', cfg, '--strict-mcp-config');
     emit(r, { type: 'status', text: `Browser: headless Chromium, page ${extra.url}${meta.hasLogin ? ', login given' : ', no login'}; limit ${uiTest.MAX_STEPS} steps` });
   } else if (scope) {
@@ -475,7 +479,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
 
   // Jedno przejście agenta (claude -p). Pierwsze pisze testy; kolejne, tylko w Autotests, poprawiają je
   // po nieudanym uruchomieniu. Zdarzenia trafiają do tego samego logu runu.
-  const launch = (promptText, extraArgs = []) => {
+  const launchCli = (promptText, extraArgs = []) => {
     const out = { spawnError: null, done: null };
     let proc;
     try {
@@ -552,6 +556,44 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     });
     return out;
   };
+
+  // The same pass on the customer's own coding agent (ACP). Same events, same result shape; no session to resume,
+  // so the one correction turn that Claude Code allows is skipped (res.sessionId stays null).
+  const runner = llmLib.runnerFor(agent.mode);
+  if (runner.note) emit(r, { type: 'status', text: runner.note });
+  const launchAcp = (promptText) => {
+    const out = { spawnError: null, done: null };
+    const pendingAcp = new Map();
+    const uiName = (t) => { const m = /browser_[a-z_]+/.exec(`${t.name} ${t.title}`); return m ? 'mcp__playwright__' + m[0] : (t.name || t.title); };
+    emit(r, { type: 'status', text: `Running on your own agent: ${runner.label || runner.command} (ACP)` });
+    out.done = runAcp({
+      command: runner.command, args: runner.args, cwd,
+      env: { ...process.env, QA_REPOS_DIR: path.join(DATA_DIR, 'repos').split(path.sep).join('/'), WORK_DIR: workDir.split(path.sep).join('/') },
+      mcpServers: toAcpServers(acpServers), systemPrompt: sysFor(agent.mode), prompt: promptText,
+      allow: allowPolicy(toolsFor(agent.mode)), timeoutMs: runLimitMs(agent.mode),
+      isCancelled: () => meta.status === 'cancelled' || !!r.uiAbort,
+      onStatus: (text) => emit(r, { type: 'status', text }),
+      onToolUse: (t) => {
+        const name = uiName(t);
+        const ev = { type: isBrowser(name) ? 'browser' : isEndpoint(name) ? 'endpoint' : 'tool', who: 'main', text: summarizeTool(name, t.input || {}), ...(t.input && isBrowser(name) ? { input: JSON.stringify(t.input).slice(0, 600) } : {}) };
+        emit(r, ev);
+        if (uiGuard && ev.type === 'browser' && !r.uiAbort) {
+          const why = uiGuard.check(name.replace(/^mcp__playwright__/, ''), t.input);
+          if (why) { r.uiAbort = why; emit(r, { type: 'status', text: why }); }
+        }
+        if (ev.type === 'endpoint') pendingAcp.set(t.id, ev);
+      },
+      onToolResult: (t) => { const ev = pendingAcp.get(t.id); if (ev) { pendingAcp.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
+      onText: (text) => emit(r, { type: 'text', who: 'main', text: text.slice(0, 1500) }),
+      onProc: (p) => { r.proc = p; },
+    }).then((res) => {
+      const cost = res.usage && res.usage.cost && /^usd$/i.test(res.usage.cost.currency || '') ? res.usage.cost.amount : null;
+      if (res.lastText) emit(r, { type: 'text', who: 'main', text: res.lastText.slice(0, 1500) });
+      return { lastText: res.lastText, finalText: res.lastText || res.text, cost, usage: null, turns: null, timedOut: res.timedOut, isError: !!res.error && !res.cancelled, stderr: res.error ? res.error + ' | ' + res.stderr : res.stderr, sessionId: null, code: res.error ? 1 : 0 };
+    });
+    return out;
+  };
+  const launch = (promptText, extraArgs = []) => (runner.kind === 'acp' ? launchAcp(promptText) : launchCli(promptText, extraArgs));
 
   // Audyt raportu przez apkę (lib/report-format.js): QA MCP kontra log wywołań, Analyses / Test design kontra pobrany kod.
   // Gdy coś się nie zgadza, ta sama sesja dostaje jedną turę korekty; to, czego agent nie poprawi, zostaje w meta.audit.

@@ -16,8 +16,8 @@ test('a task runs end to end: system prompt first, MCP servers passed, events st
   assert.ok(r.lastText.startsWith('REPORT: done.'), r.lastText);
   assert.ok(r.text.includes('Looking at the page.'));
   assert.ok(r.lastText.includes('"name":"playwright"') && r.lastText.includes('{"name":"A","value":"1"}'), 'servers reach the agent in the ACP shape');
-  assert.deepEqual(uses, ['mcp__playwright__browser_navigate', 'mcp__playwright__write_file']);
-  assert.deepEqual(results, [['browser_navigate', false], ['write_file', true]], 'the allowlisted tool ran, the write was denied');
+  assert.deepEqual(uses, ['mcp__playwright__browser_navigate', 'Write file']);
+  assert.deepEqual(results, [['mcp__playwright__browser_navigate', false], ['Write file', true]], 'the allowlisted tool ran, the write was denied');
   assert.ok(status.some((s) => /Denied/.test(s)));
 });
 

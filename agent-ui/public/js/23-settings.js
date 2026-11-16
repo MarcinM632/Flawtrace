@@ -60,6 +60,8 @@ function stAi(){
     <label>Provider<select id="llmProv">${v.providers.map(x=>`<option value="${x.id}" ${x.id===v.selected?'selected':''}>${esc(x.label)}</option>`).join('')}</select></label>
     ${p.needsModel?`<label>Model<input id="llmModel" value="${esc(v.model)}" placeholder="${esc(p.modelHint)}" autocomplete="off"></label>`:''}
     ${p.baseUrlEditable?`<label>Address${p.baseUrlRequired?' <span class="tag acc">required</span>':''}<input id="llmUrl" value="${esc(v.baseUrl)}" placeholder="${esc(p.defaultBaseUrl||'http://localhost:11434/v1')}" autocomplete="off"></label>`:''}
+    ${v.acp?`<label>Agent<select id="llmAcpPreset">${v.acp.presets.map(x=>`<option value="${x.id}" ${x.id===v.acp.preset?'selected':''}>${esc(x.label)}</option>`).join('')}</select></label>
+    ${v.acp.preset==='custom'?`<label>Command that starts the agent in ACP mode<input id="llmAcpCmd" value="${esc(v.acp.command)}" placeholder='"C:/path with spaces/agent" --acp' autocomplete="off"></label>`:'<p class="st-hint">Started with npx the first time it is needed (Node.js required, internet for the download). Sign in to that agent once in its own tool.</p>'}`:''}
     ${p.needsKey||p.id==='openai-compatible'?`<label>API key ${v.keySet?`<span class="st-hint">saved: ${esc(v.keyHint)}</span>`:''}<input id="llmKey" type="password" placeholder="${v.keySet?'leave empty to keep the saved key':'paste your key'}" autocomplete="off"></label>`:''}
   </div>
   ${p.note?`<p class="st-hint">${esc(p.note)}</p>`:''}
@@ -67,7 +69,7 @@ function stAi(){
   <div class="st-actions"><button type="button" class="btn sm" id="llmSave">Save</button><button type="button" class="btn sm" id="llmTest">Test</button>${v.keySet?'<button type="button" class="btn sm danger" id="llmClear">Remove saved key</button>':''}<span class="st-res" id="llmRes">${m?(m.ok?`<span class="ok-t">${esc(m.text)}</span>`:`<span class="bad-t">${esc(m.text)}</span>`):''}</span></div>`;
 }
 async function llmLoad(){try{ST.llm=await api('/api/llm')}catch(e){ST.llm=null;ST.llmMsg={ok:false,text:e.message}}}
-const llmBody=(extra)=>({provider:$('#llmProv').value,model:$('#llmModel')?$('#llmModel').value:'',baseUrl:$('#llmUrl')?$('#llmUrl').value:'',key:$('#llmKey')?$('#llmKey').value:'',...extra});
+const llmBody=(extra)=>({provider:$('#llmProv').value,model:$('#llmModel')?$('#llmModel').value:'',baseUrl:$('#llmUrl')?$('#llmUrl').value:'',key:$('#llmKey')?$('#llmKey').value:'',acpPreset:$('#llmAcpPreset')?$('#llmAcpPreset').value:undefined,acpCommand:$('#llmAcpCmd')?$('#llmAcpCmd').value:undefined,...extra});
 async function llmSave(extra){
   try{ST.llm=await post('/api/llm',llmBody(extra));ST.llmMsg={ok:true,text:'Saved.'}}
   catch(e){ST.llmMsg={ok:false,text:e.message}}
@@ -108,6 +110,7 @@ async function copyText(t,btn){
   setTimeout(()=>{btn.textContent=o},1400);
 }
 $('#stBody').addEventListener('change',async e=>{
+  if(e.target.id==='llmAcpPreset'){await llmSave();stRender();return}
   if(e.target.id!=='llmProv')return;
   const id=e.target.value;ST.llmMsg=null;
   const keep=ST.llm.providers.find(x=>x.id===id);
