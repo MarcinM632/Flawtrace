@@ -9,7 +9,7 @@ function applyTheme(pref){
 themeMq.addEventListener('change',()=>{if(themePref()==='auto')applyTheme('auto')});
 
 /* ---------- settings window ---------- */
-const ST={tab:'look',info:null,test:null};
+const ST={tab:'look',info:null,test:null,llm:null,llmMsg:null};
 const stCode=(t)=>`<div class="st-code"><button type="button" class="btn sm st-copy" data-copy>Copy</button><pre>${esc(t)}</pre></div>`;
 const stStep=(n,title,body)=>`<li class="st-step"><span class="st-n">${n}</span><div><b>${title}</b>${body}</div></li>`;
 
@@ -48,6 +48,31 @@ function stConnect(){
   <p class="st-foot">Full reference: <code>agent-ui/INTEGRATIONS.md</code>.</p>`;
 }
 
+
+function stAi(){
+  const v=ST.llm;
+  if(!v)return '<p class="st-lead">Loading…</p>';
+  const p=v.providers.find(x=>x.id===v.selected)||v.providers[0];
+  const m=ST.llmMsg;
+  return `<p class="st-lead">Choose the AI that Flawtrace uses. <b>You use your own account and key; Flawtrace never pays for or sees your usage.</b> The key is stored only on the machine that runs Flawtrace and is never shown again.</p>
+  <div class="chk warn">A Claude.ai or ChatGPT <b>subscription is not an API key</b>. An API key comes from the provider's developer console and is billed there. If you only have a subscription, use <b>Claude Code</b> below, or connect your assistant under <b>How to connect</b>.</div>
+  <div class="st-form">
+    <label>Provider<select id="llmProv">${v.providers.map(x=>`<option value="${x.id}" ${x.id===v.selected?'selected':''}>${esc(x.label)}</option>`).join('')}</select></label>
+    ${p.needsModel?`<label>Model<input id="llmModel" value="${esc(v.model)}" placeholder="${esc(p.modelHint)}" autocomplete="off"></label>`:''}
+    ${p.baseUrlEditable?`<label>Address${p.baseUrlRequired?' <span class="tag acc">required</span>':''}<input id="llmUrl" value="${esc(v.baseUrl)}" placeholder="${esc(p.defaultBaseUrl||'http://localhost:11434/v1')}" autocomplete="off"></label>`:''}
+    ${p.needsKey||p.id==='openai-compatible'?`<label>API key ${v.keySet?`<span class="st-hint">saved: ${esc(v.keyHint)}</span>`:''}<input id="llmKey" type="password" placeholder="${v.keySet?'leave empty to keep the saved key':'paste your key'}" autocomplete="off"></label>`:''}
+  </div>
+  ${p.note?`<p class="st-hint">${esc(p.note)}</p>`:''}
+  ${v.agentsNote?`<div class="chk warn">${esc(v.agentsNote)}</div>`:''}
+  <div class="st-actions"><button type="button" class="btn sm" id="llmSave">Save</button><button type="button" class="btn sm" id="llmTest">Test</button>${v.keySet?'<button type="button" class="btn sm danger" id="llmClear">Remove saved key</button>':''}<span class="st-res" id="llmRes">${m?(m.ok?`<span class="ok-t">${esc(m.text)}</span>`:`<span class="bad-t">${esc(m.text)}</span>`):''}</span></div>`;
+}
+async function llmLoad(){try{ST.llm=await api('/api/llm')}catch(e){ST.llm=null;ST.llmMsg={ok:false,text:e.message}}}
+const llmBody=(extra)=>({provider:$('#llmProv').value,model:$('#llmModel')?$('#llmModel').value:'',baseUrl:$('#llmUrl')?$('#llmUrl').value:'',key:$('#llmKey')?$('#llmKey').value:'',...extra});
+async function llmSave(extra){
+  try{ST.llm=await post('/api/llm',llmBody(extra));ST.llmMsg={ok:true,text:'Saved.'}}
+  catch(e){ST.llmMsg={ok:false,text:e.message}}
+}
+
 function stHelp(){
   return `<p class="st-lead">New here? These re-open the guided parts of the app.</p>
   <div class="st-help">
@@ -61,7 +86,7 @@ function stHelp(){
 
 function stRender(){
   document.querySelectorAll('.st-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.st===ST.tab));
-  $('#stBody').innerHTML=ST.tab==='look'?stLook():ST.tab==='connect'?stConnect():stHelp();
+  $('#stBody').innerHTML=ST.tab==='look'?stLook():ST.tab==='ai'?stAi():ST.tab==='connect'?stConnect():stHelp();
 }
 async function openSettings(tab){
   ST.tab=tab||ST.tab;$('#settingsModal').hidden=false;document.body.classList.add('modal-open');stRender();
@@ -76,15 +101,29 @@ $('#settingsBtn').onclick=()=>openSettings('look');
 $('#stClose').onclick=closeSettings;
 $('#settingsModal').addEventListener('mousedown',e=>{if(e.target===$('#settingsModal'))closeSettings()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#settingsModal').hidden){e.stopPropagation();closeSettings()}},true);
-document.querySelector('.st-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-st]');if(b){ST.tab=b.dataset.st;stRender()}});
+document.querySelector('.st-tabs').addEventListener('click',async e=>{const b=e.target.closest('button[data-st]');if(!b)return;ST.tab=b.dataset.st;if(ST.tab==='ai'){ST.llmMsg=null;await llmLoad()}stRender()});
 async function copyText(t,btn){
   const o=btn.textContent;
   try{await navigator.clipboard.writeText(t);btn.textContent='Copied'}catch(_){btn.textContent='Select and copy by hand'}
   setTimeout(()=>{btn.textContent=o},1400);
 }
+$('#stBody').addEventListener('change',async e=>{
+  if(e.target.id!=='llmProv')return;
+  const id=e.target.value;ST.llmMsg=null;
+  const keep=ST.llm.providers.find(x=>x.id===id);
+  try{ST.llm=await post('/api/llm',{provider:id,model:'',baseUrl:''})}catch(err){ST.llmMsg={ok:false,text:err.message}}
+  stRender();
+});
 $('#stBody').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.themePick){applyTheme(t.dataset.themePick);stRender()}
+  else if(t.id==='llmSave'){await llmSave();stRender()}
+  else if(t.id==='llmClear'){await llmSave({clearKey:true,key:''});stRender()}
+  else if(t.id==='llmTest'){
+    await llmSave();ST.llmMsg={ok:true,text:'Testing…'};stRender();
+    try{const r=await post('/api/llm/test',{});ST.llmMsg=r.ok?{ok:true,text:'Works. The provider answered: '+r.text}:{ok:false,text:r.error}}catch(err){ST.llmMsg={ok:false,text:err.message}}
+    stRender();
+  }
   else if(t.hasAttribute('data-copy'))copyText(t.parentElement.querySelector('pre').textContent,t);
   else if(t.hasAttribute('data-copy-key'))copyText(ST.info.key,t);
   else if(t.id==='stKeyShow'){const c=$('#stKey');const hid=c.textContent.startsWith('•');c.textContent=hid?c.dataset.key:'•'.repeat(24);t.textContent=hid?'Hide':'Show'}
