@@ -34,6 +34,7 @@ releaseWatch.start(); // co godzinę: nowe taski w bieżącym wydaniu -> auto st
 const coverage = require('./lib/coverage');
 coverage.start(); // nowy komentarz na tasku z Workspace -> diff z GitLaba serwisu vs wykonane testy -> % pokrycia
 const defectLifecycle = require('./lib/defect-lifecycle');
+const integration = require('./lib/integration');
 
 /** What the app has loaded from Jira so far, per page, for the Jira data check in Sources. */
 function jiraLoaded() {
@@ -84,6 +85,8 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   let m;
   try {
+    // Integration API for outside LLMs (Claude, ChatGPT, ...): /api/v1, always behind an API key.
+    if (await integration.handle(req, res, p, { body, json })) return;
     // Restart the Node process itself — picks up a code change in server.js/lib/*.js, which (unlike
     // public/ static files) is only ever read once, at process start.
     if (req.method === 'POST' && p === '/api/admin/restart') { restartServer(res); return; }
@@ -675,6 +678,8 @@ listenWithRetry(server, PORT, HOST, () => {
   // Który katalog obsadza zakładkę Analyses. Cicha pomyłka tutaj gasi cały wybór agenta,
   // więc jest wypisywana przy każdym starcie, razem z tym, ilu agentów faktycznie widać.
   const ready = Object.values(AGENTS).filter((a) => !a.absDir && agentAvailable(a)).length;
+  integration.apiKey();
+  console.log(`Integration API: /api/v1 (OpenAPI at /api/v1/openapi.json). API key: ${process.env.QA_API_KEY ? 'from QA_API_KEY' : integration.KEY_FILE}`);
   listSuite().catch(() => {}); // rozgrzewka cache listy testów, żeby pierwsze wejście w Test suite nie czekało kilku sekund
   console.log(`Agents: ${ready}/${AGENT_DIRS.length} found in ${AGENTS_ROOT}`
     + (ready ? '' : ' - set QA_AGENTS_ROOT to the folder holding claudeAgent*/'));
