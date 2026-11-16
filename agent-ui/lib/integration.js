@@ -177,6 +177,19 @@ function info(req) {
 /** Returns true when the request belonged to /api/v1 or /api/integration (and was answered). */
 async function handle(req, res, p, { body, json }) {
   if (p === '/api/integration' && req.method === 'GET') return json(res, 200, info(req)), true;
+  if (p === '/api/llm' || p === '/api/llm/test') {
+    const llm = require('./llm');
+    if (req.method === 'GET' && p === '/api/llm') return json(res, 200, llm.view()), true;
+    // A key is written or used only by a direct request on this machine, never through a proxy or tunnel.
+    if (!isLocalDirect(req)) return json(res, 403, { error: 'Open Flawtrace directly on the machine it runs on to change the AI provider.' }), true;
+    if (req.method === 'POST' && p === '/api/llm') {
+      try { return json(res, 200, llm.update(await body(req))), true; } catch (e) { return json(res, e.code || 500, { error: e.message }), true; }
+    }
+    if (req.method === 'POST' && p === '/api/llm/test') {
+      try { const r = await llm.complete('Reply with the single word OK.', 'ping', { timeoutMs: 45000 }); return json(res, 200, { ok: true, text: String(r.text).slice(0, 80), provider: r.provider, usage: r.usage || null }), true; }
+      catch (e) { return json(res, 200, { ok: false, error: e.message }), true; }
+    }
+  }
   if (p !== '/api/v1' && !p.startsWith('/api/v1/')) return false;
   const url = new URL(req.url, 'http://x');
   const sub = p.slice('/api/v1'.length) || '/';

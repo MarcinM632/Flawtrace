@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { MODEL, RUNS_DIR } = require('./config');
 
-function claudeOnce(system, input, timeoutMs = 240000) {
+function claudeCliOnce(system, input, timeoutMs = 240000) {
   return new Promise((resolve, reject) => {
     const dir = path.join(RUNS_DIR, 'work', 'pe');
     fs.mkdirSync(dir, { recursive: true });
@@ -34,4 +34,10 @@ function claudeOnce(system, input, timeoutMs = 240000) {
   });
 }
 
-module.exports = { claudeOnce };
+/** The single-step call used by the prompt engineer and the metrics text: goes to the AI provider the user selected
+ * (Claude Code by default, so nothing changes until another one is chosen in Settings). */
+function claudeOnce(system, input, timeoutMs = 240000) {
+  return require('./llm').complete(system, input, { timeoutMs });
+}
+
+module.exports = { claudeOnce, claudeCliOnce };

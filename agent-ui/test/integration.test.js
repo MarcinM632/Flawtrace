@@ -66,3 +66,16 @@ test('connection info gives the key to a direct local request only', async () =>
   assert.equal(relayed.body.key, null);
   assert.equal(relayed.body.keyHidden, true);
 });
+
+test('AI provider settings: readable, key never returned, changes only for a direct local request', async () => {
+  const v = await call('/api/llm');
+  assert.equal(v.status, 200);
+  assert.equal(v.body.selected, 'claude-cli');
+  const relayed = await call('/api/llm', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' }, body: JSON.stringify({ provider: 'openai', key: 'sk-secret' }) });
+  assert.equal(relayed.status, 403);
+  const saved = await call('/api/llm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'openai', model: 'x', key: 'sk-secret-123456' }) });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.keySet, true);
+  assert.ok(!JSON.stringify(saved.body).includes('secret'));
+  await call('/api/llm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'claude-cli' }) });
+});

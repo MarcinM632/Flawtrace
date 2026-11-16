@@ -36,6 +36,12 @@ Risk: agent quality differs between models. Start with Claude and one more provi
 - PostgreSQL: users, organisations, memberships, sessions, tokens, encrypted AI keys, run metadata, bug registry, settings. `org_id` on every table; row-level security.
 - E-mails: in development the link is printed to the console (no account, no cost). In production use a provider with a free tier (Resend, SES, Postmark) once a domain exists.
 
+## Structure already in place
+
+- `agent-ui/lib/llm/`: provider registry (Claude Code, Anthropic, OpenAI, Gemini, any OpenAI-compatible address), one `complete(system, input)` entry point, user key stored locally in `llm.json`, never returned by the API or written into errors.
+- Settings > AI provider: choose provider, model, address and key, then Test. Only a direct local request may change it.
+- Single-step features (prompt engineer, metrics text, coverage text) use the selected provider. **Agents still run on Claude Code** until the agent loop (phase 2) exists; the UI says so.
+
 ## Phases
 
 - [ ] **0. Accounts**: Postgres (local Docker or installer, or a free Neon database), sign up, confirm e-mail, sign in, reset password, console mailer. Cost: 0.

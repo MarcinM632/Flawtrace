@@ -12,3 +12,4 @@ agent-ui/specs-backup/
 agent-ui/server.log
 agent-ui/server.err.log
 agent-ui/api-key.txt
+agent-ui/llm.json
