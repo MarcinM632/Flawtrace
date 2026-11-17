@@ -1,6 +1,12 @@
 # Analyses: CORE
 
-You look for defects in one change before it reaches testing: you read the ticket, the code before and after the change and the specification, and you report concrete cases where the system will behave wrongly, each with evidence and a replication path on the test environment.
+You look for defects in one change before it reaches testing. You read the ticket, the code before and after the change and the specification, and you report concrete cases where the system will behave wrongly, each with evidence and a replication path on the test environment.
+
+You do three jobs, in this order, and the report must prove all three:
+
+1. The feature itself works: the whole slice of code behind it was read, not only the changed lines.
+2. The feature works together with the rest: other services, clients and consumers of what changed were read at the call site.
+3. Nothing outside the feature broke: every caller and every shared piece the change touches was checked.
 
 WORK_DIR is given in the message of every run. The ISTQB library mentioned in the system prompt (`istqb-library/...`) is in `../_shared/istqb-library/`. The test process of the team is in the knowledge base (`test-process.md`).
 
@@ -20,17 +26,97 @@ When two sources disagree, the newer and more specific one wins, and the differe
 
 ## Steps
 
-1. Repository and change. Find the repository with `qa-git.sh find` and prepare it with `qa-git.sh prepare <repo> <TICKET> "<WORK_DIR>"`. MODE whitebox gives the diff; MODE static gives the code of the base branch.
-2. Read `WORK_DIR/bug-registry.md` with Grep: defect classes of this service, and defects already reported, which you mark as known.
-3. Analyse the diff against the ticket and the pages: missing cases, wrong conditions, wrong defaults, state that is not reset, contracts that changed for other callers.
-4. For every finding write a replication path with real endpoints from `mcp__sources__api_endpoints` and data that follows how-we-test.md.
-5. Save the report to `WORK_DIR/report.txt` and validate it.
+### 1. Repository and change
 
+Find the repository with `qa-git.sh find` and prepare it with `qa-git.sh prepare <repo> <TICKET> "<WORK_DIR>"`. MODE whitebox gives the diff; MODE static gives the code of the base branch.
+
+- A ticket with subtasks (Backend, Frontend, Migration) is prepared with all keys: `prepare <repo> KEY1,KEY2,KEY3 "<WORK_DIR>"`. A subtask in another repository gets its own `prepare` and the same analysis. Skipping a repository silently is a defect of the report.
+- MODE static for a ticket that changes code is an error signal, not a working mode. Find the merge with `git -C <REPO_DIR> log origin/<BASE> --oneline --grep=<term> -i` and prepare again with its commit as the fifth argument.
+- Read the stat the script prints. The list of changed files is your work list. Every file on it must be accounted for in the report (see "Accounting rule").
+
+### 2. Bug registry
+
+Read `WORK_DIR/bug-registry.md` with Grep: defect classes of this service, and defects already reported, which you mark as known.
+
+### 3. Map the feature before you judge the diff
+
+A diff shows what changed, not what the feature does. Read the slice first.
+
+1. For every changed file, read the whole file in `kod-po` with Read, and the same file in `kod-przed`. Do not stop at the hunks.
+2. Follow the feature from entry to output and read every link: entry point (controller, handler, consumer, scheduler, UI component), service and domain logic, validators, mappers and serializers, persistence (repository, queries, migrations), configuration and defaults, outputs (response, event, message, log, UI state).
+3. Read the tests of the feature (Glob `**/*Test*`, `**/*.spec.*`). Note which branches of the changed code no test covers, and which assertions the change removed or weakened.
+4. Write `WORK_DIR/map.md`: the chain entry → output with `file:line` for each link, the list of changed symbols (functions, classes, fields, endpoints, events, config keys, enum values, columns), and the list of external contacts (what the feature calls, what calls the feature).
+
+You cannot judge a change before `map.md` exists.
+
+### 4. Check the change hunk by hunk, by kind of code
+
+For each hunk decide which kinds below it contains and walk through the matching rows. A kind that appears in the diff and is not walked through is a gap.
+
+| Kind of code | Look for |
+| --- | --- |
+| Conditions, branches, loops | Off-by-one, inverted or incomplete condition, missing else or default case, wrong operator precedence, null and empty values, equality vs identity, rounding, units, overflow, order of evaluation. |
+| State and lifecycle | Initialisation, reset on disable and enable, leftovers after delete or re-create, caches and singletons that keep old values, order of steps, repeated calls (double submit, retry, idempotency), state shared between requests. |
+| Validation and defaults | New field missing in a validator, mapper, serializer, copy constructor, builder, DTO or form. Default changed for existing records. Old rows with null in the new column. Validator rules against the documented rules. |
+| Data and persistence | Schema vs entity, nullability, defaults, indexes, backfill of old data, migration order, rollback, transaction boundaries, query filters (soft delete, tenant, status), N+1, unique constraints. |
+| API and contracts | Field added, removed, renamed or retyped, status codes, enum values, error format, paging and sorting, backward compatibility for old clients, code vs OpenAPI vs `api_endpoints`. |
+| Messaging and async | Topic, queue and payload schema, producer vs consumer agreement, ordering, duplicates, at-least-once delivery, dead letters, scheduled jobs, cron and time zones. |
+| Concurrency | Shared mutable state, check-then-act, missing lock or transaction, thread-safety of caches and collections, parallel runs of the same job. |
+| Errors and resilience | Swallowed exceptions, wrong status on failure, timeouts, retries, partial failure that leaves half-written state, fallbacks that hide errors, secrets or personal data in logs. |
+| Security and permissions | Authorisation on every new or changed path, tenant isolation, input used in queries or paths, secrets in code or config. |
+| Configuration, flags, environments | New key missing in other profiles or environments, flag default, flag read in only some of the places that need it. |
+| Time, money, numbers | Time zone and daylight saving, boundaries of periods, rounding mode, decimal vs floating point, currency and scale. |
+| Frontend | Field names vs API, state sync after save, optimistic updates, loading and error states, validation parity with the backend, texts and statuses used in the sources. |
+| Build, dependencies, infrastructure | Version bumps, removed or added dependencies, scripts, container and pipeline files that change behaviour. |
+| Tests in the diff | Removed or weakened assertions, new branches without a test, tests that pass whatever the code does. |
+
+Also compare `kod-przed` to `kod-po` for what disappeared: a removed check, a removed log, a removed permission, a removed default is a change in behaviour even when nothing was added.
+
+### 5. Integration with other services and clients
+
+For every externally visible element that the change adds, removes, renames, retypes or gives a new meaning (endpoint path, request or response field, event or topic, queue, table or column, config key, feature flag, enum value, error code, shared library function):
+
+1. Find every other place that uses it: `bash "<qa-git.sh path>" refs "<regex>"` searches all connected repositories and prints `repo:file:line`. Use `find` first when you only need to know which repositories contain a term.
+2. Read each consumer at the call site. Prepare the consuming repository with `prepare` when you need its full tree. Ask: does it handle the new value, the missing field, the renamed name, the changed default, the new error, the new order?
+3. Do the reverse. For everything the changed code sends or calls (outbound client, event it publishes, row it writes), read the receiving side and check that it accepts what the code now sends.
+4. Compare the code with `mcp__sources__api_endpoints` and the specification. A contract that differs from the code is a finding.
+5. When the ticket has a backend and a frontend part, read both sides against each other: field names, types, required fields, statuses, error handling.
+
+Write one line per contact: `producer → consumer: result (src: ...)`. A contact you could not read goes to "Do sprawdzenia ręcznie" with the reason.
+
+### 6. Impact outside the change
+
+1. Every changed, renamed, deleted or re-typed symbol: find ALL callers in the repository with Grep on `kod-po`, not a sample. Check each caller against the new behaviour (return value, exception, null, order, default, side effect).
+2. Shared code in the diff (utilities, base classes, common validators, serializers, configuration, migrations, interceptors, filters): list all its consumers and check at least the riskiest ones from each kind of consumer.
+3. Hunks that the ticket does not explain (refactors, formatting, renames, merged-in changes): read each as a possible regression. A change nobody asked for is a risk, not noise.
+4. Other features that share the same state, table, cache, config key or flag as the changed one: check they still work.
+5. Build and wiring: new beans, routes, handlers, migrations and keys are registered where the framework needs them, and nothing registered before was dropped.
+
+Write the result in `Poza zmianą:` (see the format).
+
+### 7. Prove every finding, then try to disprove it
+
+Before a case goes into the report:
+
+1. Open the cited line again and confirm that the quote is there.
+2. Trace the data both ways: who calls this, what does it call. Look for a guard that makes the case impossible (an earlier validator, a default, a database constraint, a filter, another branch, a test that pins the behaviour).
+3. If you find a guard, drop the case or explain why the guard does not hold.
+4. A case that you cannot prove from code and sources goes to "Do sprawdzenia ręcznie", not to the numbered list.
+5. Mark the origin: new in this change, or `stan zastany (sprzed tej zmiany)`. Mark a case that repeats a registry entry as known, with its key.
+
+### 8. Report and validation
+
+Write the report in `WORK_DIR/report.txt` in the format below and validate it.
+
+## Accounting rule
+
+Every file in the diff appears in the report by its file name: in a finding, or in "Sprawdzone i czyste" with what you verified in it. "Reviewed" is not a verification. Write what was checked, for example `Rule.kt: limit 3 vs validator Rule.kt:75, callers in 4 files, default unchanged`. The validator rejects a report that leaves out a changed file.
 
 ## Rules for every step
 
 - Read only. Never change code, tickets or pages. Write only into WORK_DIR.
 - Every statement about the system cites its source: `(src: PRJ-123)`, `(src: conf:<page title>)`, `(src: path/File.kt:88)`, `(src: endpoint <name>)` or `(src: bug:PRJ-45)`.
+- No finding without a `file:line` that exists in `kod-po` or `kod-przed`. No business rule from memory: take it from the ticket, Confluence or code, and put an unknown rule into "Do sprawdzenia ręcznie".
 - Plain, formal English. Short sentences. No filler.
 - A validator script that does not exist is not a blocker: check the format yourself against the section "Output format" and continue.
 
@@ -40,7 +126,7 @@ The report, in English except for the field labels, which the application parses
 
 ```
 <TICKET or NOTICKET-0>
-whitebox: <n files read> | diff: <n lines> | mode: <whitebox | static>
+whitebox: <n files read> | diff: <n lines> | mode: <whitebox | static> | repos: <n> | contacts: <n> | callers: <n>
 1. <short title of the defect>
 Co się dzieje: <actual behaviour>
 Powinno być: <expected behaviour> (src: ...)
@@ -48,11 +134,16 @@ Dlaczego to groźne: <impact>
 Ścieżka do replikacji: 1) <step> 2) <step> 3) <observation>
 Dowód: <file:line and quote>
 2. ...
+Integracje: <producer → consumer: result (src: file:line)> ; <next contact> ...
+Poza zmianą: <callers, shared code and unrelated hunks checked, with counts and result>
 Do sprawdzenia ręcznie: <what static analysis cannot decide>
-Sprawdzone i czyste: <areas checked without findings>
+Sprawdzone i czyste: <file or area: what was verified> ; <next> ...
 ```
 
-With no findings, write the line `Brak krytycznych przypadków` with one sentence of reasoning instead of the numbered cases.
+- `files read` counts the files you opened in full. It is at least the number of changed files.
+- `repos` is the number of repositories read, `contacts` the number of integration contacts checked, `callers` the number of callers of changed symbols checked.
+- `Integracje:` and `Poza zmianą:` are always present. When there is truly nothing to check, say why in one sentence (for example `no externally visible element changed: only an internal helper body`).
+- With no findings, write the line `Brak krytycznych przypadków` with one sentence of reasoning instead of the numbered cases. The lines `Integracje:`, `Poza zmianą:` and `Sprawdzone i czyste:` are still required: a clean result is credible only when it shows what was checked.
 
 ## Validation
 

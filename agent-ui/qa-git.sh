@@ -5,6 +5,7 @@
 #   qa-git.sh prepare <repo> <TICKET[,TICKET2,...]> <WORK_DIR> [<commit>]   kroki 2-3 z CLAUDE.md (klon --no-checkout gdy brak, fetch, tryb, diff);
 #                                                    <commit> = merge/commit zmiany, gdy nie nosi klucza ticketu (tryb static mimo zmiany)
 #   qa-git.sh find <regex>                           w którym repo (cache ~/qa/repos) siedzi dany termin: treść kodu na bazie i komunikaty commitów
+#   qa-git.sh refs <regex>                           every use of a term in ALL cached repos on the base branch, as repo:file:line:text (consumers, callers, producers; tests included)
 #   qa-git.sh git [-C <dir>] <podkomenda> ...       przepuszcza WYŁĄCZNIE podkomendy odczytu
 set -euo pipefail
 
@@ -137,9 +138,31 @@ find_code() {
   done
 }
 
+refs_code() {
+  local re="$1" d repo base out n
+  [ -n "$re" ] || die "użycie: refs <regex>"
+  [ -d "$QA_ROOT" ] || die "brak cache repozytoriów: $QA_ROOT"
+  echo "Użycia /$re/ (bez uwzględniania wielkości liter) na gałęzi bazowej każdego repo w cache; format repo:plik:linia:tekst. Gałąź bazowa nie zawiera jeszcze zmiany z ticketu."
+  for d in "$QA_ROOT"/*/; do
+    [ -d "$d/.git" ] || continue
+    repo=$(basename "$d"); base=develop
+    git -C "$d" show-ref --verify --quiet "refs/remotes/origin/$base" || base=main
+    git -C "$d" show-ref --verify --quiet "refs/remotes/origin/$base" || base=master
+    out=$(git -C "$d" grep -nIiE -e "$re" "origin/$base" 2>/dev/null | sed "s|^origin/$base:||" | cut -c1-240 || true)
+    [ -n "$out" ] || continue
+    n=$(printf '%s
+' "$out" | grep -c . || true)
+    echo "== $repo ($n trafień)"
+    printf '%s
+' "$out" | head -n 80 | sed "s|^|$repo:|"
+    [ "$n" -le 80 ] || echo "   ... jeszcze $((n - 80)) trafień: zawęź wyrażenie"
+  done
+}
+
 case "${1:-}" in
   find) [ $# -eq 2 ] || die "użycie: find <regex>"; find_code "$2" ;;
+  refs) [ $# -eq 2 ] || die "użycie: refs <regex>"; refs_code "$2" ;;
   prepare) { [ $# -eq 4 ] || [ $# -eq 5 ]; } || die "użycie: prepare <repo> <TICKET[,TICKET2]> <WORK_DIR> [<commit>]"; prepare "$2" "$3" "$4" "${5:-}" ;;
   git) shift; safe_git "$@" ;;
-  *) die "użycie: prepare <repo> <TICKET> <WORK_DIR> | find <regex> | git [-C dir] <podkomenda odczytu> ..." ;;
+  *) die "użycie: prepare <repo> <TICKET> <WORK_DIR> | find <regex> | refs <regex> | git [-C dir] <podkomenda odczytu> ..." ;;
 esac

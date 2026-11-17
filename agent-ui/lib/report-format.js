@@ -144,7 +144,7 @@ function parseQamcp(text, status) {
 
 // ------------------------------------------------------------- Analyses ----
 const AN_FIELDS = { 'Co się dzieje': 'actual', 'Powinno być': 'expected', 'Dlaczego to groźne': 'impact', 'Ścieżka do replikacji': 'path', 'Dowód': 'proof' };
-const AN_TAIL = { 'Do sprawdzenia ręcznie': 'manual', 'Sprawdzone i czyste': 'clean' };
+const AN_TAIL = { 'Do sprawdzenia ręcznie': 'manual', 'Sprawdzone i czyste': 'clean', 'Integracje': 'integration', 'Poza zmianą': 'outside' };
 
 /** Kroki replikacji "1) ... 2) ..." w jednej linii albo w osobnych liniach. */
 function splitSteps(s) {
@@ -158,7 +158,7 @@ function splitSteps(s) {
 }
 
 function parseAnalysis(text, status) {
-  const out = { kind: 'analysis', verdict: status || '', ticket: '', none: '', cases: [], manual: '', clean: '', coverage: '' };
+  const out = { kind: 'analysis', verdict: status || '', ticket: '', none: '', cases: [], manual: '', clean: '', integration: '', outside: '', coverage: '' };
   let cur = null, field = null, tail = null;
   for (const raw of String(text).split('\n')) {
     const line = raw.replace(/\r$/, '');
@@ -170,7 +170,7 @@ function parseAnalysis(text, status) {
     if (cov) { out.coverage = t; tail = null; field = null; continue; }
     const c = t.match(/^(\d+)\.\s+(.*)$/);
     if (c) { cur = { n: +c[1], title: clean(c[2]) }; out.cases.push(cur); field = null; tail = null; continue; }
-    const tl = t.match(/^(Do sprawdzenia ręcznie|Sprawdzone i czyste)\s*:\s*(.*)$/);
+    const tl = t.match(/^(Do sprawdzenia ręcznie|Sprawdzone i czyste|Integracje|Poza zmianą)\s*:\s*(.*)$/);
     if (tl) { tail = AN_TAIL[tl[1]]; out[tail] = clean(tl[2]); cur = null; field = null; continue; }
     if (tail) { out[tail] += ' ' + clean(t); continue; }
     const f = t.match(/^(Co się dzieje|Powinno być|Dlaczego to groźne|Ścieżka do replikacji|Dowód)\s*:\s*(.*)$/);

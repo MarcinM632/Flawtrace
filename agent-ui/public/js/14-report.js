@@ -31,6 +31,8 @@ function rvAnalysis(v){
     +(c.impact?`<div class="rv-line"><b>Why it matters:</b> ${esc(c.impact)}</div>`:'')
     +(c.steps.length?'<h6 class="rv-h6">How to reproduce</h6>'+rvSteps(c.steps):'')
     +(c.proof?`<div class="rv-proof"><span>Evidence</span><code>${esc(c.proof)}</code></div>`:'')+'</div>').join('');
+  if(v.integration)h+=`<div class="rv-line"><b>Integrations checked:</b> ${esc(v.integration)}</div>`;
+  if(v.outside)h+=`<div class="rv-line"><b>Outside the change:</b> ${esc(v.outside)}</div>`;
   if(v.manual)h+=`<div class="rv-line"><b>To check by hand:</b> ${esc(v.manual)}</div>`;
   if(v.clean)h+=`<div class="rv-line"><b>Checked and clean:</b> ${esc(v.clean)}</div>`;
   if(v.coverage)h+=`<div class="rv-line mono">${esc(v.coverage)}</div>`;

@@ -406,6 +406,9 @@ test('report cards: Analyses new (steps on lines, [BŁĄD]) and old (inline step
   const old = rf.parseAnalysis('SVC-1\n\n1. T\nCo się dzieje: x\nDlaczego to groźne: y\nŚcieżka do replikacji: 1) a 2) b 3) c\nDowód: B.kt:1\nSprawdzone i czyste: z\nwhitebox: 1 | static: 0 | dynamic: 0', 'RAPORT OK');
   assert.equal(old.cases[0].steps.length, 3); assert.equal(old.cases[0].steps[2].obs, true, 'old reports: the last step carries the observation');
   assert.equal(old.clean, 'z');
+  const wide = rf.parseAnalysis('PRJ-2\nwhitebox: 3 | diff: 40 | mode: whitebox | repos: 2 | contacts: 4 | callers: 9\nBrak krytycznych przypadków: guard at A.kt:5.\nIntegracje: A.kt event x → B.kt:7 handles it\nPoza zmianą: 9 callers checked, none relies on the old default\nSprawdzone i czyste: A.kt: limit vs validator', 'RAPORT OK');
+  assert.equal(wide.integration, 'A.kt event x → B.kt:7 handles it'); assert.equal(wide.outside, '9 callers checked, none relies on the old default'); assert.equal(wide.clean, 'A.kt: limit vs validator');
+  assert.match(wide.coverage, /repos: 2 \| contacts: 4 \| callers: 9/);
   assert.equal(rf.parseAnalysis('PRJ-1\n[Hedger] — brak krytycznych przypadków.', 'RAPORT OK').none, '[Hedger] — brak krytycznych przypadków.');
 });
 
