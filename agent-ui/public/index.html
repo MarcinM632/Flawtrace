@@ -64,7 +64,6 @@
     <div class="nav-group">Metrics</div>
     <button data-tab="bugs"><svg width="16" height="16"><use href="#i-bug"/></svg><span class="lbl">Bug registry</span><span class="count" id="bugCount">0</span></button>
     <button data-tab="risk"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Risk</span></button>
-    <button data-tab="metricsgen"><svg width="16" height="16"><use href="#i-chart"/></svg><span class="lbl">Metrics generation</span></button>
     <button data-tab="tfmonitor"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Release monitoring</span></button>
     <div class="nav-group">Reference</div>
     <button data-tab="tools"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">Tools</span></button>
@@ -683,106 +682,6 @@ Log in, open Settings, change the display name and save. The new name must appea
       <p class="rlede">Priority is the risk level, calculated as <b>likelihood times impact</b>  according to ISTQB CTFL 5.2. Services with more and more severe findings per ticket rank higher. <b>A high-risk service should be tested earlier and more thoroughly, not faster.</b>  The time estimate is meant for capacity planning only. ISTQB CTAL-TM 1.3.4.</p>
       <div id="rPriority"></div>
     </div>
-  </section>
- </div>
-</main>
-
-<main id="view-metricsgen" class="wide" hidden>
- <div class="doc viz">
-  <div class="doc-hero">
-    <h3>Build a metric</h3>
-    <p>Select a statistic, a period and the applications, services or Jira release to include. <b>A generated chart is saved</b>  and keeps showing the data from the day it was created.</p>
-    <div class="src" id="mgDlSt">Jira defect history: checking</div>
-    <button type="button" class="btn sm" id="mgDlSync" style="margin-top:8px">Sync Jira defect history</button>
-  </div>
-
-  <section class="panel">
-    <div class="panel-h"><h2>New chart</h2></div>
-    <div class="panel-b">
-      <div class="mgen-grid">
-        <div class="mgen-field" id="mgStatField">
-          <label for="mgStat">Statistic</label>
-          <select id="mgStat"></select>
-          <p class="hint" id="mgStatDesc"></p>
-        </div>
-        <div class="mgen-field">
-          <label>Period</label>
-          <div class="seg" id="mgPeriod">
-            <button data-p="all" class="on">All time</button>
-            <button data-p="30">Last 30 days</button>
-            <button data-p="90">Last 90 days</button>
-            <button data-p="180">Last 6 months</button>
-            <button data-p="365">Last year</button>
-            <button data-p="custom">Custom</button>
-          </div>
-          <div class="mgen-range" id="mgRange" hidden>
-            <input type="date" id="mgFrom"><span>→</span><input type="date" id="mgTo">
-          </div>
-        </div>
-        <div class="mgen-field" id="mgAppsField">
-          <label>Apps <span class="opt">Leave empty to include all applications</span></label>
-          <div class="mgen-check" id="mgApps"></div>
-        </div>
-        <div class="mgen-field" id="mgServicesField" hidden>
-          <label>Services <span class="opt">Leave empty to include all services</span></label>
-          <div class="mgen-check mgen-scroll" id="mgServices"></div>
-        </div>
-        <div class="mgen-field" id="mgReleaseField" hidden>
-          <label>Release</label>
-          <div class="mgen-release">
-            <select id="mgReleaseApp"></select>
-            <select id="mgReleaseName"></select>
-          </div>
-        </div>
-        <div class="mgen-field">
-          <label for="mgTitle">Title <span class="opt">Optional</span></label>
-          <input type="text" id="mgTitle" maxlength="120" placeholder="Defaults to the statistic name">
-        </div>
-      </div>
-      <button class="go" id="mgGo"><svg width="13" height="13"><use href="#i-spark"/></svg> Generate chart</button>
-      <div class="err" id="mgErr"></div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-h"><div><h2>Econometric analysis</h2><div class="sub">Select the metric to explain and the metrics that may explain it. The app fits a regression and reports significance, fit and the limits of a small sample.</div></div></div>
-    <div class="panel-b">
-      <div class="econ-builder">
-        <div class="mgen-field econ-gran">
-          <label for="ecGran">Granularity</label>
-          <select id="ecGran"></select>
-          <p class="hint" id="ecGranDesc"></p>
-        </div>
-        <div class="mgen-field" id="ecPeriodField">
-          <label>Period <span class="opt">Applies only when the granularity is over time</span></label>
-          <div class="seg" id="ecPeriod">
-            <button data-p="90" class="on">Last 90 days</button>
-            <button data-p="180">Last 6 months</button>
-            <button data-p="365">Last year</button>
-            <button data-p="all">All time</button>
-          </div>
-        </div>
-        <div class="mgen-field">
-          <label for="ecY">Dependent variable</label>
-          <select id="ecY"></select>
-        </div>
-        <div class="mgen-field econ-vars">
-          <label>Explanatory variables</label>
-          <div class="econ-xcheck" id="ecX"></div>
-        </div>
-        <div class="mgen-field">
-          <label for="ecTitle">Title <span class="opt">Optional</span></label>
-          <input type="text" id="ecTitle" maxlength="120" placeholder="Defaults to the variable names">
-        </div>
-      </div>
-      <button class="go" id="ecGo"><svg width="13" height="13"><use href="#i-spark"/></svg> Build model</button>
-      <div class="err" id="ecErr"></div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-h"><h2>Saved charts &amp; models</h2><span class="sec-meta" id="mgCount"></span></div>
-    <div class="panel-b"><div id="mgGallery"></div></div>
   </section>
  </div>
 </main>
@@ -2627,7 +2526,6 @@ Log in, open Settings, change the display name and save. The new name must appea
 <script src="/js/12-tools.js"></script>
 <script src="/js/14-report.js"></script>
 <script src="/js/15-tfmonitor.js"></script>
-<script src="/js/16-metrics.js"></script>
 <script src="/js/17-workspace.js"></script>
 <script src="/js/18-release-watch.js"></script>
 <script src="/js/19-run-summary.js"></script>
