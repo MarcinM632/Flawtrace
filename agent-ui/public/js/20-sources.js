@@ -28,7 +28,7 @@ async function loadSources(){
   $('#srcRO').checked=!!d.api.readOnly;
   $('#srcJiraUrl').value=d.jira.url||'';$('#srcJiraProj').value=d.jira.projects||'';
   $('#srcJiraEmail').value=d.jira.email||'';$('#srcJiraToken').value=d.jira.token||'';
-  $('#srcConfUrl').value=d.confluence.url||'';$('#srcConfSpaces').value=d.confluence.spaces||'';
+  $('#srcConfUrl').value=d.confluence.url||'';$('#srcConfSpaces').value=d.confluence.spaces||'';$('#srcConfPubSpace').value=d.confluence.publishSpace||'';$('#srcConfPubParent').value=d.confluence.publishParent||'';
   $('#srcConfEmail').value=d.confluence.email||'';$('#srcConfToken').value=d.confluence.token||'';
   $('#srcKbDir').value=d.knowledgeDir||'';$('#srcKbDir').placeholder=d.knowledgeDefault||'knowledge';
   SRC.specs=(d.api.specs||[]).map(s=>({...s}));
@@ -69,7 +69,7 @@ $('#srcRepoAdd').onclick=()=>{SRC.repos.push({name:'',url:'',branch:''});renderS
 function srcForm(){
   return {
     jira:{url:$('#srcJiraUrl').value,email:$('#srcJiraEmail').value,token:$('#srcJiraToken').value,projects:$('#srcJiraProj').value},
-    confluence:{url:$('#srcConfUrl').value,email:$('#srcConfEmail').value,token:$('#srcConfToken').value,spaces:$('#srcConfSpaces').value},
+    confluence:{url:$('#srcConfUrl').value,email:$('#srcConfEmail').value,token:$('#srcConfToken').value,spaces:$('#srcConfSpaces').value,publishSpace:$('#srcConfPubSpace').value,publishParent:$('#srcConfPubParent').value},
     api:{baseUrl:$('#srcBase').value,authHeader:$('#srcAuthH').value||'Authorization',authValue:$('#srcAuthV').value,readOnly:$('#srcRO').checked,specs:SRC.specs},
     repos:SRC.repos,
     knowledgeDir:$('#srcKbDir').value,

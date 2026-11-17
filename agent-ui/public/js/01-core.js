@@ -385,7 +385,7 @@ wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpt
 /* Light, dark or auto (follows the system). The saved choice is applied before first paint by the script in <head>; settings (23-settings.js) change it. */
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','runs','qamcp','uitest','autotest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','runs','qamcp','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
@@ -394,6 +394,7 @@ const PAGE={
   autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
   flow:['Test Flow','Test Flow','One prompt runs the whole process on a ticket: planning, analysis, design, implementation, execution and completion.'],
   tfmonitor:['Metrics','Release monitoring','Release progress, status and priority for each project, read from Jira.'],
+  fulltest:['Test Flow','Full tests','The whole testing flow of one task from 0 to 100%, with your confirmation before autotests and documentation.'],
   runsummary:['Test Flow','Run summary','All phases of one ticket on a single page, built from the latest runs.'],
   bugs:['Metrics','Bug registry','Record findings and see where defects concentrate.'],
   risk:['Metrics','Risk','Defect density by service, calculated from the bug registry.'],
@@ -425,6 +426,7 @@ function showTab(t){
   if(t==='workspace')loadWorkspace();
   if(t==='bugs')loadBugs().catch(()=>{});
   if(t==='risk')loadBugs().then(renderRisk).catch(()=>{});
+  if(t==='fulltest')loadFullTests();
   if(t==='qamcp'){loadPlatStatus();refreshAll();qPendingSync()}
   if(t==='uitest')refreshAll();
   if(t==='flow'){loadPlatStatus('#flEnv');refreshAll();qPendingSync()}

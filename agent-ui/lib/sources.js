@@ -17,7 +17,7 @@ const SECRETS = [['jira', 'token'], ['confluence', 'token'], ['api', 'authValue'
 
 const EMPTY = () => ({
   jira: { url: '', email: '', token: '', projects: '' },
-  confluence: { url: '', email: '', token: '', spaces: '' },
+  confluence: { url: '', email: '', token: '', spaces: '', publishSpace: '', publishParent: '' },
   repos: [],
   knowledgeDir: '',
   api: { baseUrl: '', authHeader: 'Authorization', authValue: '', specs: [], readOnly: false },
@@ -56,6 +56,8 @@ function save(patch) {
   next.repos = Array.isArray(patch.repos) ? patch.repos.map(cleanRepo).filter(Boolean) : cur.repos;
   next.api.specs = Array.isArray(patch.api && patch.api.specs) ? patch.api.specs.map(cleanSpec).filter(Boolean) : cur.api.specs;
   next.knowledgeDir = patch.knowledgeDir !== undefined ? String(patch.knowledgeDir || '').trim() : cur.knowledgeDir;
+  next.confluence.publishSpace = String(next.confluence.publishSpace || '').trim();
+  next.confluence.publishParent = String(next.confluence.publishParent || '').trim();
   for (const k of ['jira', 'confluence']) next[k].url = String(next[k].url || '').trim().replace(/\/+$/, '');
   next.api.baseUrl = String(next.api.baseUrl || '').trim().replace(/\/+$/, '');
   next.api.readOnly = !!next.api.readOnly;
@@ -324,6 +326,55 @@ async function confluencePage(id) {
   return { id: p.id, title: p.title, space: p.space && p.space.key, version: p.version && p.version.number, url: base + ((p._links && p._links.webui) || ''), text: htmlText(p.body && p.body.storage && p.body.storage.value) };
 }
 
+/* Publishing is optional and never automatic: the app writes a page only when the user presses Publish in Full tests.
+   Every failure comes back as an Error with words for the user, so a missing permission cannot break a run. */
+async function sendJson(method, url, headers, payload, timeoutMs = 30000) {
+  const res = await fetch(url, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(payload), signal: AbortSignal.timeout(timeoutMs) });
+  const text = await res.text();
+  if (!res.ok) {
+    const why = res.status === 401 ? 'The login is not accepted.' : res.status === 403 ? 'The token has no permission to write in this space. Give it write access, or publish the page by hand from the downloaded draft.' : res.status === 404 ? 'The space or the parent page was not found.' : text.replace(/\s+/g, ' ').slice(0, 200);
+    throw Object.assign(new Error(`Confluence refused the page (HTTP ${res.status}). ${why}`), { status: res.status });
+  }
+  try { return JSON.parse(text); } catch (_) { return {}; }
+}
+
+/** Where pages are published: { ready, space, parent, reason }. Ready only when Confluence is connected and a space is set. */
+function confluencePublishTarget() {
+  const c = read();
+  const space = String(c.confluence.publishSpace || '').trim();
+  const parent = String(c.confluence.publishParent || '').trim();
+  const connected = !!(confluenceBase(c) && (c.confluence.token || c.jira.token));
+  const reason = !connected ? 'Confluence is not connected. Add it under Sources.' : !space ? 'Set the space key for published pages under Sources, Confluence.' : '';
+  return { ready: !reason, space, parent, reason };
+}
+
+/** Creates the page, or updates the one with the same title in the space. Returns { id, url, created }. */
+async function confluencePublish({ title, html }) {
+  const t = confluencePublishTarget();
+  if (!t.ready) throw new Error(t.reason);
+  const { base, headers } = confluenceCfg();
+  const name = String(title || '').trim().slice(0, 200);
+  if (!name) throw new Error('The page has no title.');
+  const q = encodeURIComponent;
+  let ancestors;
+  if (t.parent) {
+    let id = /^\d+$/.test(t.parent) ? t.parent : '';
+    if (!id) {
+      const f = await getJson(`${base}/rest/api/content?spaceKey=${q(t.space)}&title=${q(t.parent)}`, headers);
+      id = ((f.results || [])[0] || {}).id || '';
+      if (!id) throw new Error(`The parent page "${t.parent}" was not found in space ${t.space}.`);
+    }
+    ancestors = [{ id }];
+  }
+  const found = await getJson(`${base}/rest/api/content?spaceKey=${q(t.space)}&title=${q(name)}&expand=version`, headers);
+  const existing = (found.results || [])[0];
+  const body = { storage: { value: String(html || ''), representation: 'storage' } };
+  const page = existing
+    ? await sendJson('PUT', `${base}/rest/api/content/${q(existing.id)}`, headers, { id: existing.id, type: 'page', title: name, space: { key: t.space }, version: { number: ((existing.version || {}).number || 1) + 1 }, body })
+    : await sendJson('POST', `${base}/rest/api/content`, headers, { type: 'page', title: name, space: { key: t.space }, ...(ancestors ? { ancestors } : {}), body });
+  return { id: page.id, url: base + ((page._links && page._links.webui) || ''), created: !existing };
+}
+
 /* ------------------------------------------------ Repositories ------------------------------------------------ */
 
 const isLocal = (u) => /^([A-Za-z]:[\\/]|\/|\.{1,2}[\\/])/.test(u) && fs.existsSync(path.resolve(ROOT, u));
@@ -516,7 +567,7 @@ function brief(mode) {
 }
 
 module.exports = {
-  apiReady, appModel, brief, catalogue, confluencePage, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
+  apiReady, appModel, brief, catalogue, confluencePage, confluencePublish, confluencePublishTarget, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
   adfText, jiraCheck, jiraCount, jiraLink, jiraProjectKeys, jiraProjectMap, jiraRest, jiraSearchAll, jiraUsers, jiraVersions, liveMap, projectClause, jql,
   knowledgeDir, knowledgeFiles, mcpServers, read, repoList, save, status, syncRepos, test, uploadSpec, view,
   SPECS_DIR, FILE,

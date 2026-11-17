@@ -3,12 +3,12 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const EDGE = ['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync);
+const EDGE = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync);
 if (!EDGE) { console.error('Edge not found'); process.exit(2); }
 const out = path.resolve(process.argv[2] || path.join(__dirname, '..', 'ui-shots'));
 fs.mkdirSync(out, { recursive: true });
 const base = 'http://localhost:' + (process.env.PORT || 4317) + '/';
-const TABS = ['', 'flow', 'runsummary', 'tfmonitor', 'qamcp', 'autotest', 'bugs', 'risk', 'tools', 'fix', 'doc', 'ai', 'autodoc'];
+const TABS = ['', 'fulltest', 'sources', 'flow', 'runsummary', 'tfmonitor', 'qamcp', 'autotest', 'bugs', 'risk', 'tools', 'doc', 'ai', 'autodoc'];
 let bad = 0;
 for (const t of TABS) {
   const name = t || 'analyses';

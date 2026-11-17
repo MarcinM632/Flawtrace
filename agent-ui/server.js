@@ -9,8 +9,8 @@ const { spawn } = require('child_process');
 const { body, json, jsonEtag, serveStatic } = require('./lib/http');
 const { AGENTS, agentAvailable, agentDir, agentReason, servicesFor } = require('./lib/agents');
 const sources = require('./lib/sources');
-const { AGENTS_ROOT, AGENT_DIRS, AUTOTEST_REPO, HOST, MODEL, PORT, ROOT, RUNS_DIR, TICKET_KEY } = require('./lib/config');
-const { chatBatteries, chatCases, parseReport } = require('./lib/report-format');
+const { AGENTS_ROOT, AGENT_DIRS, AUTOTEST_REPO, DATA_DIR, HOST, MODEL, PORT, ROOT, RUNS_DIR, TICKET_KEY } = require('./lib/config');
+const { chatBatteries, chatCases, parseAnalysis, parseDesign, parseReport } = require('./lib/report-format');
 const { PE_TARGETS, autotestsFromRun, bgJobs, claudeOnce, parsePE, peBusyRuns, peRun, peSystem, startJob, stripTag, unknownToolsIn } = require('./lib/pe');
 const { SEVERITIES, jira, jiraSync, saveBugs, syncBugs } = require('./lib/bugs');
 const { loadAll, persist, runs } = require('./lib/store');
@@ -29,6 +29,12 @@ const suiteLib = require('./lib/suite');
 const testMonitor = require('./lib/test-monitor');
 const metricsLib = require('./lib/metrics');
 const workspace = require('./lib/workspace');
+// Full tests: the whole flow of one task, driven on the server (lib/pipeline.js). Started after loadAll(), so known runs are known.
+const fullTests = require('./lib/pipeline').create({
+  dir: path.join(DATA_DIR, 'fulltests'), runs, AGENTS, agentAvailable, startRun, autotestsFromRun, persistRun: persist, uiTest: uiTestLib,
+  sources, parseAnalysis, parseDesign, parseReport,
+  cancelRun: (r) => { r.meta.status = 'cancelled'; if (r.proc) { if (process.platform === 'win32') spawn('taskkill', ['/pid', String(r.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); else r.proc.kill(); } },
+});
 const releaseWatch = require('./lib/release-watch');
 releaseWatch.start(); // co godzinę: nowe taski w bieżącym wydaniu -> auto static test + powiadomienie w UI
 const coverage = require('./lib/coverage');
@@ -223,6 +229,22 @@ const server = http.createServer(async (req, res) => {
     if ((m = p.match(/^\/api\/jira\/issue-text\/([A-Z0-9]+-\d+)$/i)) && req.method === 'GET') {
       try { return json(res, 200, { key: m[1], text: await bugsLib.issueTextCached(m[1]) }); }
       catch (e) { return json(res, 502, { error: e.message }); }
+    }
+    // Full tests: the whole flow of one task (Static -> Whitebox -> Design -> QA MCP + UI Tests -> confirm -> autotests -> docs).
+    if (p === '/api/fulltest' || p.startsWith('/api/fulltest/')) {
+      const fail = (e) => json(res, e.status || 500, { error: String((e && e.message) || e) });
+      try {
+        if (req.method === 'GET' && p === '/api/fulltest') return json(res, 200, { cases: fullTests.list(), confluence: sources.confluencePublishTarget(), agents: { whitebox: ['core', 'svc', 'mcp'].filter((k) => agentAvailable(AGENTS[k])), api: agentAvailable(AGENTS.execution), ui: agentAvailable(AGENTS.uitest) } });
+        if (req.method === 'POST' && p === '/api/fulltest') {
+          const b = await body(req, 2 * 1024 * 1024);
+          return json(res, 201, fullTests.createCase(b.task, b.details, { whitebox: b.whitebox, family: b.family, api: b.api, ui: b.ui, url: b.url, budgetUsd: b.budgetUsd, username: b.username, password: b.password }));
+        }
+        if ((m = p.match(/^\/api\/fulltest\/([\w-]+)$/)) && req.method === 'GET') return json(res, 200, fullTests.view(fullTests.get(m[1])));
+        if ((m = p.match(/^\/api\/fulltest\/([\w-]+)\/(continue|retry|stop|confirm)$/)) && req.method === 'POST') return json(res, 200, fullTests.act(m[1], m[2], await body(req).catch(() => ({}))));
+        if ((m = p.match(/^\/api\/fulltest\/([\w-]+)\/autotests$/)) && req.method === 'POST') { const b = await body(req).catch(() => ({})); return json(res, 200, await fullTests.autotests(m[1], b.layer, String(b.comment || '').slice(0, 1000))); }
+        if ((m = p.match(/^\/api\/fulltest\/([\w-]+)\/docs$/)) && req.method === 'GET') return json(res, 200, fullTests.docsDraft(m[1]));
+        if ((m = p.match(/^\/api\/fulltest\/([\w-]+)\/publish$/)) && req.method === 'POST') return json(res, 200, await fullTests.publish(m[1]));
+      } catch (e) { return fail(e); }
     }
     // Metrics generation: katalog (statystyki + dostępne apki/serwisy/wydania), zapisane wykresy, generowanie, usuwanie.
     if (req.method === 'GET' && p === '/api/metrics/catalog') {
@@ -672,6 +694,7 @@ function listenWithRetry(srv, port, host, cb, triesLeft = 15) {
 }
 
 loadAll();
+fullTests.start();
 pruneWork();
 listenWithRetry(server, PORT, HOST, () => {
   console.log(`Agent UI: http://${HOST === '0.0.0.0' ? '<server-host>' : 'localhost'}:${PORT}`);

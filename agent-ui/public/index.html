@@ -60,6 +60,7 @@
     <button data-tab="uitest"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">UI Tests</span><span class="live" id="nb-uitest" hidden></span></button>
     <button data-tab="autotest"><svg width="16" height="16"><use href="#i-code"/></svg><span class="lbl">Autotests</span><span class="live" id="nb-autotest" hidden></span><span class="live" id="nb-suiterun" hidden></span></button>
     <div class="nav-group">Test Flow</div>
+    <button data-tab="fulltest"><svg width="16" height="16"><use href="#i-bolt"/></svg><span class="lbl">Full tests</span></button>
     <button data-tab="flow"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Test Flow</span><span class="live" id="nb-flow" hidden></span></button>
     <div class="nav-group">Metrics</div>
     <button data-tab="bugs"><svg width="16" height="16"><use href="#i-bug"/></svg><span class="lbl">Bug registry</span><span class="count" id="bugCount">0</span></button>
@@ -307,6 +308,51 @@ Log in, open Settings, change the display name and save. The new name must appea
   </div>
 </main>
 
+<main id="view-fulltest" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-bolt"/></svg></span>
+    <div class="ph-tx"><b>Full tests</b><span>The whole testing flow of one task, from 0 to 100%: static review, whitebox, test design, QA MCP and UI tests, your confirmation, autotests and documentation.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>New full test</h2></div>
+      <div class="panel-b">
+        <div class="field">
+          <label for="ftTask">Task</label>
+          <textarea id="ftTask" rows="2" placeholder="Ticket key or task description." autocomplete="off"></textarea>
+          <div class="hint" id="ftPlan"></div>
+        </div>
+        <details class="ft-opts">
+          <summary>Options</summary>
+          <div class="field"><label for="ftDetails">More about the task <span class="opt">optional</span></label><textarea id="ftDetails" rows="3" placeholder="Anything the agents should know that is not in the ticket."></textarea></div>
+          <div class="ft-grid">
+            <div class="field"><label for="ftWb">Whitebox</label><select id="ftWb"><option value="auto">Auto: when the change is in the code</option><option value="skip">Skip</option></select></div>
+            <div class="field"><label for="ftFam">Code family</label><select id="ftFam"></select></div>
+            <div class="field"><label for="ftBudget">Budget, USD <span class="opt">0 = none</span></label><input id="ftBudget" type="number" min="0" step="0.5" value="0"></div>
+          </div>
+          <div class="ft-checks">
+            <label><input type="checkbox" id="ftApi" checked> QA MCP track (API)</label> <span class="muted-note" id="ftApiNote"></span>
+            <label><input type="checkbox" id="ftUi"> UI Tests track</label>
+          </div>
+          <div id="ftUiBox" hidden>
+            <div class="field"><label for="ftUrl">Page address</label><input id="ftUrl" placeholder="https://test.example.com/login" autocomplete="off"></div>
+            <div class="ft-grid">
+              <div class="field"><label for="ftUser">User name <span class="opt">optional</span></label><input id="ftUser" autocomplete="off"></div>
+              <div class="field"><label for="ftPass">Password <span class="opt">optional, kept only in memory</span></label><input id="ftPass" type="password" autocomplete="new-password"></div>
+            </div>
+          </div>
+        </details>
+        <button class="go" id="ftGo"><svg width="13" height="13"><use href="#i-play"/></svg> Run full test</button>
+        <div class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
+        <div class="err" id="ftErr"></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>History</h2><span class="meta-r" id="ftListCount"></span></div>
+      <div class="list" id="ftList"></div>
+    </section>
+  </div>
+  <section class="panel detail" id="ftDetail"></section>
+</main>
+
 <main id="view-runsummary" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-chart"/></svg></span>
     <div class="ph-tx"><b>Phase <em>8</em>  Run Summary</b><span>All Test Flow phases for one ticket on a single page, built from the latest run of each phase.</span></div></div>
@@ -491,6 +537,8 @@ Log in, open Settings, change the display name and save. The new name must appea
         <div class="row2">
           <div class="field"><label for="srcConfUrl">Address <span class="opt">empty uses the Jira address</span></label><input id="srcConfUrl" placeholder="https://your-org.atlassian.net/wiki" autocomplete="off"></div>
           <div class="field"><label for="srcConfSpaces">Spaces <span class="opt">optional</span></label><input id="srcConfSpaces" placeholder="QA, DEV" autocomplete="off"></div>
+          <div class="field"><label for="srcConfPubSpace">Publish Full tests to space <span class="opt">optional</span></label><input id="srcConfPubSpace" placeholder="QA" autocomplete="off"></div>
+          <div class="field"><label for="srcConfPubParent">Parent page <span class="opt">optional, id or title</span></label><input id="srcConfPubParent" placeholder="Test reports" autocomplete="off"></div>
         </div>
         <div class="row2">
           <div class="field"><label for="srcConfEmail">Email <span class="opt">empty uses Jira</span></label><input id="srcConfEmail" autocomplete="off"></div>
@@ -2533,6 +2581,7 @@ Log in, open Settings, change the display name and save. The new name must appea
 <script src="/js/21-setup.js"></script>
 <script src="/js/22-uitest.js"></script>
 <script src="/js/23-settings.js"></script>
+<script src="/js/24-fulltest.js"></script>
 <script src="/js/10-main.js"></script>
 </body>
 </html>

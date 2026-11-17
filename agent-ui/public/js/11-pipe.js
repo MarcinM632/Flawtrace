@@ -52,7 +52,7 @@ function pipeItems(){
 }
 function renderPipe(){
   const el=$('#pipe');if(!el)return;
-  const tab=VIEWS.find(v=>!$('#view-'+v).hidden);
+  const tab=VIEWS.find(v=>{const e=$('#view-'+v);return e&&!e.hidden});
   const items=PIPE_TABS.includes(tab)?pipeItems():[];
   el.hidden=!items.length;
   if(!items.length){pipeSig='';return}

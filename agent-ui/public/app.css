@@ -620,7 +620,7 @@ pre.errpre{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background
 /* Scoping --phase/--phase-soft per #view-X (not overriding the shared --acc) means every other
    --acc-dependent control in that view — inputs, links, the kbd hint — stays exactly as it looks
    everywhere else; only the phase banner and heading pick up the phase color. */
-#view-flow{--phase:var(--acc);--phase-soft:var(--acc-soft)}
+#view-flow,#view-fulltest{--phase:var(--acc);--phase-soft:var(--acc-soft)}
 #view-planning{--phase:var(--ph-planning);--phase-soft:var(--info-soft)}
 #view-tfmonitor{--phase:var(--ph-tfmonitor);--phase-soft:var(--acc-soft)}
 #view-analysis{--phase:var(--ph-analysis);--phase-soft:color-mix(in srgb,var(--app-1) 10%,transparent)}
@@ -1923,13 +1923,13 @@ body.modal-open{overflow:hidden}
 .panel-b:has(.composer) .qenv:empty{display:none}
 
 /* ================= layout: big prompt on top, history and overview underneath ================= */
-#view-runs>.col,#view-qamcp>.col,#view-flow>.col,#view-autotest>.col[data-pane="write"]{display:contents}
+#view-runs>.col,#view-qamcp>.col,#view-flow>.col,#view-fulltest>.col,#view-autotest>.col[data-pane="write"]{display:contents}
 #view-autotest>.col[data-pane="write"][hidden]{display:none}
-#view-runs>.col>section:first-of-type,#view-qamcp>.col>section:first-of-type,#view-flow>.col>section:first-of-type,
+#view-runs>.col>section:first-of-type,#view-qamcp>.col>section:first-of-type,#view-flow>.col>section:first-of-type,#view-fulltest>.col>section:first-of-type,
 #view-autotest>.col[data-pane="write"]>section:first-of-type,#view-autotest>.col[data-pane="write"]>.at-tabs{grid-column:1/-1}
 .composer textarea{min-height:52px;max-height:50vh;resize:none;overflow-y:auto;field-sizing:content}
 .composer .go{display:none}
-@media(max-width:900px){#view-runs,#view-qamcp,#view-flow,#view-autotest{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){#view-runs,#view-qamcp,#view-flow,#view-fulltest,#view-autotest{grid-template-columns:minmax(0,1fr)}}
 
 /* ================= theme: light, airy blue (Snowflake-like), rounded cards, tight spacing ================= */
 :root{
@@ -2019,3 +2019,24 @@ input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:
 .df-add{background:rgba(26,127,55,.12);color:#1a7f37}
 .df-del{background:rgba(207,34,46,.10);color:#cf222e}
 .df-hunk{color:#8a8a8a}
+
+/* ================= Full tests ================= */
+.ft-opts{margin:4px 0 14px;border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 14px;background:var(--surface2)}
+.ft-opts summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink2)}
+.ft-opts[open] summary{margin-bottom:12px}
+.ft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 16px}
+.ft-checks{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin:4px 0 12px;font-size:13px}
+.ft-checks input[type="checkbox"]{width:15px;height:15px;flex:none;accent-color:var(--acc);cursor:pointer}
+.ft-checks .muted-note:empty{display:none}
+.ft-checks label{display:flex;align-items:center;gap:7px;margin:0;font-weight:500;color:var(--ink2);cursor:pointer}
+.ft-body{display:flex;flex-direction:column;gap:6px}
+.ft-h{margin:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);display:flex;gap:8px;align-items:center}
+.ft-row,.ft-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.ft-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.ft-main b{font-weight:600;color:var(--ink)}
+.ft-side{display:flex;align-items:center;gap:10px;flex:none}
+.ft-sub{font-size:12.5px;color:var(--ink3);line-height:1.45}
+.ft-list{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--ink2)}
+.ft-warn{font-size:12.5px;color:var(--bad)}
+.ft-pause{border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);background:var(--bad-soft);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--ink)}
+.ft-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
