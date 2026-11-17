@@ -37,7 +37,7 @@ fs.mkdirSync(RUNS_DIR, { recursive: true });
 // bez slowa wyjasnienia - kazdy przycisk disabled, a pierwszy z listy wyglada na wybrany.
 // Dlatego szukamy ich osobno: QA_AGENTS_ROOT (jesli ustawione, honorujemy je nawet gdy puste -
 // jawna konfiguracja nie moze byc po cichu nadpisana), inaczej ROOT, inaczej ../Agents.
-const AGENT_DIRS = ['claudeAgent', 'claudeAgentB', 'claudeAgentMcp', 'claudeAgentTestDesign', 'claudeAgentTestFlowPlanning', 'claudeAgentTestFlowAnalysis', 'claudeAgentTestFlowImplementation', 'claudeAgentTestFlowCompletion'];
+const AGENT_DIRS = ['claudeAgent', 'claudeAgentB', 'claudeAgentMcp', 'claudeAgentStatic', 'claudeAgentTestDesign', 'claudeAgentTestFlowPlanning', 'claudeAgentTestFlowAnalysis', 'claudeAgentTestFlowImplementation', 'claudeAgentTestFlowCompletion'];
 const holdsAgents = (dir) => AGENT_DIRS.some((d) => fs.existsSync(path.join(dir, d, 'CLAUDE.md')));
 const AGENTS_ROOT = process.env.QA_AGENTS_ROOT
   ? path.resolve(process.env.QA_AGENTS_ROOT)

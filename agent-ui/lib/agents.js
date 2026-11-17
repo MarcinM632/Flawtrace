@@ -9,6 +9,11 @@ const AGENTS = {
   core: { label: 'CORE', dir: 'claudeAgent', freeform: true, hint: 'Ticket key or task description', pattern: /^[\s\S]{3,300}$/ },
   svc: { label: 'SVC', dir: 'claudeAgentB', freeform: true, hint: 'Ticket key or task description', pattern: /^[\s\S]{3,300}$/ },
   mcp: { label: 'mcp-server', dir: 'claudeAgentMcp', freeform: true, hint: 'Ticket key or task description', pattern: /^[\s\S]{3,300}$/ },
+  // Static: recenzja samego taska (testowanie statyczne wg ISTQB) wobec istniejącego kodu i specyfikacji; nic nie uruchamia.
+  static: {
+    label: 'Static', dir: 'claudeAgentStatic', mode: 'static', freeform: true,
+    hint: 'Ticket key or task description', pattern: /^[\s\S]{3,300}$/,
+  },
   design: {
     label: 'Test design', dir: 'claudeAgentTestDesign', mode: 'design', freeform: true,
     hint: 'Ticket key or requirement',

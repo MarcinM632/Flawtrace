@@ -1,0 +1,46 @@
+DEMO-101 — Limit on open orders per customer
+Repo/mode: billing-svc, orders-svc (static: base branch develop)
+Sources: DEMO-101, comment of the author, billing-svc LimitService.kt, LimitController.kt, LimitDefaults.kt, orders-svc BillingClient.kt, LimitCache.kt
+Review: static, checklist-based + scenario-based + role-based | requirements: 4 | findings: 2 | scenarios: 3 | code files read: 7
+
+## Requirements
+R1 [business rule] "A new order is rejected when the customer already has maxOpenOrders open orders or more." (src: DEMO-101)
+R2 [data] "maxOpenOrders is 1..1000, default 5." (src: DEMO-101)
+R3 [interface] "GET /limits/check rejects the order with reason 'too many open orders' when openOrders >= maxOpenOrders." (src: DEMO-101)
+R4 [functional] "The limit.changed event carries the new field." (src: DEMO-101)
+
+## Existing logic
+- Exposure check rejects only when exposure > maxExposure, an exposure equal to the limit is allowed (src: src/main/kotlin/billing/limits/LimitService.kt:38)
+- GET /limits/check takes customerId and exposure, orders-svc sends exactly these two (src: src/main/kotlin/orders/BillingClient.kt:11)
+- limit.changed carries customerLimit and orders-svc reads that name (src: src/main/kotlin/orders/LimitCache.kt:8)
+
+## Findings
+1. [Interface] [Critical] The check endpoint gets a new required input that the only caller does not send
+Requirement: R3
+Task says: "GET /limits/check rejects the order ... when openOrders >= maxOpenOrders" (src: DEMO-101)
+System or source says: orders-svc counts open orders itself and calls the endpoint with customerId and exposure only (src: src/main/kotlin/orders/BillingClient.kt:11)
+Why it matters: the task does not say who supplies openOrders, so either every order check fails or the rule is never applied.
+Question for the author: should orders-svc send openOrders, or should billing-svc count the open orders itself?
+Suggested wording: "GET /limits/check takes openOrders from orders-svc; orders-svc is changed in the same release."
+2. [Inconsistency] [Major] The event field name in the task differs from the name the consumer reads
+Requirement: R4
+Task says: "The limit.changed event carries the new field." (src: DEMO-101)
+System or source says: the event field for the exposure limit is customerLimit and orders-svc caches it under that name (src: src/main/kotlin/orders/LimitCache.kt:8)
+Why it matters: the comment of the author mentions a rename of event fields, which would stop the cache from updating.
+Question for the author: are the existing event field names kept, and is the new field added under the name maxOpenOrders?
+Suggested wording: "limit.changed keeps customerLimit and adds maxOpenOrders."
+
+## Scenarios
+S1 customer c1, maxOpenOrders 5, 4 open orders, new order | task expects: allowed | system gives: no open-order check exists, allowed (src: src/main/kotlin/billing/limits/LimitService.kt:38) | MATCH
+S2 customer c1, maxOpenOrders 5, 5 open orders, new order | task expects: rejected (">= maxOpenOrders") | system gives: the existing exposure check compares with ">" and would allow the equal case if reused (src: src/main/kotlin/billing/limits/LimitService.kt:41) | MISMATCH → finding 1
+S3 existing rule without the new field, order check | task expects: default 5 applies | system gives: the table has no such column for old rows (src: src/main/resources/db/migration/V1__limit_rule.sql:1) | MISMATCH → finding 1
+
+## Checked and consistent
+- R1: the rule matches the existing exposure rule except the boundary, covered by S2 (src: src/main/kotlin/billing/limits/LimitService.kt:41)
+- R2: the bounds 1..1000 fit the existing validator style (src: src/main/kotlin/billing/limits/LimitRuleValidator.kt:7)
+
+## Open questions
+- Is a closed order counted as open until it is settled? Reading A: only status new. Reading B: new and partly filled.
+
+## Verdict
+STATUS: NEEDS REWORK — finding 1 (Critical) and finding 2 (Major): the author must say who supplies openOrders and keep the event field names.

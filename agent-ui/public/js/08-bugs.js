@@ -1,6 +1,6 @@
 // QA Agents UI: bugs. Klasyczny skrypt: wszystkie pliki z js/ dzielą jeden zakres globalny i ładują się po kolei (kolejność jest istotna).
 /* ---------- bug registry ---------- */
-const bugApps=()=>agents.filter(a=>a.mode!=='design'&&!OWN_TABS.includes(a.key));
+const bugApps=()=>agents.filter(a=>a.mode!=='design'&&a.mode!=='static'&&!OWN_TABS.includes(a.key));
 function renderBugAgents(){
   if(!bugApps().length)return;
   if(!bugApps().some(a=>a.key===bSel))bSel=bugApps()[0].key;

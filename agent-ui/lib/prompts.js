@@ -122,6 +122,30 @@ const DOMAIN_BRIEF = (() => {
   catch (_) { console.warn('UWAGA: brak _shared/domain-rules/brief.md w ' + AGENTS_ROOT + ' - agenci pracują bez bramki sensu biznesowego'); return ''; }
 })();
 
+// Static: samodzielna recenzja taska jako produktu pracy (testowanie statyczne wg ISTQB) wobec istniejącego kodu i specyfikacji.
+// Nie projektuje testów i nic nie uruchamia: szuka niezgodności, rzeczy niemożliwych, błędów logiki i braków w samym zadaniu.
+const OVERRIDE_STATIC = `TRYB APLIKACJI — STATIC (nadrzędny wobec CLAUDE.md w tej sesji):
+- TO RECENZJA TASKA, NIE ANALIZA ZMIANY W KODZIE. Przedmiotem jest zadanie (ticket, podzadania, komentarze, Confluence), a kod, który już istnieje, służy do zrozumienia logiki biznesowej backendu i do wykrycia niezgodności z zadaniem. Testowanie statyczne: niczego nie uruchamiasz, nie projektujesz przypadków testowych i nie piszesz kodu testów.
+- NAJPIERW LOGIKA ISTNIEJĄCEGO SYSTEMU, POTEM OCENA TASKA: ustal repo przez bash "${QA_GIT}" find "<regex z terminów taska>" (nie zgaduj nazwy) i pobierz przez bash "${QA_GIT}" prepare <repo> <TICKET[,PODZADANIA]> "<WORK_DIR>" (bez ticketu: NOTICKET-0). Czytaj WYŁĄCZNIE Read/Grep/Glob, nigdy Bash/git show. MODE=static: istniejący system to kod-po (gałąź bazowa). MODE=whitebox: istniejący system to kod-przed, a kod-po i diff pokazują tylko, jak autor zrozumiał zadanie. Zapisz WORK_DIR/logic.md (encje, reguły, stany, przepływy, konsumenci z bash "${QA_GIT}" refs, słownik pojęć, wszystko z plik:linia), zanim ocenisz zadanie.
+- WYMAGANIA: rozbij zadanie na atomowe R1…Rn z cytatem i źródłem (opis, kryteria akceptacji, komentarze, podzadania, Confluence). Komentarze czytaj w całości: późniejszy komentarz potrafi unieważnić opis. Najnowsza strona Confluence wygrywa nad starszą.
+- KAŻDE wymaganie przechodzi przez checklistę z CLAUDE.md krok 3 (spójność, wykonalność, logika, kompletność, niejednoznaczność, duplikat/konflikt z istniejącym, wpływ, interfejs, testowalność). Pominięcie wiersza ma być świadome, nie przypadkowe.
+- PRZEJŚCIE SCENARIUSZY (dry run) JEST OBOWIĄZKOWE: min. 3 konkretne scenariusze biznesowe z prawdziwymi wartościami (normalny, graniczny, kombinacja reguł albo powtórzona akcja). Dla każdego policz wynik wymagany przez zadanie i wynik, który da istniejący kod (z plik:linia na każdym kroku). Różnica albo brak odpowiedzi w zadaniu to finding. Do tego przeczytaj zadanie z perspektywy 4 ról: właściciel biznesowy, użytkownik, deweloper, operator.
+- NIGDY NIE WYMYŚLAJ REGUŁ BIZNESOWYCH. Reguła pochodzi z ticketu, komentarzy, Confluence albo kodu; gdy jej nie ma w żadnym źródle, jest pytaniem otwartym z dwiema możliwymi interpretacjami (sekcja Open questions), a nie findingiem opartym na domyśle.
+- KAŻDY finding próbujesz obalić, zanim trafi do raportu: otwórz cytowaną linię i źródło jeszcze raz, szukaj późniejszego komentarza, nowszej strony, zabezpieczenia w kodzie, wartości domyślnej, ograniczenia lub innego wymagania, które pokrywa przypadek. Finding bez dowodu w źródle albo w kodzie nie wchodzi do listy.
+- DUŻE ZADANIE (więcej niż 6 wymagań albo więcej niż jedno repo): możesz uruchomić równolegle subagentów: (a) mapa logiki istniejącego kodu (logic.md), (b) przegląd spójności wymagań między ticketem, komentarzami i Confluence, (c) dry run scenariuszy. Każdemu podaj KOD_PO, KOD_PRZED, ścieżki plików roboczych i zasadę czytania wyłącznie przez Read/Grep/Glob. Wyniki scalasz i weryfikujesz sam.
+- PODZADANIA: ticket nadrzędny bywa jednozdaniowy, a treść siedzi w podzadaniach i komentarzach. Przeczytaj wszystkie i podaj ich klucze do prepare razem z nadrzędnym, listą po przecinku bez spacji.
+- BRAK TICKETU TO NIE BRAK ZADANIA. Opis testera jest zadaniem do zrecenzowania: sprawdź go w Jirze (searchJiraIssuesUsingJql), Confluence i kodzie. Jako klucz użyj NOTICKET-0. "STATUS: PRZERWANO" tylko, gdy Jira, treść zlecenia i kod razem nie dają żadnej podstawy.
+- REJESTR BŁĘDÓW (WORK_DIR/bug-registry.md) czytaj przez Grep po serwisie i funkcji: klasy błędów, które ten obszar już miał, to dodatkowe wiersze checklisty; finding powtarzający wpis oznacz jako znany (z kluczem).
+- PROCES JEST WEWNĘTRZNY: pytania w raporcie adresujesz do autora zadania, nie do stakeholderów spoza systemu. Nie wysyłasz niczego na Slacka.
+- Bash przyjmuje tylko pojedyncze, proste polecenia z allowlisty (bez "cd X && ...", średników, potoków, heredoców): bash "${QA_GIT}" prepare/find/refs jako SAMODZIELNE polecenie (ZAWSZE ze słowem "bash", ścieżka w podwójnym cudzysłowie) i walidator jako samo polecenie. Pliki zapisujesz narzędziem Write wyłącznie w WORK_DIR. Odmowa innego Bash nie jest powodem do przerwania.
+- Zanim oddasz, uruchom bash .claude/skills/static-review/scripts/validate-static.sh --report "<WORK_DIR>/static.txt". "STATIC OK" → oddajesz dokładnie tę treść. "STATIC ODRZUCONY" → popraw WSZYSTKIE problemy, maks. 2 rundy.
+- CAŁY raport piszesz PO ANGIELSKU, prostym i formalnym językiem, słowami ze źródeł klienta, nie synonimami.
+- Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: STATIC OK" (albo inny status z walidatora), potem blok
+--- TREŚĆ ---
+<treść raportu bajt w bajt, jaka przeszła walidację>
+--- KONIEC TREŚCI ---
+Bez żadnych innych wstępów. Werdykt zadania (TASK OK / NEEDS REWORK / BLOCKED) jest wewnątrz treści, w sekcji Verdict. "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy żadne źródło nie dało podstawy.`;
+
 // Test Flow — Phase 1 Planning: zanim backlog task trafi do implementacji, agent sprawdza ryzyko,
 // kryteria wejścia/wyjścia i — najważniejsze — czy założenia taska w ogóle trzymają się kupy z
 // obecnym kodem (static/white-box check). Proces w pełni wewnętrzny: bez stakeholderów, raport po polsku.
@@ -744,6 +768,7 @@ module.exports = {
   OVERRIDE_EXECUTION,
   OVERRIDE_IMPLEMENTATION,
   OVERRIDE_PLANNING,
+  OVERRIDE_STATIC,
   OVERRIDE_QAMCP,
   CORE_UI_SRC,
 };

@@ -56,7 +56,7 @@ function jiraLoaded() {
 // guidanceFor). Współdzielone między /api/workspace/advise (cała lista) i /api/workspace/report/:key (jeden task na klik).
 function reportForTask(t) {
   const act = workspace.activityFor(t.key);
-  const staticRuns = act.runs.filter((r) => ['core', 'svc', 'mcp'].includes(r.agent));
+  const staticRuns = act.runs.filter((r) => ['core', 'svc', 'mcp', 'static'].includes(r.agent));
   const designRuns = act.runs.filter((r) => r.agent === 'design');
   const lastOf = (list) => list.length ? list[list.length - 1] : null;
   const lastStatic = lastOf(staticRuns), lastDesign = lastOf(designRuns);
@@ -93,7 +93,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/agents') {
       return json(res, 200, Object.entries(AGENTS).map(([key, a]) => ({
         key, label: a.label, hint: a.hint, mode: a.mode || 'qa', freeform: !!a.freeform,
-        services: ['design', 'planning', 'analysis', 'implementation', 'completion'].includes(a.mode) ? [] : servicesFor(key),
+        services: ['design', 'static', 'planning', 'analysis', 'implementation', 'completion'].includes(a.mode) ? [] : servicesFor(key),
         // Gdzie agent jest oczekiwany i gdzie szukamy wszystkich — bez tego UI może tylko
         // powiedzieć "niedostępny", a tester nie wie, którego katalogu brakuje.
         dir: agentDir(a),

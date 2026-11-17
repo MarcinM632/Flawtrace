@@ -17,7 +17,7 @@ const { emit, persist, runs } = require('./store');
 const { BUILTIN_TOOLS, SCOPE_NOTE, addUsage, runLimitMs, scopeFor, toolGroups } = require('./scope');
 const { glossaryFor, glossaryPrompt } = require('./glossary');
 const { writeTestScope } = require('./test-scope');
-const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, QA_URL_PROMPT, mcpChatAutotestEval, mcpChatDesignEval, mcpChatQamcpEval, MCP_CHAT_AUTOTEST, MCP_CHAT_DESIGN, MCP_CHAT_QAMCP, MCP_CHAT_RE, OVERRIDE, OVERRIDE_ANALYSIS, OVERRIDE_AUTOTEST, OVERRIDE_COMPLETION, OVERRIDE_DESIGN, OVERRIDE_EXECUTION, OVERRIDE_IMPLEMENTATION, OVERRIDE_PLANNING, OVERRIDE_QAMCP, CORE_UI_SRC } = require('./prompts');
+const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, QA_URL_PROMPT, mcpChatAutotestEval, mcpChatDesignEval, mcpChatQamcpEval, MCP_CHAT_AUTOTEST, MCP_CHAT_DESIGN, MCP_CHAT_QAMCP, MCP_CHAT_RE, OVERRIDE, OVERRIDE_ANALYSIS, OVERRIDE_AUTOTEST, OVERRIDE_COMPLETION, OVERRIDE_DESIGN, OVERRIDE_EXECUTION, OVERRIDE_IMPLEMENTATION, OVERRIDE_PLANNING, OVERRIDE_STATIC, OVERRIDE_QAMCP, CORE_UI_SRC } = require('./prompts');
 const { extractReport, isBrowser, isEndpoint, summarizeTool } = require('./run-format');
 const { auditDesignBugs, auditDesignBusiness, auditDesignConcrete, auditDesignFlow, auditEvidence, auditQamcp, correctionPrompt } = require('./report-format');
 const uiTest = require('./uitest');
@@ -183,6 +183,8 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   if (agent.mode === 'implementation') { writeBugRegistry(workDir, inputText); writeTestScope(workDir, inputText); }
   // Completion: "wyciągnięcie wniosków" (krok 3 CLAUDE.md) to właśnie znane defekty tego obszaru.
   if (agent.mode === 'completion') { writeBugRegistry(workDir, inputText); writeTestScope(workDir, inputText); }
+  // Static: wzorce błędów serwisu to dodatkowe wiersze checklisty recenzji taska (krok 6 CLAUDE.md).
+  if (agent.mode === 'static') { writeBugRegistry(workDir, inputText); writeTestScope(workDir, inputText); }
   // Analyses też: klasy błędów serwisu mówią, czego szukać w zmianie, a wpisy [ZGLOSZONY] — czego nie ogłaszać jako nowe.
   if (!agent.mode) { writeBugRegistry(workDir, inputText); writeTestScope(workDir, inputText); }
   // QA MCP i Autotests (wykonawcze): to samo dopasowanie, bo flow/zasoby testowe z test-scope dotyczą
@@ -315,6 +317,12 @@ function startRun(agentKey, ticket, notes, extra = {}) {
         return `=== ZAKRES TESTOWY SERWISU (test-scope; sekcja 3 to niepotwierdzone hipotezy, nie dowód) ===\n${ts.slice(0, 20000)}\n=== KONIEC ZAKRESU ===\n\n`;
       })() +
       `Wykonaj go przez serwer MCP \`qa\` i zwróć raport w formacie z system promptu.`
+    : agent.mode === 'static'
+    ? `Input: ${ticket}
+Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniejącego systemu, wymagania R1…Rn, checklista, dry run min. 3 scenariuszy, finding z próbą obalenia, werdykt. Cały wynik po angielsku.
+` +
+      `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md" (Grep po serwisie/funkcji), zakres testowy serwisu w "${wd}/test-scope.md".
+`
     : agent.mode === 'planning'
     ? `Input: ${ticket}\nSprawdź ten task zgodnie z CLAUDE.md (kroki 1–6): static/white-box check jest najważniejszy i zawsze pierwszy, potem ryzyka (wszystkie, nie tylko najważniejsze), priorytet, entry/exit criteria i werdykt. Cały wynik po angielsku.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera (wzorce błędów podobnych tasków) jest w "${wd}/bug-registry.md": przeczytaj go przez Grep po serwisie/funkcji, ZANIM wypiszesz ryzyka — bierz z niego flow i klasę błędu, nigdy gotowy przypadek do skopiowania.\n` +
@@ -370,6 +378,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     'Bash(cd *)', 'Bash(export *)', 'Bash(cat *)', 'Bash(head *)', 'Bash(tail *)', 'Bash(sort *)', 'Bash(uniq *)', 'Bash(cut *)', 'Bash(tr *)', 'Bash(echo *)', 'Bash(pwd)', 'Bash(test *)', 'Bash(git -C * grep *)', 'Bash(git -C * merge-base *)', 'Bash(git -C * rev-list *)', 'Bash(git -C * blame *)',
     'Bash(bash *raport-qa/scripts/validate-report.sh*)',
     'Bash(bash *test-design/scripts/validate-design.sh*)',
+    'Bash(bash *static-review/scripts/validate-static.sh*)',
     'Bash(bash *test-planning/scripts/validate-plan.sh*)',
     'Bash(bash *test-strategy/scripts/validate-strategy.sh*)',
     'Bash(bash *test-implementation/scripts/validate-implementation.sh*)',
@@ -409,6 +418,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
       : mode === 'qamcp' ? OVERRIDE_QAMCP
       : mode === 'execution' ? OVERRIDE_EXECUTION
       : mode === 'design' ? OVERRIDE_DESIGN
+      : mode === 'static' ? OVERRIDE_STATIC
       : mode === 'planning' ? OVERRIDE_PLANNING
       : mode === 'analysis' ? OVERRIDE_ANALYSIS
       : mode === 'implementation' ? OVERRIDE_IMPLEMENTATION
@@ -600,7 +610,7 @@ function startRun(agentKey, ticket, notes, extra = {}) {
 
   // Audyt raportu przez apkę (lib/report-format.js): QA MCP kontra log wywołań, Analyses / Test design kontra pobrany kod.
   // Gdy coś się nie zgadza, ta sama sesja dostaje jedną turę korekty; to, czego agent nie poprawi, zostaje w meta.audit.
-  const auditKind = isQamcpLike(agent.mode) ? 'qamcp' : agent.mode === 'design' ? 'design' : agent.mode === 'planning' ? 'planning' : agent.mode === 'analysis' ? 'analysis' : agent.mode === 'implementation' ? 'implementation' : !agent.mode ? 'qa' : null;
+  const auditKind = isQamcpLike(agent.mode) ? 'qamcp' : agent.mode === 'design' ? 'design' : agent.mode === 'planning' ? 'planning' : agent.mode === 'static' ? 'static' : agent.mode === 'analysis' ? 'analysis' : agent.mode === 'implementation' ? 'implementation' : !agent.mode ? 'qa' : null;
   const runAudit = () => {
     if (auditKind === 'qamcp') return { checked: null, issues: auditQamcp(meta.report, meta.reportStatus, r.events, workDir) };
     const ev = auditEvidence(meta.report, workDir) || { checked: null, issues: [], noCode: true };

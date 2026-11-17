@@ -11,7 +11,8 @@ One folder per agent. The application starts each agent in its folder, so `CLAUD
 | claudeAgentTestDesign | Test Flow phase 4, Design |
 | claudeAgentTestFlowImplementation | Test Flow phase 5, Implementation |
 | claudeAgentTestFlowCompletion | Test Flow phase 7, Completion |
-| claudeAgent, claudeAgentB, claudeAgentMcp | Analyses |
+| claudeAgent, claudeAgentB, claudeAgentMcp | Analyses (whitebox: the change in the code, its integrations and what it breaks outside) |
+| claudeAgentStatic | Static: reviews the task itself against the existing code and specification (inconsistencies, impossible or illogical requirements, gaps), static testing by ISTQB |
 | claudeAgentVerifier | Verifier: a second agent that checks every report against the sources (not a tab, it runs after each report) |
 
 Phase 6, Execution, and QA MCP have no folder: they run the procedure on the test environment through the qa MCP server, which calls the endpoints imported in the Sources tab.
