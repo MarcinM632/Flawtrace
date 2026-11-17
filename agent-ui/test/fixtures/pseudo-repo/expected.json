@@ -1,0 +1,16 @@
+{
+  "ticket": "DEMO-101",
+  "note": "Seeded defects of the change feature/DEMO-101-max-open-orders. A finding counts as hit when its block names one of the files and matches one of the patterns.",
+  "defects": [
+    { "id": "D1", "what": "Off-by-one: rejects only when openOrders > max; the ticket says >=", "files": ["LimitService.kt"], "patterns": ["off-by-one", "off by one", ">=", "openOrders >", "at the limit", "equal", "exactly", "boundary"] },
+    { "id": "D2", "what": "Mapper toEntity drops maxOpenOrders: PUT never saves it, GET returns the default 5", "files": ["LimitRuleMapper.kt"], "patterns": ["toEntity", "not mapped", "dropped", "default", "ignored", "lost", "not saved"] },
+    { "id": "D3", "what": "Event field customerLimit renamed to maxExposure; orders-svc LimitCache still reads customerLimit and silently ignores the event", "files": ["LimitCache.kt", "LimitService.kt"], "patterns": ["customerLimit"], "crossRepo": true },
+    { "id": "D4", "what": "GET /limits/check now requires openOrders; orders-svc BillingClient does not send it, so every order check fails", "files": ["BillingClient.kt", "LimitController.kt"], "patterns": ["openOrders"], "crossRepo": true },
+    { "id": "D5", "what": "Unrelated hunk: PERIOD_DAYS default 30 -> 7 also shortens the invoice due date in InvoiceService", "files": ["LimitDefaults.kt", "InvoiceService.kt"], "patterns": ["PERIOD_DAYS", "30", "due date", "dueDate", "invoice"], "outside": true },
+    { "id": "D6", "what": "Permission check canRead removed from GET /limits/{customerId}", "files": ["LimitController.kt"], "patterns": ["canRead", "Forbidden", "authori", "permission", "access"], "outside": true },
+    { "id": "D7", "what": "Migration adds max_open_orders NOT NULL without DEFAULT: existing rows break", "files": ["V2__max_open_orders.sql"], "patterns": ["NOT NULL", "default", "existing"] }
+  ],
+  "clean": [
+    { "id": "C1", "what": "LimitRuleValidator bounds 1..1000 are correct", "files": ["LimitRuleValidator.kt"] }
+  ]
+}

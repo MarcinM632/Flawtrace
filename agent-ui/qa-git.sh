@@ -133,8 +133,8 @@ find_code() {
     echo "== $repo ($n plików na origin/$base)"
     printf '%s
 ' "$hits" | grep -viE '(^|/)(test|integrationTest|spec)/|\.spec\.|Test\.kt$' | head -n 6 | sed 's/^/   /'
-    [ -n "$log" ] && printf '%s
-' "$log" | sed 's/^/   commit: /'
+    if [ -n "$log" ]; then printf '%s
+' "$log" | sed 's/^/   commit: /'; fi
   done
 }
 
