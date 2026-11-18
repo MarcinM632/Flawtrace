@@ -20,7 +20,7 @@ cd agent-ui
 npm start
 ```
 
-Open http://127.0.0.1:4317 in the browser. The setup window opens and stays open until the test environment API is connected. Work through its steps from top to bottom; every step except the first can be skipped and done later on the page **Sources**, where **Open setup** brings the window back.
+`npm start` opens http://127.0.0.1:4317 in your browser by itself. The first step of the setup window connects your AI: pick Claude Code, ChatGPT (through Codex), your own agent, an API key or a local model. For Claude Code and Codex the button **Sign in** opens the tool's own browser login (install it first if the card says it is missing); nothing to copy or paste. The setup window opens and stays open until the test environment API is connected. Work through its steps from top to bottom; every step except the first can be skipped and done later on the page **Sources**, where **Open setup** brings the window back.
 
 With the API alone the agents still work: they read the application model built from the specification (the resources, what each can do, which one must exist before another and the order to create test data in), work out from it what the application is for and build the test flows. Every source you add later makes them more accurate.
 

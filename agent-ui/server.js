@@ -702,6 +702,12 @@ listenWithRetry(server, PORT, HOST, () => {
   // więc jest wypisywana przy każdym starcie, razem z tym, ilu agentów faktycznie widać.
   const ready = Object.values(AGENTS).filter((a) => !a.absDir && agentAvailable(a)).length;
   integration.apiKey();
+  // `npm start` passes --open: show the app (and its first-run setup) in the default browser, once, on this machine only.
+  if (process.argv.includes('--open') && (HOST === '127.0.0.1' || HOST === 'localhost' || HOST === '::1')) {
+    const url = `http://127.0.0.1:${PORT}`;
+    const cmd = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : [process.platform === 'darwin' ? 'open' : 'xdg-open', [url]];
+    try { require('child_process').spawn(cmd[0], cmd[1], { stdio: 'ignore', detached: true }).on('error', () => {}).unref(); } catch (_) { /* no browser: the address is printed above */ }
+  }
   console.log(`Integration API: /api/v1 (OpenAPI at /api/v1/openapi.json). API key: ${process.env.QA_API_KEY ? 'from QA_API_KEY' : integration.KEY_FILE}`);
   listSuite().catch(() => {}); // rozgrzewka cache listy testów, żeby pierwsze wejście w Test suite nie czekało kilku sekund
   console.log(`Agents: ${ready}/${AGENT_DIRS.length} found in ${AGENTS_ROOT}`

@@ -35,7 +35,8 @@ function setupAiPaint(){
   const a=SETUP.ai,det=a.det;
   const cards=SETUP_AI.map(c=>{
     const f=!c.tool||!det?null:!!(det[c.tool]&&det[c.tool].found);
-    const st=f===true?`<span class="wz-st ok">Found on this machine${det[c.tool].version?' · '+esc(det[c.tool].version):''}</span>`
+    const st=f===true&&det[c.tool].loggedIn===false?'<span class="wz-st bad">Installed, not signed in yet</span>'
+      :f===true?`<span class="wz-st ok">${det[c.tool].loggedIn?'Signed in on this machine':'Found on this machine'}</span>`
       :f===false?`<span class="wz-st bad">${c.miss}</span>`
       :c.tool?'<span class="wz-st">Checking…</span>':'';
     return `<button type="button" class="wz-card ${a.card===c.id?'on':''}" data-wz="${c.id}" aria-pressed="${a.card===c.id}"><span class="wz-t"><b>${c.t}</b>${c.tag?`<span class="tag acc">${c.tag}</span>`:''}</span><span class="wz-d">${c.d}</span>${st}</button>`;
@@ -58,6 +59,7 @@ function setupAiForm(){
     return;
   }
   if(!v){box.innerHTML=`<div class="chk bad">${esc(a.msg?a.msg.text:'Could not read the AI settings.')}</div>`;return}
+  if(c.id==='claude'||c.id==='codex'){setupAiLoginForm(c,m);return}
   let f='';
   if(c.id==='api'){
     const ids=['anthropic','openai','gemini'];
@@ -83,6 +85,46 @@ function setupAiForm(){
     ${testable?'':'<p class="st-hint">An agent started over ACP cannot be tested here with a single message. Its first real run (for example UI Tests) shows whether it works.</p>'}`;
 }
 
+// Claude Code and Codex: three states, each with one obvious button. Missing -> how to install; installed but not signed
+// in -> "Sign in" (starts the tool's own browser login on this machine); signed in -> saved at once, nothing to type.
+function setupAiLoginForm(c,m){
+  const a=SETUP.ai,box=$('#wzForm');
+  const name=c.id==='claude'?'Claude Code':'Codex';
+  const d=a.det&&a.det[c.tool];
+  const lg=a.det&&a.det.login&&a.det.login[c.tool];
+  const inst=c.id==='claude'?'npm i -g @anthropic-ai/claude-code':'npm i -g @openai/codex';
+  if(!d){box.innerHTML='<p class="st-hint">Checking this machine…</p>';return}
+  if(!d.found){
+    box.innerHTML=`<p class="st-hint"><b>${name}</b> is not installed. Run this once in a terminal, then press Check again:</p>
+      <div class="st-code"><button type="button" class="btn sm st-copy" data-wzcopy="${inst}">Copy</button><pre>${esc(inst)}</pre></div>
+      <div class="st-actions"><button type="button" class="btn sm" id="wzRecheck">Check again</button>${m}</div>`;return;
+  }
+  if(!d.loggedIn){
+    const run=lg&&lg.running;
+    box.innerHTML=`<p class="st-hint">${run?`A browser window should have opened. Finish signing in to ${name} there; this page continues by itself.`:`<b>${name}</b> is installed but not signed in. The button opens ${name}'s own sign-in in your browser. Flawtrace never sees your password.`}</p>
+      <div class="st-actions"><button type="button" class="go" id="wzLogin" ${run?'disabled':''}>${run?'Waiting for sign-in…':'Sign in to '+name}</button>${run&&lg.url?`<a href="${esc(lg.url)}" target="_blank" rel="noopener">Browser did not open? Use this link</a>`:''}${m}</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="chk ok">Signed in to ${name} on this machine. ${a.llm&&a.llm.chosen&&a.llm.selected===c.prov?'Flawtrace will use it.':'Press Use it to select it.'}</div>
+    <div class="st-actions"><button type="button" class="btn sm" id="wzUse">Use it</button>${c.id==='claude'?'<button type="button" class="btn sm" id="wzTest">Test</button>':''}${m}</div>`;
+}
+let setupAiTimer=null;
+// After "Sign in": ask the machine every 2.5 s whether the tool is now signed in, then select it automatically.
+function setupAiPoll(){
+  clearInterval(setupAiTimer);
+  const stop=Date.now()+300000;
+  setupAiTimer=setInterval(async()=>{
+    const a=SETUP.ai;
+    if(!SETUP.open||SETUP.i!==0||Date.now()>stop){clearInterval(setupAiTimer);return}
+    try{a.det=await api('/api/llm/detect')}catch(_){return}
+    const c=SETUP_AI.find(x=>x.id===a.card);
+    if(c&&a.det[c.tool]&&a.det[c.tool].loggedIn){
+      clearInterval(setupAiTimer);
+      await setupAiSave();a.msg={ok:true,text:'Signed in and selected.'};
+      setupAiPaint();setupTicks();
+    }else setupAiPaint();
+  },2500);
+}
 function setupAiBody(){
   const c=SETUP_AI.find(x=>x.id===SETUP.ai.card);
   if(!c)return null;
@@ -101,7 +143,22 @@ $('#setupStage').addEventListener('click',async e=>{
   const t=e.target.closest('button');
   if(!t)return;
   const a=SETUP.ai;
-  if(t.dataset.wz){a.card=t.dataset.wz;a.msg=null;setupAiPaint();return}
+  if(t.dataset.wz){
+    a.card=t.dataset.wz;a.msg=null;setupAiPaint();
+    // One click is enough when the tool is already signed in.
+    const c=SETUP_AI.find(x=>x.id===a.card);
+    if((c.id==='claude'||c.id==='codex')&&a.det&&a.det[c.tool]&&a.det[c.tool].loggedIn){await setupAiSave();setupAiPaint();setupTicks()}
+    return;
+  }
+  if(t.dataset.wzcopy){try{await navigator.clipboard.writeText(t.dataset.wzcopy);t.textContent='Copied'}catch(_){t.textContent='Select and copy by hand'}return}
+  if(t.id==='wzRecheck'){try{a.det=await api('/api/llm/detect')}catch(_){}setupAiPaint();return}
+  if(t.id==='wzUse'){await setupAiSave();setupAiPaint();setupTicks();return}
+  if(t.id==='wzLogin'){
+    const c=SETUP_AI.find(x=>x.id===a.card);
+    try{await post('/api/llm/login',{tool:c.tool});a.det=await api('/api/llm/detect');a.msg=null;setupAiPaint();setupAiPoll()}
+    catch(err){a.msg={ok:false,text:err.message};setupAiForm()}
+    return;
+  }
   if(t.id==='wzMcp'){closeSetup();openSettings('connect');return}
   if(t.id==='wzMcpOk'){try{localStorage.setItem('setup.ai.mcp','1')}catch(_){}a.msg={ok:true,text:'Noted. Flawtrace will not call an AI itself.'};setupAiForm();setupTicks();return}
   if(t.id==='wzSave'){await setupAiSave();setupAiForm();setupTicks();return}
