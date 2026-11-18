@@ -1,8 +1,10 @@
 // Flawtrace: setup wizard. Opens on the first visit and can be closed at any time (nothing is mandatory; the API is
 // needed only to run tests, and the banner keeps reminding until it is connected). It shows the Sources panels one at a time (the same forms, so
 // saving and importing work exactly as on the Sources page) and ends with what the agents will learn from.
-const SETUP={i:0,panels:[],homes:[],open:false};
+const SETUP={i:0,panels:[],homes:[],open:false,ai:{card:null,llm:null,det:null,msg:null}};
+const SETUP_LAST=6;
 const SETUP_STEPS=[
+  {t:'AI connection',d:'How Flawtrace reaches an AI'},
   {t:'Test environment API',d:'Swagger or OpenAPI of the environment',req:true},
   {t:'Jira',d:'Tasks, releases and bugs'},
   {t:'Confluence',d:'Specifications'},
@@ -15,31 +17,34 @@ function setupPanels(){
   if(!SETUP.panels.length)SETUP.panels=[...document.querySelectorAll('#view-sources > .col > section.panel')].slice(1,7);
   return SETUP.panels;
 }
-const setupDone=()=>{const s=SRC.data&&SRC.data.status;return s?srcStepsDone(s):[]};
+const setupAiDone=()=>{if(SETUP.ai.llm&&SETUP.ai.llm.chosen)return true;try{return !!localStorage.getItem('setup.ai.mcp')}catch(_){return false}};
+// Step 0 is the AI connection; the Sources steps follow, so their ticks are shifted by one.
+const setupDone=()=>{const s=SRC.data&&SRC.data.status;return s?[setupAiDone(),...srcStepsDone(s)]:[setupAiDone()]};
 const setupApiReady=()=>!!(SRC.data&&SRC.data.status&&SRC.data.status.api);
 
 function setupRender(){
   const done=setupDone();
   $('#setupSteps').innerHTML=SETUP_STEPS.map((s,i)=>`<li class="${i===SETUP.i?'on':''} ${done[i]?'done':''}" data-i="${i}">
-    <span class="ss-n">${done[i]&&i<5?SRC_TICK:String(i+1).padStart(2,'0')}</span>
+    <span class="ss-n">${done[i]&&i<SETUP_LAST?SRC_TICK:String(i+1).padStart(2,'0')}</span>
     <span class="ss-t"><b>${s.t}</b><small>${s.d}${s.req?' · required':''}</small></span></li>`).join('');
   $('#setupCount').textContent=`Step ${SETUP.i+1} of ${SETUP_STEPS.length}`;
   const stage=$('#setupStage');
   [...stage.children].forEach(c=>{if(c.classList.contains('panel'))setupRestore(c)});
   stage.innerHTML='';
-  if(SETUP.i===5){stage.insertAdjacentHTML('beforeend','<div id="setupSummary" class="setup-summary"></div>');setupSummary()}
-  const p=setupPanels()[SETUP.i];
+  if(SETUP.i===0)setupAiStart();
+  if(SETUP.i===SETUP_LAST){stage.insertAdjacentHTML('beforeend','<div id="setupSummary" class="setup-summary"></div>');setupSummary()}
+  const p=SETUP.i>0?setupPanels()[SETUP.i-1]:null;
   if(p){SETUP.homes[SETUP.i]=SETUP.homes[SETUP.i]||document.createComment('setup');if(!SETUP.homes[SETUP.i].parentNode)p.before(SETUP.homes[SETUP.i]);stage.appendChild(p)}
   stage.classList.remove('enter');void stage.offsetWidth;stage.classList.add('enter');
   const ready=setupApiReady();
   $('#setupBack').hidden=SETUP.i===0;
-  $('#setupSkip').hidden=SETUP.i===5;
+  $('#setupSkip').hidden=SETUP.i===SETUP_LAST;
   const next=$('#setupNext');
-  next.textContent=SETUP.i===5?'Start using Flawtrace':'Next';
+  next.textContent=SETUP.i===SETUP_LAST?'Start using Flawtrace':'Next';
   next.disabled=false;
-  $('#setupHint').textContent=!ready?'Optional. Close this window any time; the API is needed only to run tests.':'';
+  $('#setupHint').textContent=SETUP.i===0?'You can change this any time in Settings > AI provider.':!ready?'Optional. Close this window any time; the API is needed only to run tests.':'';
 }
-function setupRestore(p){const i=setupPanels().indexOf(p);const h=SETUP.homes[i];if(h&&h.parentNode)h.replaceWith(p)}
+function setupRestore(p){const i=setupPanels().indexOf(p)+1;const h=SETUP.homes[i];if(h&&h.parentNode)h.replaceWith(p)}
 
 async function setupSummary(){
   const box=$('#setupSummary');if(!box)return;
@@ -68,7 +73,7 @@ async function openSetup(start){
   if(!SRC.data||!$('#srcBase').value)await loadSources();
   SETUP.open=true;
   const done=setupDone();
-  SETUP.i=start!=null?start:(done[0]?5:0);
+  SETUP.i=start!=null?start:(!done[0]?0:done[1]?SETUP_LAST:1);
   $('#setupModal').hidden=false;document.body.classList.add('modal-open');
   setupRender();
 }
@@ -80,7 +85,7 @@ function closeSetup(){
 }
 function setupGo(i){SETUP.i=Math.max(0,Math.min(SETUP_STEPS.length-1,i));setupRender()}
 
-$('#setupNext').onclick=()=>{if(SETUP.i===5)return closeSetup();setupGo(SETUP.i+1)};
+$('#setupNext').onclick=()=>{if(SETUP.i===SETUP_LAST)return closeSetup();setupGo(SETUP.i+1)};
 $('#setupBack').onclick=()=>setupGo(SETUP.i-1);
 $('#setupClose').onclick=closeSetup;
 $('#setupModal').addEventListener('mousedown',e=>{if(e.target===$('#setupModal'))closeSetup()});

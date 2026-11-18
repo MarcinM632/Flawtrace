@@ -58,7 +58,7 @@ const mask = (k) => (k ? (k.length > 10 ? k.slice(0, 3) + '…' + k.slice(-4) : 
 function view() {
   const c = current();
   return {
-    selected: c.id, model: c.model, baseUrl: c.baseUrl, keySet: !!c.key, keyHint: mask(c.key),
+    selected: c.id, chosen: !!load().provider, model: c.model, baseUrl: c.baseUrl, keySet: !!c.key, keyHint: mask(c.key),
     providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, needsKey: p.needsKey, needsModel: p.needsModel, baseUrlEditable: p.baseUrl !== false, baseUrlRequired: !!p.baseUrlRequired, agents: p.agents, note: p.note || '', modelHint: p.modelHint || '', defaultBaseUrl: p.baseUrl || '' })),
     acp: c.id === 'acp' ? { preset: acpCommand().preset, command: load().acpCommand || '', presets: Object.entries(ACP_PRESETS).map(([id, p]) => ({ id, label: p.label })), ported: [...ACP_MODES] } : null,
     agentsNote: c.id === 'acp' ? `Ported to your own agent so far: ${[...ACP_MODES].join(', ')}. The other agents still run on Claude Code and the run log says so.` : c.def.agents ? '' : 'Agents (Analyses, QA MCP, UI Tests, Autotests) still run on Claude Code. This provider serves the single-step features until the agent loop is built.',
