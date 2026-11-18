@@ -122,13 +122,13 @@ function paint(m){
     +mi('Duration',dur(m),'elapsed')
     +(m.costUsd?mi('Cost','$'+m.costUsd.toFixed(2)):'')
     +(m.usage?mi('Tokens',fmtTok(m.usage),null,'input + cache written / cache read / output · '+m.usage.turns+' turns'):'')
-    +(m.scope&&(m.agent==='qamcp'||m.agent==='execution')?mi('Tools',m.scope.groups?m.scope.groups.length+' groups · '+m.scope.tools:'all '+m.scope.tools,null,m.scope.groups?m.scope.groups.join(', '):'every tool group'):'');
+    +(m.scope&&(m.agent==='qamcp'||m.agent==='execution'||m.agent==='pentest')?mi('Tools',m.scope.groups?m.scope.groups.length+' groups · '+m.scope.tools:'all '+m.scope.tools,null,m.scope.groups?m.scope.groups.join(', '):'every tool group'):'');
   $('#actions').innerHTML=(m.status==='running'?`<button class="btn danger" id="cancel">${ico('x')} Cancel run</button>`:'')
     +(FLOW_NEXT[m.agent]&&m.status==='done'&&!m.pushedTo?`<button class="btn" id="pushNext" title="Starts ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]])} with this report as its input">${ico('play')} Push to ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]])}</button>`:'')
     +(m.pushedTo?`<button class="btn" id="pushedTag" title="Open the run this was pushed to">${ico('check')} Pushed to ${esc(FLOW_LABEL[FLOW_NEXT[m.agent]]||'the next phase')}</button>`:'')
     +(m.agent==='completion'&&m.status==='done'?`<button class="btn" id="toSummary" title="All Test Flow phases of this ticket on one page">${ico('chart',13)} Open Run Summary</button>`:'')
     +(canReplicate(m)?`<button class="btn" id="toQa" title="Turn this result into a process and run it in QA MCP">${ico('term')} Replicate in QA MCP</button>`:'')
-    +((m.agent==='qamcp'||m.agent==='execution')&&m.status==='done'&&m.eps?`<button class="btn" id="toTests" title="Write automated tests that replicate this run">${ico('code')} Create autotests</button>`:'')
+    +((m.agent==='qamcp'||m.agent==='execution'||m.agent==='pentest')&&m.status==='done'&&m.eps?`<button class="btn" id="toTests" title="Write automated tests that replicate this run">${ico('code')} Create autotests</button>`:'')
     +(m.agent==='uitest'&&m.status==='done'?(m.accepted?`<button class="btn" id="uiAccepted" title="Open the Playwright test written from this run">${ico('check')} Accepted, open the test</button>`:/^VERIFIED/i.test(m.reportStatus||'')?`<button class="btn" id="uiAccept" title="Write a Playwright test in TypeScript from this fully passed run">${ico('code')} Accept and write the Playwright test</button>`:`<button class="btn" id="uiAccept" disabled title="Only a run with the status VERIFIED (every step and check passed) can be accepted">${ico('code')} Cannot accept: ${esc(m.reportStatus||'no verdict')}</button>`):'')
     +(m.status==='done'?`<button class="btn" id="toBug">${ico('bug')} Report a bug</button>`:'');
   if($('#pushNext'))$('#pushNext').onclick=async()=>{

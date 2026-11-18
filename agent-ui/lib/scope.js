@@ -101,7 +101,12 @@ BUILTIN_TOOLS.analysis = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.execution = BUILTIN_TOOLS.qamcp;
 BUILTIN_TOOLS.implementation = BUILTIN_TOOLS.qa;
 BUILTIN_TOOLS.completion = BUILTIN_TOOLS.qa;
-const RUN_LIMIT_MIN = { design: 60, qa: 45, qamcp: 30, autotest: 20, uitest: 20, planning: 50, static: 50, analysis: 50, execution: 30, implementation: 40, completion: 15 };
+// Pentest gets exactly the QA MCP built-in set (ToolSearch only, no Bash/Read/Write) — same reasoning as QA MCP:
+// the only access it needs or gets is the `qa` MCP server, never the host's shell or filesystem.
+BUILTIN_TOOLS.pentest = BUILTIN_TOOLS.qamcp;
+// Longer than QA MCP: a full sweep goes through every category of the methodology against the whole endpoint
+// catalogue (scope 'all'), not a scoped functional process.
+const RUN_LIMIT_MIN = { design: 60, qa: 45, qamcp: 30, autotest: 20, uitest: 20, planning: 50, static: 50, analysis: 50, execution: 30, implementation: 40, completion: 15, pentest: 60 };
 const runLimitMs = (mode) => (Number(process.env.QA_RUN_LIMIT_MIN) || RUN_LIMIT_MIN[mode] || 45) * 60000;
 
 module.exports = {

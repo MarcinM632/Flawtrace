@@ -402,7 +402,7 @@ const server = http.createServer(async (req, res) => {
         // Komunikat ma mówić, co jest nie tak z TYM polem: Autotests i QA MCP nie mają ticketów, a powodem
         // odrzucenia jest najczęściej długość wklejonego opisu.
         const n = ticket.length;
-        const error = a.mode === 'autotest' || a.mode === 'qamcp' || a.mode === 'execution' || a.mode === 'uitest'
+        const error = a.mode === 'autotest' || a.mode === 'qamcp' || a.mode === 'execution' || a.mode === 'uitest' || a.mode === 'pentest'
           ? (n < 10 ? 'Describe it in a few words (at least 10 characters).'
             : `The description is ${n} characters; the limit is 8000. Shorten it, or split it into separate runs.`)
           : a.freeform

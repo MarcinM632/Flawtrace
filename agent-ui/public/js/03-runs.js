@@ -1,13 +1,13 @@
 // QA Agents UI: runs. Klasyczny skrypt: wszystkie pliki z js/ dzielą jeden zakres globalny i ładują się po kolei (kolejność jest istotna).
 /* ---------- runs: shared plumbing for Analyses, QA MCP and Autotests ---------- */
 /* Each tab keeps its own history; the Analyses list holds everything that is neither. */
-const OWN_TABS=['qamcp','uitest','autotest','planning','analysis','design','implementation','execution','completion'];
+const OWN_TABS=['qamcp','pentest','uitest','autotest','planning','analysis','design','implementation','execution','completion'];
 const FLOW_PHASES=['planning','analysis','design','implementation','execution','completion'];
 const TAB_OF=a=>FLOW_PHASES.includes(a)?'flow':OWN_TABS.includes(a)?a:'runs';
-const RUN_TABS=['runs','qamcp','uitest','autotest','flow'];
-const PANEL={runs:'#detail',qamcp:'#qDetail',uitest:'#uDetail',autotest:'#aDetail',flow:'#flDetail'};
-const LIST={runs:'#list',qamcp:'#qList',uitest:'#uList',autotest:'#aList',flow:'#flList'};
-const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',uitest:'#uListCount',autotest:'#aListCount',flow:'#flListCount'};
+const RUN_TABS=['runs','qamcp','pentest','uitest','autotest','flow'];
+const PANEL={runs:'#detail',qamcp:'#qDetail',pentest:'#ptDetail',uitest:'#uDetail',autotest:'#aDetail',flow:'#flDetail'};
+const LIST={runs:'#list',qamcp:'#qList',pentest:'#ptList',uitest:'#uList',autotest:'#aList',flow:'#flList'};
+const LIST_COUNT={runs:'#listCount',qamcp:'#qListCount',pentest:'#ptListCount',uitest:'#uListCount',autotest:'#aListCount',flow:'#flListCount'};
 /* ---------- Test Flow chaining ---------- */
 /* Which phase's finished report feeds which phase's input. Monitoring & control has no per-ticket
    report, so it is never a link in this chain — "push to next phase" simply does not exist there. */
@@ -59,6 +59,7 @@ async function autoPushCheck(list){
 const LIST_EMPTY={
   runs:'No analyses yet. Run the first one above.',
   qamcp:'No test processes run yet. Describe one above.',
+  pentest:'No pentests run yet. Describe an area above, or leave it blank for a full sweep.',
   uitest:'No pages checked yet. Enter a page and what to verify above.',
   autotest:'No autotests written yet. Describe a case above.',
   flow:'No flows run yet. Enter a backlog task above.',
@@ -74,6 +75,11 @@ const GUIDE={
     ['The agent runs it','Every read and write is sent to the environment shown in the form.'],
     ['Check the evidence','The log lists every endpoint called and every value read. The result is a short verdict with replication steps.'],
     ['Create autotests','A finished run can be turned into API tests with pytest or UI tests with Playwright.'],
+  ],
+  pentest:[
+    ['Name an area, or leave it blank','A feature, endpoint group, or nothing for a full sweep of the whole connected API.'],
+    ['The agent runs the methodology','Authentication, access control (IDOR/BOLA), mass assignment, business logic, rate limiting, SSRF, misconfiguration and injection, from OWASP’s testing guide and API Security Top 10 — only against the environment you connected.'],
+    ['Check the evidence','Every finding cites the call that proved it, with severity and the OWASP/CWE category. A confirmed finding is retested before it is reported.'],
   ],
   uitest:[
     ['Give the page','Enter the page address and what to verify. If the page needs a login, enter the user name and password.'],
@@ -203,7 +209,7 @@ function renderOverview(t,rs){
 
 /* ---------- analyses ---------- */
 /* Run buttons follow the availability of each agent; the hint under the field says what is missing. */
-const AVAIL={qamcp:['#qGo','#qHint'],planning:['#flGo','#flHint']};
+const AVAIL={qamcp:['#qGo','#qHint'],pentest:['#ptGo','#ptHint'],planning:['#flGo','#flHint']};
 function applyAvailability(){
   for(const [mode,[go,hint]] of Object.entries(AVAIL)){
     const a=agents.find(x=>x.mode===mode);if(!a||!$(go))continue;
@@ -306,6 +312,23 @@ $('#qProcess').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#qGo').click()}
 });
 
+/* ---------- Pentest ---------- */
+/* A blank box means "full sweep"; the agent needs ten characters, so the request carries a fixed phrase instead
+   of forcing the box non-empty. */
+$('#ptGo').onclick=async()=>{
+  $('#ptErr').textContent='';$('#ptGo').disabled=true;
+  try{
+    const txt=$('#ptProcess').value.trim();
+    const m=await post('/api/runs',{agent:'pentest',ticket:txt||'Full sweep of the whole connected API, every category of the methodology.',notes:''});
+    await open(m.id);
+    $('#ptProcess').value='';
+  }catch(e){$('#ptErr').textContent=e.message}
+  $('#ptGo').disabled=false;
+};
+$('#ptProcess').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#ptGo').click()}
+});
+
 /* ---------- Test Flow: one prompt starts Planning; the chain does the rest ---------- */
 $('#flGo').onclick=async()=>{
   $('#flErr').textContent='';$('#flGo').disabled=true;
@@ -404,7 +427,7 @@ function bindCount(inputSel,cntSel,max){
   const upd=()=>{const n=el.value.trim().length;c.textContent=n?n+' / '+max+' chars':'';c.classList.toggle('over',n>max)};
   el.addEventListener('input',upd);upd();
 }
-bindCount('#qProcess','#qCnt',8000);bindCount('#aCase','#aCnt',8000);
+bindCount('#qProcess','#qCnt',8000);bindCount('#aCase','#aCnt',8000);bindCount('#ptProcess','#ptCnt',8000);
 
 /* ---------- run detail ---------- */
 const KIND={endpoint:['ep','API'],tool:['tool','TOOL'],text:['say','MSG'],status:['st','SYS']};

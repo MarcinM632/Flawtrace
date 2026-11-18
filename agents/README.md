@@ -15,7 +15,7 @@ One folder per agent. The application starts each agent in its folder, so `CLAUD
 | claudeAgentStatic | Static: reviews the task itself against the existing code and specification (inconsistencies, impossible or illogical requirements, gaps), static testing by ISTQB |
 | claudeAgentVerifier | Verifier: a second agent that checks every report against the sources (not a tab, it runs after each report) |
 
-Phase 6, Execution, and QA MCP have no folder: they run the procedure on the test environment through the qa MCP server, which calls the endpoints imported in the Sources tab.
+Phase 6, Execution, QA MCP and Pentest have no folder: they run on the test environment through the qa MCP server, which calls the endpoints imported in the Sources tab. Pentest runs the same mechanism as QA MCP but with its own prompt: a systematic sweep of the connected environment against OWASP's Web Security Testing Guide, the OWASP API Security Top 10 and the CWE Top 25, scoped to every authorization and safety boundary stated in that prompt (its own target only, no real flooding, no brute force, proof by call citation and retest before anything is reported).
 
 Every agent starts with step 0: it reads the knowledge base, the ticket, Confluence, the code and the API contracts connected in the Sources tab. To teach the agents how to test, write it in the knowledge base (`../knowledge`), not here.
 

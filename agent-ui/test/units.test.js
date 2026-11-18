@@ -450,6 +450,46 @@ test('report cards: the business-rules gate line has its own field, not glued to
   assert.match(require('../lib/prompts').OVERRIDE_QAMCP, /BRAMKA:/);
 });
 
+test('Pentest: agent definition reuses the QA MCP execution mechanism and the AUTOTEST sandbox', () => {
+  const { AGENTS, agentAvailable, agentReason } = require('../lib/agents');
+  const a = AGENTS.pentest;
+  assert.equal(a.mode, 'pentest');
+  assert.equal(a.absDir, require('../lib/config').ROOT, 'no CLAUDE.md folder: driven by the system prompt, same as qamcp/execution');
+  assert.ok(a.pattern.test('x'.repeat(10)), 'accepts a free-text area description');
+  assert.ok(!a.pattern.test('short'), 'still enforces the 10-char minimum like qamcp');
+  // Availability and the reason shown in the UI follow the same rule as qamcp/execution: needs the test environment API.
+  assert.equal(agentAvailable(a), require('../lib/sources').apiReady());
+  if (!agentAvailable(a)) assert.match(agentReason(a), /Connect the test environment API/);
+});
+
+test('Pentest prompt: keeps the QA MCP report format the parser/auditor expect, and states its authorization boundary', () => {
+  const { OVERRIDE_PENTEST } = require('../lib/prompts');
+  for (const token of ['WYNIK:', 'ZLECENIE:', 'KROKI:', 'BŁĘDY:', 'KROK:', 'ENDPOINT:', 'OCZEKIWANO:', 'OTRZYMANO:', 'RODZAJ:', 'BRAMKA:', 'STAN KOŃCOWY:', '--- KONIEC TREŚCI ---']) {
+    assert.ok(OVERRIDE_PENTEST.includes(token), `missing parsed section/field: ${token}`);
+  }
+  // A genuine vulnerability must be taggable as RODZAJ: PRODUKT, or auditQamcp() rejects STATUS: BŁĄD (see test below).
+  assert.match(OVERRIDE_PENTEST, /RODZAJ: PRODUKT/);
+  // Professional methodology actually named, not just "do a pentest".
+  for (const kw of [/OWASP/, /API Security Top|API1|API2|BOLA/i, /SSRF/, /CWE/]) assert.match(OVERRIDE_PENTEST, kw);
+  // Safety rails: scoped to the authorized target only, no real DoS, no real brute force, own sandboxed accounts.
+  assert.match(OVERRIDE_PENTEST, /AUTOTEST-pentest-a/);
+  assert.match(OVERRIDE_PENTEST, /GRANICE AUTORYZACJI/);
+  assert.match(OVERRIDE_PENTEST, /Zero realnego odmawiania usługi/);
+});
+
+test('Pentest report: a confirmed finding audits the same way a QA MCP product defect does (status <-> RODZAJ: PRODUKT)', () => {
+  const report = 'WYNIK: 1 kategoria sprawdzona, 1 potwierdzona podatność\n' +
+    'ZLECENIE:\n- [ZROBIONO] Authorization / BOLA on order resources\n' +
+    'KROKI:\n1. Called order_get with account B id while authenticated as account A: full order returned [c1].\n2. [BŁĄD] retest with a second order id of account B confirms it [c2].\n' +
+    'BŁĘDY:\n### Any account can read any other account\'s orders\nKROK: 2\nENDPOINT: `order_get`\nOCZEKIWANO: 403 Forbidden regardless of caller\nOTRZYMANO: 200 with the full order body (confirmed retest [c2])\nRODZAJ: PRODUKT — CRITICAL, API1:2023 BOLA (CWE-639)\nBRAMKA: any authenticated account can read another account\'s orders with no extra access\n' +
+    'STAN KOŃCOWY: AUTOTEST-pentest-a and AUTOTEST-pentest-b left in place for the next run\n--- KONIEC TREŚCI ---';
+  const events = [{ type: 'endpoint', text: 'order_get · {}' }];
+  const issues = rf.auditQamcp(report, 'STATUS: BŁĄD', events, tmp);
+  assert.deepEqual(issues.filter((i) => i.code === 'status-mismatch'), [], 'BŁĄD + RODZAJ: PRODUKT must not be flagged as a status mismatch');
+  const v = rf.parseQamcp(report, 'BŁĄD');
+  assert.match(v.errors[0].kind, /PRODUKT/);
+});
+
 test('Test design: a tester flow must be mapped and run, not replaced by config-save checks', () => {
   const flow = 'please cover PRJ-508: rejecting trades moves orders to other accounts in the matrix or the next priority; two no-funds accounts in one tranche, exposure moves to two funded ones; vary minOrderStep and maxLotPerTrade per account';
   assert.equal(rf.hasTesterFlow('PRJ-508', ''), false, 'a bare ticket key is not a flow');

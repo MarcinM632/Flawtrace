@@ -51,7 +51,7 @@ function rvAudit(m){
   const a=m.audit;if(!a)return '';
   const vf=a.verifier;
   const vTxt=vf?(vf.ran?` A second agent (the verifier) checked ${vf.checked||'the'} claims against the sources.`:` The verifier did not run${vf.error?': '+esc(vf.error):''}.`):'';
-  const what=m.agent==='qamcp'||m.agent==='execution'?'every endpoint named in the report was really called in this run':`every file:line evidence${a.checked?` (${a.checked})`:''} exists in the downloaded code`;
+  const what=m.agent==='qamcp'||m.agent==='execution'||m.agent==='pentest'?'every endpoint named in the report was really called in this run':`every file:line evidence${a.checked?` (${a.checked})`:''} exists in the downloaded code`;
   if(a.noCode&&!vf)return '';
   const was=a.corrected?' The agent corrected the report after the first check found: '+esc((a.before||[]).map(i=>i.text).join('; ')):'';
   if(!a.issues.length)return `<div class="rv-audit ok">${ico('check',13)} <span><b>Report check passed:</b> ${a.noCode?'':what+'.'}${vTxt}${was}</span></div>`;

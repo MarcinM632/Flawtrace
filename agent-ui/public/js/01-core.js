@@ -296,6 +296,7 @@ $('#envBtn').onclick=async()=>{
     ENV_STATE=await post('/api/environment',{key:next.key});
     renderEnvBtn();
     if(!$('#view-qamcp').hidden)loadPlatStatus();
+    if(!$('#view-pentest').hidden)loadPlatStatus('#ptEnv');
     if(!$('#view-flow').hidden)loadPlatStatus('#flEnv');
     toast(`Environment switched to ${ENV_STATE.current}`,'ok');
   }catch(e){toast(e.message,'err')}
@@ -385,11 +386,12 @@ wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpt
 /* Light, dark or auto (follows the system). The saved choice is applied before first paint by the script in <head>; settings (23-settings.js) change it. */
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','runs','qamcp','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','runs','qamcp','pentest','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
   qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
+  pentest:['Agents','Pentest','Run a systematic penetration test of the connected test environment, following OWASP’s testing guide and API Security Top 10.'],
   uitest:['Agents','UI Tests','Verify a web page through its interface, also behind a login, and turn a fully passed run into a Playwright test.'],
   autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
   flow:['Test Flow','Test Flow','One prompt runs the whole process on a ticket: planning, analysis, design, implementation, execution and completion.'],
@@ -428,6 +430,7 @@ function showTab(t){
   if(t==='risk')loadBugs().then(renderRisk).catch(()=>{});
   if(t==='fulltest')loadFullTests();
   if(t==='qamcp'){loadPlatStatus();refreshAll();qPendingSync()}
+  if(t==='pentest'){loadPlatStatus('#ptEnv');refreshAll()}
   if(t==='uitest')refreshAll();
   if(t==='flow'){loadPlatStatus('#flEnv');refreshAll();qPendingSync()}
   if(t==='autotest'){loadAutotestMeta();refreshAll();qPendingSync();atSetSub(AT_SUB)}

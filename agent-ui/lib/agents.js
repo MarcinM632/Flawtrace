@@ -34,6 +34,14 @@ const AGENTS = {
     hint: 'Procedure to run',
     pattern: /^[\s\S]{10,8000}$/,
   },
+  // Pentest: systematyczny test penetracyjny (OWASP WSTG / API Security Top 10 / ASVS) na żywym środowisku,
+  // przez ten sam serwer MCP `qa` co QA MCP — ten sam mechanizm wykonania i ta sama dyscyplina dowodowa
+  // ([cN], _readBack), inny prompt (metodyka + granice autoryzacji) i osobna historia/zakładka.
+  pentest: {
+    label: 'Pentest', absDir: ROOT, mode: 'pentest', freeform: true,
+    hint: 'Area or feature to test (or "full sweep of the whole API")',
+    pattern: /^[\s\S]{10,8000}$/,
+  },
   // Test Flow — Phase 1: ryzyko, entry/exit criteria i static/white-box check, zanim backlog task
   // trafi do implementacji. Pełna architektura jak Test Design (subagenci jako role w CLAUDE.md,
   // istqb-library/test-manager.md, walidator test-planning), raport po polsku (proces wewnętrzny).
@@ -84,7 +92,7 @@ const agentDir = (a) => a.absDir || path.join(AGENTS_ROOT, a.dir);
 /** Czy agent ma z czego wystartować. QA MCP potrzebuje .mcp.json, reszta — CLAUDE.md u siebie. */
 const agentAvailable = (a) => (a.mode === 'uitest'
   ? true // przeglądarka Playwright MCP startuje przez npx, nie potrzeba API środowiska
-  : a.mode === 'qamcp' || a.mode === 'execution'
+  : a.mode === 'qamcp' || a.mode === 'execution' || a.mode === 'pentest'
   ? require('./sources').apiReady()
   // Autotests nie ma CLAUDE.md — jego instrukcją jest README.md repo (to samo sprawdza /api/autotest-meta).
   : a.mode === 'autotest'
@@ -110,7 +118,7 @@ function servicesFor(key) {
 /** Why an agent cannot run, in words for the UI. Empty when it can. */
 const agentReason = (a) => {
   if (agentAvailable(a)) return '';
-  if (a.mode === 'qamcp' || a.mode === 'execution') return 'Connect the test environment API under Sources first.';
+  if (a.mode === 'qamcp' || a.mode === 'execution' || a.mode === 'pentest') return 'Connect the test environment API under Sources first.';
   if (a.mode === 'autotest') return 'No autotest repository with a README.md.';
   return 'No CLAUDE.md in ' + agentDir(a) + '.';
 };

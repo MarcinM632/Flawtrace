@@ -154,6 +154,7 @@ const TOUR=[
   {t:'Agents: who does what',p:'Each agent has a different job. Pick the one that matches what you want to know.',
    items:[['Analyses (CORE, SVC, mcp-server)','Finds defects in one change before it reaches testing. It reads the ticket, the code before and after the change and the specification, then reports concrete failing cases with evidence. The three tabs use the same method, each on its own part of the code.','runs'],
           ['QA MCP','Runs a test process you describe on the live test environment, calling its API step by step. The report lists every call it made, so each value can be checked.','qamcp'],
+          ['Pentest','Runs a systematic penetration test of the connected test environment: authentication, access control, injection, business logic, SSRF and more, following OWASP’s testing guide and API Security Top 10. Only tests what you connected.','pentest'],
           ['UI Tests','Opens a web page in a browser, checks what you ask (also behind a login) and reports step by step. A run that fully passes and that you accept becomes a Playwright test.','uitest'],
           ['Autotests','Turns a written test case into an automated pytest test in your suite, and runs the Smoke pack, the System pack or any test from the suite.','autotest']]},
   {t:'Test Flow: the whole process on one ticket',p:'One prompt walks a ticket through seven phases. Each phase is its own agent and passes its report to the next, so the chain is traceable from risk to closing.',

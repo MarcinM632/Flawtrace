@@ -1923,13 +1923,13 @@ body.modal-open{overflow:hidden}
 .panel-b:has(.composer) .qenv:empty{display:none}
 
 /* ================= layout: big prompt on top, history and overview underneath ================= */
-#view-runs>.col,#view-qamcp>.col,#view-flow>.col,#view-fulltest>.col,#view-autotest>.col[data-pane="write"]{display:contents}
+#view-runs>.col,#view-qamcp>.col,#view-pentest>.col,#view-flow>.col,#view-fulltest>.col,#view-autotest>.col[data-pane="write"]{display:contents}
 #view-autotest>.col[data-pane="write"][hidden]{display:none}
-#view-runs>.col>section:first-of-type,#view-qamcp>.col>section:first-of-type,#view-flow>.col>section:first-of-type,#view-fulltest>.col>section:first-of-type,
+#view-runs>.col>section:first-of-type,#view-qamcp>.col>section:first-of-type,#view-pentest>.col>section:first-of-type,#view-flow>.col>section:first-of-type,#view-fulltest>.col>section:first-of-type,
 #view-autotest>.col[data-pane="write"]>section:first-of-type,#view-autotest>.col[data-pane="write"]>.at-tabs{grid-column:1/-1}
 .composer textarea{min-height:52px;max-height:50vh;resize:none;overflow-y:auto;field-sizing:content}
 .composer .go{display:none}
-@media(max-width:900px){#view-runs,#view-qamcp,#view-flow,#view-fulltest,#view-autotest{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){#view-runs,#view-qamcp,#view-pentest,#view-flow,#view-fulltest,#view-autotest{grid-template-columns:minmax(0,1fr)}}
 
 /* ================= theme: light, airy blue (Snowflake-like), rounded cards, tight spacing ================= */
 :root{
