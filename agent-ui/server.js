@@ -30,7 +30,10 @@ const testMonitor = require('./lib/test-monitor');
 const metricsLib = require('./lib/metrics');
 const workspace = require('./lib/workspace');
 // Full tests: the whole flow of one task, driven on the server (lib/pipeline.js). Started after loadAll(), so known runs are known.
+const lessonsLib = require('./lib/lessons');
+const onboarding = require('./lib/onboarding').create({ sources, llm: require('./lib/llm'), knowledgeDir: () => sources.knowledgeDir(), dataDir: DATA_DIR, runs: () => [...runs.values()] });
 const fullTests = require('./lib/pipeline').create({
+  lessons: { record: (x) => lessonsLib.record(sources.knowledgeDir(), x) },
   dir: path.join(DATA_DIR, 'fulltests'), runs, AGENTS, agentAvailable, startRun, autotestsFromRun, persistRun: persist, uiTest: uiTestLib,
   sources, parseAnalysis, parseDesign, parseReport,
   cancelRun: (r) => { r.meta.status = 'cancelled'; if (r.proc) { if (process.platform === 'win32') spawn('taskkill', ['/pid', String(r.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); else r.proc.kill(); } },
@@ -282,6 +285,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/metrics/defect-lifecycle/sync') {
       metricsLib.defectLifecycleRefresh(true).catch(() => {});
       return json(res, 202, { busy: true });
+    }
+    // Onboarding: builds product knowledge (overview, glossary, rules, flows, known defects, briefing) from the connected sources.
+    if (p === '/api/onboarding' || p.startsWith('/api/onboarding/')) {
+      try {
+        if (req.method === 'GET' && p === '/api/onboarding') return json(res, 200, onboarding.view());
+        if (req.method === 'POST' && p === '/api/onboarding/start') { const b = (await body(req, 1e4).catch(() => ({}))) || {}; return json(res, 202, onboarding.start({ depth: b.depth, language: b.language, scanOnly: !!b.scanOnly })); }
+        if (req.method === 'POST' && p === '/api/onboarding/stop') return json(res, 200, onboarding.stop());
+        if (req.method === 'GET' && p === '/api/onboarding/file') return json(res, 200, { path: url.searchParams.get('path'), text: onboarding.readFile(url.searchParams.get('path')) });
+      } catch (e) { return json(res, e.status || 500, { error: e.message }); }
     }
     // Sources: Jira, Confluence, repositories, knowledge base and the API of the test environment.
     if (req.method === 'GET' && p === '/api/guide') {

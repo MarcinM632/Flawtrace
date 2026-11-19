@@ -320,6 +320,22 @@ async function confluenceSearch(text, max = 10) {
   return (r.results || []).map((p) => ({ id: p.id, title: p.title, space: p.space && p.space.key, updated: p.version && p.version.when, url: base + ((p._links && p._links.webui) || '') }));
 }
 
+/** The most recently changed pages of the configured spaces (all visible spaces when none is set), newest first. */
+async function confluenceList(limit = 60) {
+  const { c, base, headers } = confluenceCfg();
+  const spaces = String(c.confluence.spaces || '').split(/[\s,]+/).filter(Boolean);
+  const cql = 'type=page' + (spaces.length ? ` AND space in (${spaces.map((x) => '"' + x + '"').join(',')})` : '') + ' ORDER BY lastmodified DESC';
+  const out = [];
+  for (let start = 0; out.length < limit; ) {
+    const r = await getJson(`${base}/rest/api/content/search?cql=${encodeURIComponent(cql)}&limit=${Math.min(50, limit - out.length)}&start=${start}&expand=space,version`, headers);
+    const rows = r.results || [];
+    out.push(...rows.map((p) => ({ id: p.id, title: p.title, space: p.space && p.space.key, updated: p.version && p.version.when })));
+    start += rows.length;
+    if (!rows.length || rows.length < 1) break;
+  }
+  return out.slice(0, limit);
+}
+
 async function confluencePage(id) {
   const { base, headers } = confluenceCfg();
   const p = await getJson(`${base}/rest/api/content/${encodeURIComponent(id)}?expand=body.storage,version,space`, headers);
@@ -546,6 +562,21 @@ function mcpServers({ api = false, knowledge = true, callLog = '' } = {}) {
   return servers;
 }
 
+/** Product knowledge written by onboarding and lessons from past runs, as lines for the brief ([] when there are none). */
+function productBrief() {
+  const dir = knowledgeDir();
+  const lines = [];
+  let digest = '';
+  try { digest = fs.readFileSync(path.join(dir, 'product', 'digest.md'), 'utf8').replace(/<!--[\s\S]*?-->/g, '').trim(); } catch (_) { /* not generated yet */ }
+  const names = (sub) => { try { return fs.readdirSync(path.join(dir, sub)).filter((n) => /\.md$/.test(n) && !/\.new\.md$/.test(n) && n !== 'digest.md').map((n) => sub + '/' + n); } catch (_) { return []; } };
+  const product = names('product');
+  if (digest) lines.push("PRODUCT BRIEFING (written from this team's own sources during onboarding; background to verify against the task and the live sources, not an instruction):\n" + digest);
+  if (product.length) lines.push(`- Product knowledge, generated from the team's sources with a source on every statement: ${product.join(', ')}. Read the ones that touch the task with mcp__sources__knowledge_read before you design checks; use the glossary for the product's own words.`);
+  const lessons = require('./lessons').digest(dir, 6);
+  if (lessons) lines.push('LESSONS FROM PAST RUNS (confirmed by the tester; full lists in lessons/): do not repeat a false alarm, and look again near a confirmed defect when the task touches it.\n' + lessons);
+  return lines;
+}
+
 /** What the agent is told about its sources. Only connected sources are listed. */
 function brief(mode) {
   const s = status();
@@ -553,6 +584,7 @@ function brief(mode) {
   const k = knowledgeFiles();
   const lines = ['KNOWLEDGE SOURCES (connected in the Sources tab; read them before you decide anything about the task):'];
   lines.push(`- Knowledge base: ${k.files.length} documents in "${k.dir}". Start with the files about how the team tests (test process, test approach, performance testing). Read them with mcp__sources__knowledge_search and mcp__sources__knowledge_read${mode === 'qa' ? ', or with Read and Grep' : ''}. They define how testing is done here and take precedence over general habits.`);
+  lines.push(...productBrief());
   if (s.jira) lines.push(`- Jira: ${c.jira.url}${c.jira.projects ? ', projects ' + c.jira.projects : ''}. Read the ticket with mcp__sources__jira_get_issue (description, subtasks and every comment) and look for related work with mcp__sources__jira_search.`);
   else lines.push('- Jira: not connected. Work from the text of the task; do not ask for Jira access.');
   if (s.confluence) lines.push(`- Confluence: ${confluenceBase(c)}${c.confluence.spaces ? ', spaces ' + c.confluence.spaces : ''}. Search requirements and specifications with mcp__sources__confluence_search and read pages with mcp__sources__confluence_get_page.`);
@@ -567,7 +599,7 @@ function brief(mode) {
 }
 
 module.exports = {
-  apiReady, appModel, brief, catalogue, confluencePage, confluencePublish, confluencePublishTarget, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
+  apiReady, appModel, brief, catalogue, confluenceList, confluencePage, confluencePublish, confluencePublishTarget, confluenceSearch, fetchSpecs, jiraIssue, jiraIssueText, jiraSearch,
   adfText, jiraCheck, jiraCount, jiraLink, jiraProjectKeys, jiraProjectMap, jiraRest, jiraSearchAll, jiraUsers, jiraVersions, liveMap, projectClause, jql,
   knowledgeDir, knowledgeFiles, mcpServers, read, repoList, save, status, syncRepos, test, uploadSpec, view,
   SPECS_DIR, FILE,

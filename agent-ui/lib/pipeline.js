@@ -335,7 +335,10 @@ function create(deps) {
       if (c.status !== 'waiting') throw Object.assign(new Error('There is nothing to confirm now.'), { status: 409 });
       const dec = (b.decisions && typeof b.decisions === 'object') ? b.decisions : {};
       c.confirm.items.forEach((i) => { i.decision = dec[i.id] === 'not-defect' ? 'not-defect' : 'defect'; });
-      c.confirm.note = clip(b.note, 1000); c.confirm.status = 'done'; c.status = 'done'; save(c); return view(c);
+      c.confirm.note = clip(b.note, 1000); c.confirm.status = 'done'; c.status = 'done'; save(c);
+      // What the tester decided is kept for the next runs (confirmed defects, false alarms).
+      if (deps.lessons) { try { deps.lessons.record({ ticket: c.ticket, items: c.confirm.items, note: c.confirm.note }); } catch (_) { /* a lesson is never worth failing the confirmation */ } }
+      return view(c);
     }
     throw Object.assign(new Error('Unknown action'), { status: 400 });
   }

@@ -15,3 +15,6 @@ agent-ui/api-key.txt
 agent-ui/llm.json
 
 agent-ui/fulltests/
+
+knowledge/product/
+knowledge/lessons/
