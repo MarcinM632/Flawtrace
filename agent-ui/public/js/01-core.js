@@ -386,7 +386,7 @@ wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpt
 /* Light, dark or auto (follows the system). The saved choice is applied before first paint by the script in <head>; settings (23-settings.js) change it. */
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','runs','qamcp','pentest','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','onboarding','runs','qamcp','pentest','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
@@ -401,6 +401,7 @@ const PAGE={
   bugs:['Metrics','Bug registry','Record findings and see where defects concentrate.'],
   risk:['Metrics','Risk','Defect density by service, calculated from the bug registry.'],
   fix:['FIX Sessions','FIX client','Connect as a FIX client, send messages and review the message log.'],
+  onboarding:['Workspace','Onboarding','The app reads your sources and writes what the agents need to know about the product, with a source on every statement.'],
   sources:['Workspace','Sources','Knowledge the agents learn from and the test environment they test on.'],
   tools:['Reference','Tools','Endpoints of the test environment imported from its API specifications.'],
   doc:['Reference','Manual testing','Test levels, design techniques and how to choose between them.'],
@@ -429,6 +430,7 @@ function showTab(t){
   if(t==='bugs')loadBugs().catch(()=>{});
   if(t==='risk')loadBugs().then(renderRisk).catch(()=>{});
   if(t==='fulltest')loadFullTests();
+  if(t==='onboarding')loadOnboarding();
   if(t==='qamcp'){loadPlatStatus();refreshAll();qPendingSync()}
   if(t==='pentest'){loadPlatStatus('#ptEnv');refreshAll()}
   if(t==='uitest')refreshAll();

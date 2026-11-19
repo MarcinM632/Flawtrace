@@ -55,6 +55,7 @@
     <div class="nav-group">Workspace</div>
     <button data-tab="workspace"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="lbl">Workspace</span><span class="live" id="nb-workspace" hidden></span></button>
     <button data-tab="sources"><svg width="16" height="16"><use href="#i-plug"/></svg><span class="lbl">Sources</span><span class="count" id="srcCount" hidden></span></button>
+    <button data-tab="onboarding"><svg width="16" height="16"><use href="#i-book"/></svg><span class="lbl">Onboarding</span></button>
     <div class="nav-group">Agents</div>
     <button data-tab="runs" class="on"><svg width="16" height="16"><use href="#i-flask"/></svg><span class="lbl">Analyses</span><span class="live" id="nb-runs" hidden></span></button>
     <button data-tab="qamcp"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">QA MCP</span><span class="live" id="nb-qamcp" hidden></span></button>
@@ -336,6 +337,34 @@ Log in, open Settings, change the display name and save. The new name must appea
   </div>
 </main>
 
+<main id="view-onboarding" hidden>
+  <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-book"/></svg></span>
+    <div class="ph-tx"><b>Onboarding</b><span>One click and the app reads your Jira, Confluence, repositories and API, then writes what the agents need to know about your product: overview, glossary, business rules, key flows and known defects. Every statement names its source.</span></div></div>
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><h2>Learn the product</h2></div>
+      <div class="panel-b">
+        <div class="field"><label>Sources it will read</label><div class="ob-srcs" id="obSources"></div>
+          <div class="hint" id="obNone" hidden>Nothing is connected yet. <a href="#sources" data-tab-link="sources">Open Sources</a> and add Jira, Confluence, a repository or an API specification.</div></div>
+        <div class="ft-grid">
+          <div class="field"><label for="obDepth">How much to read</label><select id="obDepth"></select><div class="hint" id="obDepthNote"></div></div>
+          <div class="field"><label for="obLang">Language of the files</label><select id="obLang"><option value="auto">Same as the sources</option><option value="English">English</option><option value="Polish">Polish</option></select></div>
+        </div>
+        <div class="hint" id="obLlm"></div>
+        <div class="ob-acts"><button class="go" id="obGo"><svg width="13" height="13"><use href="#i-play"/></svg> Build product knowledge</button>
+          <button class="btn" id="obScan" title="Reads the sources and counts what a full run would need. Makes no model call, so it costs nothing.">Scan only (free)</button></div>
+        <div class="kbd-hint">Run it again any time: files you edited by hand are kept, and the new draft is saved beside them. Results of Full tests you confirm are added to the lessons automatically.</div>
+        <div class="err" id="obErr"></div>
+      </div>
+    </section>
+    <section class="panel" id="obProgress" hidden><div class="panel-h"><h2>Progress</h2></div><div class="panel-b"></div></section>
+    <section class="panel">
+      <div class="panel-h"><h2>What the agents know now</h2></div>
+      <div class="list" id="obFiles"></div>
+      <div class="panel-b" id="obView" hidden><h5 class="ft-h" id="obViewTitle"></h5><pre class="ob-text" id="obViewText"></pre></div>
+    </section>
+  </div>
+</main>
 <main id="view-fulltest" hidden>
   <div class="phase-hero"><span class="ph-ico"><svg width="18" height="18"><use href="#i-bolt"/></svg></span>
     <div class="ph-tx"><b>Full tests</b><span>The whole testing flow of one task, from 0 to 100%: static review, whitebox, test design, QA MCP and UI tests, your confirmation, autotests and documentation.</span></div></div>
@@ -2611,6 +2640,7 @@ Log in, open Settings, change the display name and save. The new name must appea
 <script src="/js/22-uitest.js"></script>
 <script src="/js/23-settings.js"></script>
 <script src="/js/24-fulltest.js"></script>
+<script src="/js/25-onboarding.js"></script>
 <script src="/js/10-main.js"></script>
 </body>
 </html>

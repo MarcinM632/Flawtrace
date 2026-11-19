@@ -391,7 +391,9 @@ function create(deps) {
 
   function view() {
     const s = deps.sources.status();
-    return { ...st, running: !!running, files: files(), sources: { jira: s.jira, confluence: s.confluence, repos: s.repos, api: s.api, knowledge: s.knowledge }, llm: deps.llm.current ? deps.llm.current().id : '' };
+    // Only the team's own documents count: the files shipped with the app and the generated ones are not a source.
+    const own = deps.sources.knowledgeFiles().files.filter((f) => !/^(product|lessons)\//.test(f.path) && !(SHIPPED.has(path.basename(f.path)) && !f.path.includes('/'))).length;
+    return { ...st, running: !!running, files: files(), sources: { jira: s.jira, confluence: s.confluence, repos: s.repos, api: s.api, knowledge: own }, llm: deps.llm.current ? deps.llm.current().id : '' };
   }
 
   return { start, stop, view, readFile, files, scan, _state: () => st, whenDone: () => running };
