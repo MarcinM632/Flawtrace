@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Choose a new password · Flawtrace</title><meta name="robots" content="noindex"><meta name="referrer" content="no-referrer"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell">
+  <a class="brand" href="{{SITE_URL}}"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a>
+  <div class="panel">
+    <h1>Choose a new password</h1>
+    <p class="sub">You will be signed out everywhere and can sign in with the new one.</p>
+    <div id="done" class="msg ok" hidden></div>
+    <form data-api="/_gw/api/reset" data-confirm="1" data-done="#done" data-done-text="Your password was changed. You can sign in now." data-hide="1" novalidate>
+      <div id="err" class="msg err" hidden></div>
+      <input type="hidden" name="token" data-from="token">
+      <label for="password">New password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="10" autofocus>
+      <label for="password2">Repeat the password</label>
+      <input id="password2" name="password2" type="password" autocomplete="new-password" required minlength="10">
+      <p class="hint">At least 10 characters.</p>
+      <button class="btn block" type="submit">Change password</button>
+    </form>
+    <div class="links"><a href="/_gw/login">Go to sign in</a></div>
+  </div>
+</main>
+<script src="/_gw/static/gw.js"></script>
+</body></html>

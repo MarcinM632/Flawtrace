@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Account · Flawtrace</title><meta name="robots" content="noindex"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell wide">
+  <div class="topbar">
+    <a class="brand" href="/"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a>
+    <div class="row"><a class="btn ghost small" href="/" id="openApp">Open the app</a><button class="btn ghost small" id="signout" type="button">Sign out</button></div>
+  </div>
+  <div id="notice" class="msg" hidden></div>
+
+  <section class="panel" id="planBox">
+    <div class="row between"><h2>Plan</h2><span class="pill" id="planPill">…</span></div>
+    <p class="sub" id="planText">Loading…</p>
+    <div class="row" id="planActions"></div>
+  </section>
+
+  <section class="panel" id="teamBox">
+    <h2>Workspace</h2>
+    <p class="sub" id="wsName"></p>
+    <table id="members"></table>
+    <div id="inviteBox" hidden>
+      <label for="inviteEmail">Invite a colleague <small>(they get an e-mail with a link that works for 7 days)</small></label>
+      <div class="row"><input id="inviteEmail" type="email" placeholder="colleague@company.com"><button class="btn small" id="inviteBtn" type="button">Send invitation</button></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Sign-in</h2>
+    <p class="sub" id="who"></p>
+    <form id="pwForm" class="stack">
+      <div id="pwMsg" class="msg" hidden></div>
+      <div><label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password" required></div>
+      <div><label for="pwNew">New password <small>(at least 10 characters)</small></label><input id="pwNew" type="password" autocomplete="new-password" required minlength="10"></div>
+      <button class="btn small" type="submit">Change password</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Your data</h2>
+    <p class="sub">Download what we hold. Secrets such as tokens and AI keys are not included.</p>
+    <div class="row">
+      <a class="btn ghost small" href="/_gw/api/export" id="exportAcc">Account data (JSON)</a>
+      <a class="btn ghost small" href="/_gw/api/export-data" id="exportWs">All workspace data (.tar.gz)</a>
+    </div>
+  </section>
+
+  <section class="panel danger-zone" id="dangerBox" hidden>
+    <h2>Delete the workspace</h2>
+    <p class="sub">This removes all runs, knowledge files, settings and members, cancels the subscription, and cannot be undone. Download your data first.</p>
+    <form id="delForm" class="stack">
+      <div id="delMsg" class="msg" hidden></div>
+      <div><label for="delPw">Your password</label><input id="delPw" type="password" autocomplete="current-password" required></div>
+      <div><label for="delConfirm">Type DELETE to confirm</label><input id="delConfirm" type="text" autocomplete="off" required></div>
+      <button class="btn danger small" type="submit">Delete the workspace for good</button>
+    </form>
+  </section>
+  <p class="foot"><a href="{{SITE_URL}}/privacy">Privacy</a> · <a href="{{SITE_URL}}/terms">Terms</a> · <a href="{{SITE_URL}}/security">Security</a> · <a href="mailto:{{CONTACT_EMAIL}}">Contact</a></p>
+</main>
+<script src="/_gw/static/gw.js"></script>
+<script src="/_gw/static/account.js"></script>
+</body></html>

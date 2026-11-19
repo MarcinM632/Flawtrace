@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Security · Flawtrace</title><meta name="description" content="How Flawtrace Cloud protects your tickets, code and keys."><link rel="icon" href="/assets/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"></head>
+<body>{{HEADER}}
+<main id="main" class="doc"><div class="narrow">
+<h1>Security</h1>
+<p class="meta">Version {{TERMS_VERSION}}. What we do to protect your tickets, code, keys and reports, and where the limits are.</p>
+
+<h2>Separation between customers</h2>
+<ul>
+<li>Every workspace runs as its own process, started on demand, with its own data folder.</li>
+<li>That process listens only on the server's internal address and answers only requests that carry a secret known to our gateway. Nothing else on the network can talk to it.</li>
+<li>Each workspace has its own encryption key, derived from a master secret and the workspace identity. A key that leaked would open one workspace, not all.</li>
+<li>Workspaces share a server today. Running each one in its own container with hard resource limits is on our plan, and we will say so here when it is done.</li>
+</ul>
+
+<h2>What the agents can and cannot do</h2>
+<ul>
+<li>An agent has no shell. Its tools are a short list: read files, write files, call the connected test API, read your knowledge sources, drive a browser. Reading and writing are limited to the folder of that run.</li>
+<li>The only commands an agent may start are the repository helper, which can only read, and the agents' own report checkers.</li>
+<li>Outgoing calls are made only to public internet addresses. Internal addresses, the cloud metadata service and other workspaces cannot be reached, and every redirect is checked again.</li>
+<li>Every run has limits on steps, tokens and time. Text found inside a ticket or a page is treated as data, never as an instruction to the agent.</li>
+<li>Code from your repositories is read but never executed on our servers.</li>
+</ul>
+
+<h2>Your secrets</h2>
+<ul>
+<li>Jira, Confluence and API tokens and your AI key are encrypted at rest with AES-256-GCM, are never shown again after you save them, and are not written to logs or to reports.</li>
+<li>Your AI key is sent only to the provider you chose.</li>
+<li>A password for a UI run is kept for that run, written to a temporary file that is deleted when the run ends, and scrubbed from the report.</li>
+</ul>
+
+<h2>Accounts</h2>
+<ul>
+<li>Passwords are stored as salted scrypt hashes. We limit attempts and answer the same way whether an account exists or not.</li>
+<li>Sessions use a secure, HTTP-only cookie that is not sent to other sites. Requests that change data must come from our own pages.</li>
+<li>E-mail addresses are confirmed. Password reset links work once and for one hour, and a reset signs out every device.</li>
+</ul>
+
+<h2>Network and operations</h2>
+<ul>
+<li>All traffic uses HTTPS with HSTS.</li>
+<li>Our servers are in {{HOSTING_REGION}}, with {{HOSTING_PROVIDER}}. Disks are encrypted and backups are encrypted and kept for {{BACKUP_DAYS}} days.</li>
+<li>Security-relevant account events are logged and kept for up to 90 days.</li>
+<li>If a breach affects your data we tell you without undue delay, and within 72 hours where personal data is involved.</li>
+</ul>
+
+<h2>Reporting a vulnerability</h2>
+<p>Write to <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a> with the details. We answer within three working days. If you act in good faith, test only your own workspace, and do not read or change other people's data, we will not take legal action. Please give us reasonable time to fix the problem before you publish it. Our <a href="/.well-known/security.txt">security.txt</a> has the same contact.</p>
+</div></main>
+{{FOOTER}}</body></html>

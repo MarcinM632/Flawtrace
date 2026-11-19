@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Data processing agreement · Flawtrace</title><link rel="icon" href="/assets/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"></head>
+<body>{{HEADER}}
+<main id="main" class="doc"><div class="narrow">
+<h1>Data processing agreement</h1>
+<p class="meta">Version {{TERMS_VERSION}}. It forms part of the <a href="/terms">terms of service</a> and applies when we process personal data in your workspace content on your behalf (Article 28 GDPR). You are the controller; {{COMPANY_NAME}}, {{COMPANY_ADDRESS}} is the processor.</p>
+
+<h2>1. Subject matter, duration and nature</h2>
+<p>We host Flawtrace Cloud and run the agents you start. We process the content of your workspace for as long as your account exists, to provide the service. Processing consists of storing, reading, transmitting to the AI provider you chose, and deleting that content.</p>
+
+<h2>2. Types of data and people concerned</h2>
+<p>Content you choose to connect or enter: tickets, comments, wiki pages, source code, API specifications, test reports. It may contain names, work e-mail addresses and user identifiers of your staff, customers and partners. You decide what you connect. Please do not connect special categories of personal data (Article 9) unless you have to.</p>
+
+<h2>3. Our obligations</h2>
+<ul>
+<li><strong>Instructions.</strong> We process the content only on your documented instructions, which are these terms and what you do in the product, unless the law requires otherwise. We tell you if we think an instruction breaks data protection law.</li>
+<li><strong>Confidentiality.</strong> People who may access personal data are bound by confidentiality. Our staff do not open workspace content unless you ask for support.</li>
+<li><strong>Security.</strong> We apply the measures in section 5 and on the <a href="/security">security page</a>.</li>
+<li><strong>Sub-processors.</strong> You give us a general authorisation to use the sub-processors on the <a href="/subprocessors">sub-processors page</a>. We bind them by contract to the same obligations, and we announce a new one at least 14 days ahead so you can object. If you object and we cannot offer a solution, you may end the agreement.</li>
+<li><strong>Your own AI provider.</strong> Content sent to the provider whose key you entered is sent on your instruction and under your agreement with that provider. That provider is not our sub-processor.</li>
+<li><strong>Assistance.</strong> We help you answer requests from people exercising their rights, and with your security, breach-notification and impact-assessment duties, as far as is reasonable given the nature of the processing. The account page offers export and deletion.</li>
+<li><strong>Breaches.</strong> We notify you without undue delay, and in any case within 72 hours of becoming aware of a personal data breach affecting your content, with the information we have.</li>
+<li><strong>Deletion and return.</strong> You can download your workspace data and delete the workspace at any time. When the agreement ends we delete the content from live systems at once and from backups within {{BACKUP_DAYS}} days, unless the law requires us to keep it.</li>
+<li><strong>Audits.</strong> We give you the information needed to show that we comply with this agreement, and we allow reasonable audits by you or an auditor you appoint, with notice, during business hours and under confidentiality.</li>
+</ul>
+
+<h2>4. International transfers</h2>
+<p>Where processing involves a transfer outside the European Economic Area, we use the standard contractual clauses approved by the European Commission, or another valid transfer mechanism, with the sub-processor concerned.</p>
+
+<h2>5. Technical and organisational measures</h2>
+<ul>
+<li>Every workspace runs in its own process, with its own data folder and its own encryption key.</li>
+<li>Tokens and AI keys are encrypted at rest (AES-256-GCM). Passwords are stored as salted scrypt hashes.</li>
+<li>All traffic is encrypted in transit (HTTPS).</li>
+<li>Agents have no shell. Their tools are restricted to the workspace folder, and outgoing network calls are limited to public addresses.</li>
+<li>Access to our systems is limited to the staff who need it and is logged.</li>
+<li>Backups are encrypted and kept for {{BACKUP_DAYS}} days.</li>
+</ul>
+
+<h2>6. Contact</h2>
+<p><a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a></p>
+</div></main>
+{{FOOTER}}</body></html>

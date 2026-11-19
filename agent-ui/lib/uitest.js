@@ -10,15 +10,13 @@ const NOISE = /^(snapshot|wait_for|take_screenshot|console_messages|network_requ
 
 /** Command line of the Playwright MCP server: fast (no images to the model) and bounded (timeouts, one origin). */
 function playwrightServer({ origin, workDir, secretsFile }) {
-  const win = process.platform === 'win32';
-  const args = ['-y', '@playwright/mcp@0.0.85', '--headless', '--isolated',
+  return require('./playwright-cmd').playwrightCommand(['--headless', '--isolated',
     '--viewport-size', '1280x720',
     '--image-responses', 'omit',              // the accessibility snapshot is enough; images only cost time and tokens
     '--timeout-action', '8000', '--timeout-navigation', '30000',
     '--allowed-origins', origin,              // the page under test only (a guard rail, not a security boundary)
     '--output-dir', path.join(workDir, 'shots'),
-    ...(secretsFile ? ['--secrets', secretsFile] : [])];
-  return { command: win ? 'cmd' : 'npx', args: win ? ['/c', 'npx', ...args] : args };
+    ...(secretsFile ? ['--secrets', secretsFile] : [])]);
 }
 
 /** Observes the browser calls of one run and says when to stop it: too many steps, a loop, or another site. */

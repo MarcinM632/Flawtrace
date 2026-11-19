@@ -1,0 +1,35 @@
+# HTTPS for Flawtrace Cloud. Caddy gets certificates from Let's Encrypt by itself once the DNS records point at this server.
+# SITE_HOST and APP_HOST come from the environment (see docker-compose.yml and .env.example).
+{
+	# Where Let's Encrypt writes to you if a certificate cannot be renewed. Put a real address in .env.
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		-Server
+	}
+}
+
+# The public site: flawtrace.example
+{$SITE_HOST} {
+	import common
+	reverse_proxy gateway:8080
+}
+
+# The app: app.flawtrace.example. flush_interval -1 keeps live run logs (server-sent events) streaming.
+{$APP_HOST} {
+	import common
+	reverse_proxy gateway:8080 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+		}
+	}
+}
+
+# www goes to the bare domain.
+www.{$SITE_HOST} {
+	redir https://{$SITE_HOST}{uri} permanent
+}

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flawtrace: QA agents that know your product and show their evidence</title>
+<meta name="description" content="Flawtrace reads your Jira, Confluence and code, then reviews tasks, designs tests and runs them on your test environment. Every claim cites its source. Bring your own AI key.">
+<meta property="og:title" content="Flawtrace: QA agents that know your product and show their evidence">
+<meta property="og:description" content="Reviews, test design, API and UI test runs with source-cited reports. Bring your own AI key.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{SITE_URL}}">
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/assets/logo.svg" alt="" width="28" height="28">Flawtrace</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#agents">What it does</a>
+      <a href="#key">Your AI key</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <span class="spacer"></span>
+    <a class="signin" href="{{APP_URL}}/_gw/login">Sign in</a>
+    <a class="btn primary small" href="{{APP_URL}}/_gw/signup">Start free trial</a>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero">
+  <svg class="trace" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 80 L140 80 L190 40 L250 104 L330 56 L400 80 L560 80 L610 30 L660 96 L720 62 L800 80 L1200 80"/><circle cx="610" cy="30" r="4"/></svg>
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow"><i></i>For QA teams</span>
+      <h1>QA agents that know your product, and <em>show their evidence</em>.</h1>
+      <p class="lead">Flawtrace reads your Jira, Confluence and code, then reviews tasks, designs tests and runs them against your test environment. Every statement in a report points to the ticket, page, line of code or API call it came from.</p>
+      <div class="cta">
+        <a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a>
+        <a class="btn ghost big" href="#how">See how it works</a>
+      </div>
+      <p class="fine">{{TRIAL_DAYS}} days free. You bring your own AI key, so you pay your AI provider directly and nothing is marked up.</p>
+    </div>
+    <div class="report" role="img" aria-label="Example of a Flawtrace report with a confirmed defect and the sources behind it">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span><b>QA MCP run</b><span>· refund flow · 9 calls</span></div>
+      <div class="body">
+        <div class="row"><span class="mark pass">✓</span><span>POST /orders returns 201 and an id <span class="ref">c1</span></span></div>
+        <div class="row"><span class="mark pass">✓</span><span>GET /orders/{id} returns the same total <span class="ref">c2</span></span></div>
+        <div class="row"><span class="mark fail">✗</span><span>POST /orders/{id}/refund accepts an amount above the order total. The rule says it must be refused <span class="ref">c5</span> <span class="ref">S2</span></span></div>
+        <div class="row"><span class="mark ask">?</span><span>Partial refund twice in a row: the specification is silent. Left as an open question, not guessed.</span></div>
+        <div class="verdict">Defect confirmed. Call c5 returned 200 for 120.00 on an order of 80.00.</div>
+        <div class="dim">S2 · ORDERS-114 comment, 12 March<br>c5 · full request and response saved in the call log</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap">
+    <small>Reads</small>
+    <span class="chips"><span class="chip">Jira</span><span class="chip">Confluence</span><span class="chip">Git repositories</span><span class="chip">OpenAPI specifications</span><span class="chip">Your own documents</span></span>
+    <span class="br"></span>
+    <small>Runs on</small>
+    <span class="chips"><span class="chip">Claude</span><span class="chip">OpenAI</span><span class="chip">Gemini</span><span class="chip">Any OpenAI-compatible API</span></span>
+  </div>
+</div>
+
+<section id="why">
+  <div class="wrap">
+    <h2>Built so a report can be trusted</h2>
+    <p class="sub">An AI that sounds sure and is wrong costs a QA team more than it saves. Flawtrace is built around checking, not around fluent text.</p>
+    <div class="cards">
+      <article class="card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6M8 11h6"/></svg></span>
+        <h3>Agents that learn your product first</h3>
+        <p>Onboarding reads your sources and writes the product overview, glossary, business rules and key flows. Every fact carries the number of the document it came from. A fact without a real source is dropped.</p>
+      </article>
+      <article class="card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/></svg></span>
+        <h3>A second agent checks the first</h3>
+        <p>After each report, an independent verifier checks every reference and every claim against the sources. Quotes that are not in the report are discarded, and long, vague sentences are sent back for a rewrite.</p>
+      </article>
+      <article class="card">
+        <span class="ico flaw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg></span>
+        <h3>Proof for every call</h3>
+        <p>API runs keep a numbered log of each request and response. A defect in the report must point to a call in the log, and the app audits the report against that log before you see it.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="tint">
+  <div class="wrap">
+    <h2>From connected sources to a verified report</h2>
+    <p class="sub">Set it up once, then give the agents a task. Each stage is optional, so you can run only the part you need.</p>
+    <ol class="steps">
+      <li><h3>Connect</h3><p>Add Jira, Confluence, a repository, your API specification and your AI key. Tokens are stored encrypted.</p></li>
+      <li><h3>Onboard</h3><p>One click builds the product knowledge from your sources. Start with a free scan that makes no AI calls and shows what a full run would cost.</p></li>
+      <li><h3>Run</h3><p>Pick the stages for a task: review, code analysis, test design, API run, UI run. Skip any you do not need.</p></li>
+      <li><h3>Learn</h3><p>Confirm what was a real defect and what was a false alarm. Both are saved and the agents read them on the next run.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="agents">
+  <div class="wrap">
+    <h2>What the agents do</h2>
+    <p class="sub">Specialists with their own instructions, not one assistant doing everything.</p>
+    <div class="agents">
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><div><b>Static review</b><span>Checks a task against the existing code and specification for gaps, contradictions and impossible requirements, before anyone builds it.</span></div></div>
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg><div><b>Code analysis</b><span>Reads the change in the repository, its integrations and what it can break outside the changed files.</span></div></div>
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><div><b>Test design</b><span>Turns the findings into test cases with expected results and the source of each expectation.</span></div></div>
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg><div><b>API test runs</b><span>Executes a test process on your test environment through the endpoints in your specification and reports with call-by-call evidence.</span></div></div>
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><div><b>UI runs</b><span>Walks a page in its own browser, also behind a login, and records each step. Your password is kept out of every report and removed when the run ends.</span></div></div>
+      <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b>Security sweep</b><span>A systematic check of your own test environment against OWASP lists, with proof and a retest before anything is reported.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="key" class="tint">
+  <div class="wrap two">
+    <div>
+      <h2>Your AI key. Your cost. No markup.</h2>
+      <p class="sub">Flawtrace never sells you tokens. You paste a key from Anthropic, OpenAI or Google, or the address of any OpenAI-compatible service, and the agents use it directly.</p>
+      <div class="note"><b>A chat subscription is not an API key.</b> A Claude.ai or ChatGPT subscription does not give you one. You create an API key in the provider's developer console, billed separately by the provider. What a run costs depends on the model and the size of the task.</div>
+    </div>
+    <ul class="checks">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>The key is stored encrypted and is never shown again. It is sent only to the provider you chose.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Every run has limits on steps, tokens and time, so one mistake cannot empty your budget.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Token use is recorded for every run, so you can see what a task really cost.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Change the provider or model whenever you like. Your knowledge and history stay.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap two">
+    <div>
+      <h2>Your data stays yours</h2>
+      <p class="sub">Flawtrace reads your tickets and code, so it is built like something that is trusted with them.</p>
+      <p><a href="/security">Read how security works</a> · <a href="/privacy">Privacy policy</a> · <a href="/dpa">Data processing agreement</a></p>
+    </div>
+    <ul class="checks">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Every workspace is its own isolated process with its own folder and its own encryption key.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Tokens and AI keys are encrypted at rest with AES-256-GCM.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Agents cannot run a shell. They get a short list of tools, and each one is limited to the run's own folder.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Outgoing calls reach only public addresses, so nobody can aim the service at an internal network.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Download all of your workspace data, or delete the workspace, from your account page.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="pricing" class="tint">
+  <div class="wrap">
+    <h2>Simple pricing</h2>
+    <p class="sub">One price per workspace. No usage meter, because you pay your AI provider directly.</p>
+    <div class="price">
+      <div class="plan">
+        <h3>Team workspace</h3>
+        <div class="amount">{{PRICE_LABEL}}</div>
+        <div class="per">per workspace, up to 5 people</div>
+        <ul class="checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>All agents and all stages</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Product onboarding and lessons from past runs</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Your own AI key from any supported provider</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Data export and workspace deletion at any time</span></li>
+        </ul>
+        <a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a>
+      </div>
+      <div class="card">
+        <h3>{{TRIAL_DAYS}}-day free trial</h3>
+        <p>No card needed to start. Connect your sources, run onboarding and try a real task before you decide.</p>
+        <h3>Cancel any time</h3>
+        <p>The subscription is managed in a secure billing portal. Export your data first if you want to keep it.</p>
+        <h3>Need something else?</h3>
+        <p>A bigger team, an invoice or an agreement of your own: write to <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="narrow">
+    <h2>Questions</h2>
+    <details><summary>Does it replace testers?</summary><p>No. It does the reading, cross-checking and first drafts that eat a tester's day, and shows its evidence so a person can decide quickly. The confirmation of a defect stays with you, and your confirmations make the next run better.</p></details>
+    <details><summary>How does it avoid made-up facts?</summary><p>Three checks. Product knowledge is written only from numbered source documents and a fact without a valid source is dropped. Reports must cite their sources, and a second agent verifies the citations. API defects must point to a recorded call. Where the sources are silent, the agent is told to ask, not to guess.</p></details>
+    <details><summary>Which AI models work?</summary><p>Claude, OpenAI and Gemini models through your own API key, and any service that speaks the OpenAI format. The agents were developed and tuned on Claude, so start there. Results on other models depend on the model.</p></details>
+    <details><summary>Can it reach a test environment behind our VPN?</summary><p>Not in the cloud version. Flawtrace Cloud can only call public addresses. Test environments that are only reachable from inside a company network need a self-hosted installation, which is available on request.</p></details>
+    <details><summary>What is not available yet?</summary><p>Generating and running automated pytest suites, which would mean running code on our servers. Private repositories (the beta clones public https repositories; you can also add documents to the knowledge base directly). Connectors that read GitHub and GitLab issues and merge requests.</p></details>
+    <details><summary>Who can see my data?</summary><p>Your colleagues in the workspace. Our staff do not open workspace content unless you ask us for support, and your content is sent only to the AI provider whose key you entered, as part of a run. See the <a href="/privacy">privacy policy</a> and the <a href="/subprocessors">list of sub-processors</a>.</p></details>
+    <details><summary>Where is it hosted?</summary><p>On servers in {{HOSTING_REGION}}. The hosting provider and every other service that touches your data are listed on the <a href="/subprocessors">sub-processors</a> page.</p></details>
+  </div>
+</section>
+
+<section class="final tint">
+  <div class="wrap">
+    <h2>Try it on a real task</h2>
+    <p>Connect one project and one test environment. In an afternoon you will know whether it saves your team time.</p>
+    <div class="cta"><a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div><a class="brand" href="/"><img src="/assets/logo.svg" alt="" width="28" height="28">Flawtrace</a><p>QA agents that show their evidence.</p></div>
+      <div><h4>Product</h4><a href="#how">How it works</a><a href="#agents">What it does</a><a href="#pricing">Pricing</a><a href="{{APP_URL}}/_gw/login">Sign in</a></div>
+      <div><h4>Trust</h4><a href="/security">Security</a><a href="/privacy">Privacy policy</a><a href="/dpa">Data processing</a><a href="/subprocessors">Sub-processors</a></div>
+      <div><h4>Company</h4><a href="/terms">Terms of service</a><a href="/cookies">Cookies</a><a href="mailto:{{CONTACT_EMAIL}}">Contact</a></div>
+    </div>
+    <div class="legal">© {{YEAR}} {{COMPANY_NAME}}, {{COMPANY_ADDRESS}}. {{COMPANY_ID}}.</div>
+  </div>
+</footer>
+</body>
+</html>

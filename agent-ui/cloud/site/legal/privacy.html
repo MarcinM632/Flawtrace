@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Privacy policy · Flawtrace</title><meta name="robots" content="index,follow"><link rel="icon" href="/assets/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/site.css"></head>
+<body>{{HEADER}}
+<main id="main" class="doc"><div class="narrow">
+<h1>Privacy policy</h1>
+<p class="meta">Version {{TERMS_VERSION}}. This policy explains what personal data Flawtrace Cloud processes, why, and what your rights are.</p>
+
+<h2>1. Who is responsible</h2>
+<p>{{COMPANY_NAME}}, {{COMPANY_ADDRESS}}, {{COMPANY_ID}} ("we", "Flawtrace") is the controller of the personal data described in sections 2 to 4. You can reach us at <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>.</p>
+<p>For the content you put into your workspace (tickets, pages, code, specifications, reports) we act as your <strong>processor</strong>, and you are the controller. The <a href="/dpa">data processing agreement</a> applies to that content.</p>
+
+<h2>2. What we process and why</h2>
+<table>
+<tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR)</th></tr>
+<tr><td>Account data: e-mail address, name, password (stored only as a salted hash), time you accepted the terms</td><td>Create and run your account, sign you in, contact you about the service</td><td>Contract, Art. 6(1)(b)</td></tr>
+<tr><td>Workspace data: Jira and Confluence content you connect, repository code, API specifications, run reports, knowledge files</td><td>Provide the service you asked for (see section 1: we are a processor)</td><td>Contract, Art. 6(1)(b), under your instructions</td></tr>
+<tr><td>Connection secrets: API tokens and AI keys you enter</td><td>Call your sources and your AI provider for you. Stored encrypted.</td><td>Contract, Art. 6(1)(b)</td></tr>
+<tr><td>Billing data: customer and subscription identifiers, status. Card data is handled by Stripe and never reaches us.</td><td>Charge for the service, keep accounting records</td><td>Contract, Art. 6(1)(b); legal obligation, Art. 6(1)(c)</td></tr>
+<tr><td>Security and usage logs: IP address, browser type, time of sign-ins and important account events</td><td>Keep the service secure, prevent abuse, investigate incidents</td><td>Legitimate interest, Art. 6(1)(f)</td></tr>
+<tr><td>Service e-mails: confirmation, password reset, invitations, important notices</td><td>Operate the account</td><td>Contract, Art. 6(1)(b)</td></tr>
+</table>
+<p>We do not use your workspace content to train any AI model, we do not sell personal data, and we do not use advertising or tracking cookies.</p>
+
+<h2>3. Who receives data</h2>
+<ul>
+<li><strong>Our service providers</strong> (sub-processors), listed on the <a href="/subprocessors">sub-processors page</a>: hosting, e-mail delivery and payments.</li>
+<li><strong>The AI provider you choose.</strong> When an agent runs, the relevant parts of your workspace content are sent to the provider whose key you entered (for example Anthropic, OpenAI or Google), under your account with them and their terms. We do not send content to any other AI provider.</li>
+<li><strong>Authorities,</strong> where the law requires it.</li>
+</ul>
+
+<h2>4. Transfers outside the European Economic Area</h2>
+<p>Our hosting is in {{HOSTING_REGION}}. Some providers listed on the sub-processors page, and the AI provider you choose, may process data in other countries, including the United States. Where that happens we rely on an adequacy decision or on the standard contractual clauses approved by the European Commission.</p>
+
+<h2>5. How long we keep data</h2>
+<ul>
+<li>Account and workspace data: until you delete the workspace. Deleting it removes the workspace folder and the account records from our live systems immediately. Backups are overwritten within {{BACKUP_DAYS}} days.</li>
+<li>Security and usage logs: up to 90 days, longer only where needed to handle an incident.</li>
+<li>Accounting records: as long as tax and accounting law requires.</li>
+</ul>
+
+<h2>6. Your rights</h2>
+<p>You can ask us for access to your data, correction, deletion, restriction and a portable copy, and you can object to processing that is based on legitimate interest. Most of this is self-service: your account page lets you download your account data and all of your workspace data, and delete the workspace. For anything else write to <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>; we answer within one month. You can also complain to the data protection authority of your country.</p>
+
+<h2>7. Security</h2>
+<p>We protect data with the measures described on the <a href="/security">security page</a>. No system is perfectly secure. If a breach affects your personal data we will tell you without undue delay.</p>
+
+<h2>8. Children</h2>
+<p>Flawtrace is a professional tool and is not intended for anyone under 16.</p>
+
+<h2>9. Changes</h2>
+<p>If we change this policy in a way that matters, we will tell you by e-mail or in the product before it takes effect.</p>
+</div></main>
+{{FOOTER}}</body></html>

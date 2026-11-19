@@ -24,3 +24,19 @@ jobs:
         run: pip install pytest pytest-playwright requests
       - name: Unit and API tests
         run: npm test
+
+  # The cloud image must keep building (browser, git and the app in one image). Nothing is pushed anywhere.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Flawtrace Cloud image
+        run: docker build -t flawtrace-cloud:ci .
+      - name: The image starts and answers its health check
+        run: |
+          docker run -d --name ft -e CLOUD_MASTER_SECRET=ci-secret-0123456789abcdef0123456789 -e SITE_HOST=localhost:8080 -e APP_HOST=app.localhost:8080 -p 8080:8080 flawtrace-cloud:ci
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/healthz
+          docker logs ft
+          docker rm -f ft

@@ -18,3 +18,10 @@ agent-ui/fulltests/
 
 knowledge/product/
 knowledge/lessons/
+
+# Flawtrace Cloud: secrets and data never go into git
+.env
+cloud-data/
+*.db
+*.db-wal
+*.db-shm

@@ -1,0 +1,51 @@
+# Flawtrace Cloud on one server: the app (gateway + customer processes) and Caddy, which gets and renews the HTTPS
+# certificates by itself. Setup, step by step: docs/RELEASE-CHECKLIST.md.
+#   cp .env.example .env   (fill it in)   then   docker compose up -d --build
+services:
+  gateway:
+    build: .
+    image: flawtrace-cloud:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PUBLIC_SCHEME: https
+    volumes:
+      - flawtrace-data:/data
+    tmpfs:
+      - /tmp:size=512m
+    # Not published to the internet: only Caddy reaches it.
+    expose:
+      - "8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 2048
+    networks: [web]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - gateway
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_HOST: ${SITE_HOST}
+      APP_HOST: ${APP_HOST}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [web]
+
+volumes:
+  flawtrace-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  web:

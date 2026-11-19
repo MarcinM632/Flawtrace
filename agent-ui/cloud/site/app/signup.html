@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Create your account · Flawtrace</title><meta name="robots" content="noindex"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell">
+  <a class="brand" href="{{SITE_URL}}"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a>
+  <div class="panel">
+    <h1 id="title">Start your free trial</h1>
+    <p class="sub" id="sub">{{TRIAL_DAYS}} days free, no card needed.</p>
+    <form data-api="/_gw/api/signup" novalidate>
+      <div id="err" class="msg err" hidden></div>
+      <input type="hidden" name="invite" id="invite">
+      <label for="name">Your name <small>(optional)</small></label>
+      <input id="name" name="name" type="text" autocomplete="name">
+      <label for="email">Work e-mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required data-from="email">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="10">
+      <p class="hint">At least 10 characters. <button type="button" class="btn ghost small" data-toggle-password="password">Show</button></p>
+      <div id="betaBox" hidden>
+        <label for="betaCode">Beta code</label>
+        <input id="betaCode" name="betaCode" type="text" autocomplete="off">
+        <p class="hint">Sign-up is by invitation during the beta.</p>
+      </div>
+      <label class="check"><input type="checkbox" name="terms" required><span>I accept the <a href="{{SITE_URL}}/terms" target="_blank" rel="noopener">Terms of Service</a> and have read the <a href="{{SITE_URL}}/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+      <button class="btn block" type="submit">Create account</button>
+    </form>
+    <div class="links"><span>Already have an account?</span><a href="/_gw/login">Sign in</a></div>
+  </div>
+</main>
+<script src="/_gw/static/gw.js"></script>
+<script src="/_gw/static/signup.js"></script>
+</body></html>

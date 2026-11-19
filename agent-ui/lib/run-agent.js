@@ -412,10 +412,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
   // Chrome) and reads the page as accessibility snapshots. The run log keeps every browser step, so
   // "Create autotests" can replay the flow as a Playwright test.
   const browserUrl = agent.mode === 'qamcp' && extra.url ? extra.url : '';
-  const playwrightServers = browserUrl ? { playwright: {
-    command: process.platform === 'win32' ? 'cmd' : 'npx',
-    args: [...(process.platform === 'win32' ? ['/c', 'npx'] : []), '-y', '@playwright/mcp@0.0.85', '--headless', '--isolated'],
-  } } : {};
+  const playwrightServers = browserUrl ? { playwright: require('./playwright-cmd').playwrightCommand(['--headless', '--isolated']) } : {};
   const toolsFor = (mode) =>
     mode === 'uitest' ? ['mcp__playwright']
     : isQamcpLike(mode) ? [`mcp__${MCP_SERVER}`, 'mcp__sources', ...(browserUrl ? ['mcp__playwright'] : [])] : mode === 'autotest' ? autotestTools : allowed;

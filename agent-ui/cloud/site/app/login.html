@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign in · Flawtrace</title><meta name="robots" content="noindex"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell">
+  <a class="brand" href="{{SITE_URL}}"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a>
+  <div class="panel">
+    <h1>Sign in</h1>
+    <p class="sub">Welcome back.</p>
+    <div id="notice" class="msg" hidden></div>
+    <form data-api="/_gw/api/login" novalidate>
+      <div id="err" class="msg err" hidden></div>
+      <input type="hidden" name="next" value="/">
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required autofocus data-from="email">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="btn block" type="submit">Sign in</button>
+    </form>
+    <div class="links"><a href="/_gw/forgot">Forgot your password?</a><a href="/_gw/signup">Create an account</a></div>
+  </div>
+  <p class="foot"><a href="{{SITE_URL}}/privacy">Privacy</a> · <a href="{{SITE_URL}}/terms">Terms</a></p>
+</main>
+<script src="/_gw/static/gw.js"></script>
+</body></html>
