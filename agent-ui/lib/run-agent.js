@@ -9,7 +9,7 @@ const { AGENTS, agentAvailable, agentDir } = require('./agents');
 const { allowPolicy, runAcp, toAcpServers } = require('./acp');
 const { runLoop } = require('./agent-loop');
 const llmLib = require('./llm');
-const { AUTOTEST_REPO, DATA_DIR, MCP_SERVER, MODEL, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
+const { AGENTS_ROOT, AUTOTEST_REPO, DATA_DIR, MCP_SERVER, MODEL, QA_GIT, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
 const envLock = require('./env-lock');
 const environment = require('./environment');
 const { isProject, projectFiles, stackOf, stackPrompt } = require('./stacks');
@@ -579,7 +579,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
 
   // The same pass on the customer's own coding agent (ACP). Same events, same result shape; no session to resume,
   // so the one correction turn that Claude Code allows is skipped (res.sessionId stays null).
-  const runner = llmLib.runnerFor(agent.mode);
+  const runner = llmLib.runnerFor(agent.mode || 'qa');
   if (runner.note) emit(r, { type: 'status', text: runner.note });
   const launchAcp = (promptText) => {
     const out = { spawnError: null, done: null };
@@ -617,6 +617,19 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
   };
   // The same pass on the built-in agent loop, with the user's own API key (Anthropic, OpenAI, Gemini, any compatible
   // endpoint). Only the agents that need nothing but the MCP tool servers run here (llm/providers.js API_MODES).
+  // What the analysis agents get besides the MCP servers: read-only file tools, Write/Edit in the run's folder, the two
+  // permitted kinds of Bash command, skills and sub-agents (lib/agent-tools.js). The MCP-only agents get none of them.
+  const apiTools = () => {
+    const wanted = (BUILTIN_TOOLS[agent.mode] || BUILTIN_TOOLS.qa).filter((n) => ['Read', 'Grep', 'Glob', 'Bash', 'Write', 'Edit', 'Skill', 'Agent'].includes(n));
+    if (!wanted.length || isQamcpLike(agent.mode) || agent.mode === 'uitest') return { builtin: [], readRoots: [] };
+    const skills = path.join(cwd, '.claude', 'skills');
+    const cleanEnv = { ...process.env, QA_REPOS_DIR: path.join(DATA_DIR, 'repos').split(path.sep).join('/'), WORK_DIR: workDir.split(path.sep).join('/'), GIT_TERMINAL_PROMPT: '0' };
+    for (const k of ['QA_MASTER_KEY', 'QA_GATEWAY_TOKEN', 'QA_API_KEY']) delete cleanEnv[k];
+    return {
+      builtin: wanted, readRoots: [workDir, path.join(DATA_DIR, 'repos'), cwd, path.join(AGENTS_ROOT, '_shared')], writeRoots: [workDir], skillDirs: [skills],
+      shell: { workDir, qaGit: QA_GIT, validateRoots: [skills], env: cleanEnv },
+    };
+  };
   const launchApi = (promptText) => {
     const out = { spawnError: null, done: null };
     const pendingApi = new Map();
@@ -624,7 +637,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
     out.done = runLoop({
       provider: runner.provider, system: sysFor(agent.mode), prompt: promptText, mcpServers: acpServers || {}, cwd,
       env: { QA_REPOS_DIR: path.join(DATA_DIR, 'repos').split(path.sep).join('/'), WORK_DIR: workDir.split(path.sep).join('/') },
-      builtin: [], readRoots: [], allow: toolsFor(agent.mode), timeoutMs: runLimitMs(agent.mode),
+      ...apiTools(), allow: toolsFor(agent.mode), timeoutMs: runLimitMs(agent.mode),
       isCancelled: () => meta.status === 'cancelled' || !!r.uiAbort,
       onStatus: (text) => emit(r, { type: 'status', text }),
       onToolUse: (t) => {

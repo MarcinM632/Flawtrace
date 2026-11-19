@@ -55,8 +55,9 @@ const ACP_PRESETS = {
 // Agents already ported to the ACP runner. The others still run on Claude Code and say so in the run log.
 const ACP_MODES = new Set(['uitest', 'qamcp', 'execution']);
 
-// Agents that the built-in loop (lib/agent-loop.js) can run on an API key: they only need the MCP tool servers.
-// The others also need a shell or file writing and stay on Claude Code / ACP until the loop gets those tools.
-const API_MODES = new Set(['uitest', 'qamcp', 'execution', 'pentest']);
+// Agents that the built-in loop (lib/agent-loop.js) can run on an API key. The analysis agents use its restricted tools
+// (read-only files, Write/Edit in the run's folder, the repository helper, skills, sub-agents). Autotests also run pytest
+// and write into a repository, so they stay on Claude Code / ACP.
+const API_MODES = new Set(['uitest', 'qamcp', 'execution', 'pentest', 'qa', 'static', 'design', 'planning', 'analysis', 'implementation', 'completion']);
 
 module.exports = { API_MODES, ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS };

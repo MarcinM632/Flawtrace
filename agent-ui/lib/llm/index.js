@@ -57,7 +57,7 @@ function runnerFor(mode) {
       if (!c.model) return { kind: 'unsupported', note: 'Choose a model name in Settings > AI provider.' };
       return { kind: 'api', label: c.def.label, provider: { id: c.id, key: c.key, model: c.model, baseUrl: c.baseUrl } };
     }
-    if (hosted()) return { kind: 'unsupported', note: 'This agent is not available with an API key yet (it needs a shell or file writing). Use QA MCP, Execution, Pentest or UI Tests.' };
+    if (hosted()) return { kind: 'unsupported', note: 'Autotests run code and write into a repository, so they are not part of Flawtrace Cloud yet. The other agents are available.' };
     return { kind: 'claude-cli', note: 'This agent is not available on an API key yet, so it runs on Claude Code.' };
   }
   if (c.id !== 'acp') return { kind: 'claude-cli' };

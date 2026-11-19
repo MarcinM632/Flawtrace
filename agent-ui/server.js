@@ -101,6 +101,12 @@ const server = http.createServer(async (req, res) => {
       if (!hostedLib.gatewayOk(req)) return json(res, 401, { error: 'Not available' });
       if (hostedLib.blocked(req.method, p)) return json(res, 403, { error: 'This is not available in Flawtrace Cloud.' });
     }
+    // Hosted: the gateway asks whether this customer's process is working, so it never stops one in the middle of a run.
+    if (hostedLib.HOSTED && req.method === 'GET' && p === '/api/gateway/busy') {
+      const busy = [...runs.values()].some((r) => r.meta.status === 'running') || fullTests.list().some((c) => c.status === 'running')
+        || !!onboarding.view().running || [...bgJobs.values()].some((j) => j && j.status === 'running');
+      return json(res, 200, { busy });
+    }
     // Integration API for outside LLMs (Claude, ChatGPT, ...): /api/v1, always behind an API key.
     if (await integration.handle(req, res, p, { body, json })) return;
     // Restart the Node process itself — picks up a code change in server.js/lib/*.js, which (unlike

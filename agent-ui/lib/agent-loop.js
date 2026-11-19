@@ -10,6 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { chatTurn } = require('./llm/chat');
 const mcp = require('./mcp-client');
+const agentTools = require('./agent-tools');
 
 const MAX_RESULT_CHARS = 40000;      // one tool answer
 const CONTEXT_CHARS = 600000;        // about 150k tokens; older tool answers are dropped beyond this
@@ -137,7 +138,8 @@ function trimContext(messages) {
 
 /**
  * opts: { provider: { id, key, model, baseUrl }, system, prompt, mcpServers: { name: { command, args, env } }, cwd, env,
- *   builtin: ['Read','Grep','Glob'], readRoots: [folders], allow: [names], maxSteps, maxTokens, timeoutMs,
+ *   builtin: ['Read','Grep','Glob','Bash','Write','Edit','Skill','Agent'], readRoots: [folders], writeRoots: [folders],
+ *   shell: { workDir, qaGit, validateRoots, env }, skillDirs: [folders], allow: [names], maxSteps, maxTokens, timeoutMs, depth,
  *   isCancelled(), onToolUse({id,name,input}), onToolResult({id,text,error}), onText(text), onStatus(text), onProc() }
  * Resolves { text, lastText, stopReason, usage, stderr, timedOut, cancelled, error, steps }.
  */
@@ -166,7 +168,23 @@ async function runLoop(opts) {
       }
     }
     const ft = fileTools(opts.readRoots || [opts.cwd], opts.cwd);
-    for (const n of opts.builtin || []) if (ft[n]) add(n, ft[n].description, ft[n].schema, async (input) => ({ text: ft[n].run(input), isError: false }));
+    const extra = { ...(opts.writeRoots && opts.writeRoots.length ? agentTools.writeTools(opts.writeRoots) : {}) };
+    if (opts.shell) extra.Bash = agentTools.shellTool({ cwd: opts.cwd, ...opts.shell });
+    if (opts.skillDirs && opts.skillDirs.length) extra.Skill = agentTools.skillTool(opts.skillDirs);
+    for (const n of opts.builtin || []) {
+      const t = ft[n] || extra[n];
+      if (t) add(n, t.description, t.schema, async (input) => ({ text: await t.run(input), isError: false }));
+    }
+    // A sub-agent: the same loop again with its own context, the same tools except this one. Its usage counts for the run.
+    if ((opts.builtin || []).includes('Agent') && !(opts.depth > 0)) {
+      add('Agent', 'Runs a sub-agent with its own context on one self-contained task and returns its final answer. Give it all it needs in the prompt.',
+        { type: 'object', properties: { description: { type: 'string', description: 'three to five words' }, prompt: { type: 'string' } }, required: ['prompt'] },
+        async (input) => {
+          const r = await runLoop({ ...opts, depth: 1, prompt: String(input.prompt || ''), system: [opts.system, 'You are a sub-agent. Do only the task in the prompt, with your tools, and answer with the complete result.'].join(String.fromCharCode(10, 10)), maxSteps: 80, onToolUse: (t) => opts.onToolUse && opts.onToolUse({ ...t, name: t.name, title: t.title }), onToolResult: opts.onToolResult, onText: null });
+          state.usage.input += r.usage.input; state.usage.output += r.usage.output; state.usage.cached += r.usage.cached; state.steps += r.steps;
+          return { text: r.lastText || r.error || '(the sub-agent returned nothing)', isError: !!r.error && !r.lastText };
+        });
+    }
     say(`Agent loop: ${opts.provider.id} / ${opts.provider.model}, ${tools.length} tools`);
     if (tools.length > 120) say(`Warning: ${tools.length} tools are offered to the model; some providers allow fewer.`);
 

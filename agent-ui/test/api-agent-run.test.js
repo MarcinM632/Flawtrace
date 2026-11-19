@@ -102,10 +102,10 @@ test('QA MCP runs on the API loop: tools started, call logged, report extracted'
   assert.ok(run.meta.usage && run.meta.usage.input > 0);
 });
 
-test('an agent that needs a shell is refused on a hosted deployment', async () => {
-  const start = await post('/api/runs', { agent: 'static', ticket: 'ABC-123' });
+test('Autotests (they run code) are refused on a hosted deployment', async () => {
+  const start = await post('/api/runs', { agent: 'autotest', ticket: 'Check that the pet can be added and read back' });
   if (start.status !== 201) return; // not startable without a repository: nothing to assert
   const run = await finished((await start.json()).id);
   assert.equal(run.meta.status, 'failed');
-  assert.match(run.meta.error, /not available with an API key/);
+  assert.match(run.meta.error, /not part of Flawtrace Cloud/);
 });
