@@ -1,3 +1,7 @@
+# Flawtrace: plan
+
+> **Decision 3 (2026-11-19): a hosted cloud version is built, next to the local one.** The customer still brings their own AI key (owner pays no tokens). Built: agent loop for API keys, accounts and sessions, Stripe, one isolated process per workspace, public site and legal pages, Docker/Caddy deployment. How it works: [CLOUD.md](CLOUD.md). What is left for the owner to do (domain, server, Stripe, Resend, lawyer, test, beta): [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md). Deviations from the plan below: SQLite instead of PostgreSQL for the first server (all SQL is in `cloud/db.js`); a process per workspace instead of a container (container per workspace is the next step). The text below is the earlier plan and is kept for the reasoning.
+
 # Flawtrace: plan (local / self-hosted first)
 
 **Decision 2 (2026-11-16): the product is a LOCAL, self-hosted application.** The customer runs Flawtrace on their own machine or server, with their own data, their own database and their own AI. The owner hosts nothing and pays nothing for anybody. Everything below about accounts, organisations, Stripe and a hosted multi-tenant cloud is **deferred** (kept as a later option), not the next step.
