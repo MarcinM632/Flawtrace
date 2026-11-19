@@ -7,6 +7,7 @@ const sources = require('./sources');
 const { syncBugs } = require('./bugs');
 const { AGENTS, agentAvailable, agentDir } = require('./agents');
 const { allowPolicy, runAcp, toAcpServers } = require('./acp');
+const { runLoop } = require('./agent-loop');
 const llmLib = require('./llm');
 const { AUTOTEST_REPO, DATA_DIR, MCP_SERVER, MODEL, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
 const envLock = require('./env-lock');
@@ -614,7 +615,40 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniej�
     });
     return out;
   };
-  const launch = (promptText, extraArgs = []) => (runner.kind === 'acp' ? launchAcp(promptText) : launchCli(promptText, extraArgs));
+  // The same pass on the built-in agent loop, with the user's own API key (Anthropic, OpenAI, Gemini, any compatible
+  // endpoint). Only the agents that need nothing but the MCP tool servers run here (llm/providers.js API_MODES).
+  const launchApi = (promptText) => {
+    const out = { spawnError: null, done: null };
+    const pendingApi = new Map();
+    emit(r, { type: 'status', text: `Running on your own API key: ${runner.label} / ${runner.provider.model} (agent loop)` });
+    out.done = runLoop({
+      provider: runner.provider, system: sysFor(agent.mode), prompt: promptText, mcpServers: acpServers || {}, cwd,
+      env: { QA_REPOS_DIR: path.join(DATA_DIR, 'repos').split(path.sep).join('/'), WORK_DIR: workDir.split(path.sep).join('/') },
+      builtin: [], readRoots: [], allow: toolsFor(agent.mode), timeoutMs: runLimitMs(agent.mode),
+      isCancelled: () => meta.status === 'cancelled' || !!r.uiAbort,
+      onStatus: (text) => emit(r, { type: 'status', text }),
+      onToolUse: (t) => {
+        const ev = { type: isBrowser(t.name) ? 'browser' : isEndpoint(t.name) ? 'endpoint' : 'tool', who: 'main', text: summarizeTool(t.name, t.input || {}),
+          ...(t.input && isEndpoint(t.name) ? { input: JSON.stringify(t.input).slice(0, /_read_/.test(t.name) ? 700 : 6000) } : {}), ...(t.input && isBrowser(t.name) ? { input: JSON.stringify(t.input).slice(0, 600) } : {}) };
+        emit(r, ev);
+        if (uiGuard && ev.type === 'browser' && !r.uiAbort) {
+          const why = uiGuard.check(t.name.replace(/^mcp__playwright__/, ''), t.input);
+          if (why) { r.uiAbort = why; emit(r, { type: 'status', text: why }); }
+        }
+        if (ev.type === 'endpoint') pendingApi.set(t.id, ev);
+      },
+      onToolResult: (t) => { const ev = pendingApi.get(t.id); if (ev) { pendingApi.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
+      onText: (text) => emit(r, { type: 'text', who: 'main', text: text.slice(0, 1500) }),
+    }).then((res) => ({
+      lastText: res.lastText, finalText: res.lastText || res.text, cost: null,
+      usage: { input_tokens: res.usage.input, output_tokens: res.usage.output, cache_read_input_tokens: res.usage.cached }, turns: res.steps,
+      timedOut: res.timedOut, isError: !!res.error && !res.cancelled, stderr: res.error ? res.error + (res.stderr ? ' | ' + res.stderr : '') : res.stderr, sessionId: null, code: res.error ? 1 : 0,
+    }));
+    return out;
+  };
+  // No way to run this agent on the chosen provider (no key, or an agent that needs a shell on a hosted deployment).
+  const launchUnsupported = () => ({ spawnError: null, done: Promise.resolve({ lastText: '', finalText: runner.note, cost: null, usage: null, turns: null, timedOut: false, isError: true, stderr: runner.note, sessionId: null, code: 1 }) });
+  const launch = (promptText, extraArgs = []) => (runner.kind === 'acp' ? launchAcp(promptText) : runner.kind === 'api' ? launchApi(promptText) : runner.kind === 'unsupported' ? launchUnsupported() : launchCli(promptText, extraArgs));
 
   // Audyt raportu przez apkę (lib/report-format.js): QA MCP kontra log wywołań, Analyses / Test design kontra pobrany kod.
   // Gdy coś się nie zgadza, ta sama sesja dostaje jedną turę korekty; to, czego agent nie poprawi, zostaje w meta.audit.

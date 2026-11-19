@@ -66,12 +66,50 @@ function toIssues(verdict, report) {
   return { issues, dropped };
 }
 
+/** The same check on the user's own API key (Anthropic, OpenAI, Gemini, ...): the built-in agent loop with the sources server
+ * and read-only file tools, instead of a Claude Code session. */
+async function verifyViaLoop({ report, kind, task, workDir, isCancelled }, cur, base, long) {
+  const { runLoop } = require('./agent-loop');
+  const dir = path.join(RUNS_DIR, 'work', 'verifier');
+  fs.mkdirSync(dir, { recursive: true });
+  const repos = sources.repoList().filter((r) => r.ready).map((r) => r.path);
+  const res = await runLoop({
+    provider: { id: cur.id, key: cur.key, model: cur.model, baseUrl: cur.baseUrl },
+    system: [fs.readFileSync(FILE(), 'utf8'), sources.brief('qa')].join(String.fromCharCode(10, 10)),
+    prompt: `REPORT TYPE: ${kind}
+
+TASK GIVEN TO THE AGENT:
+${String(task || '').slice(0, 6000)}
+
+REPORT TO CHECK:
+${report}
+
+Working folder with the agent's input files: ${workDir || '(none)'}
+Check the report now and return the JSON object.`,
+    mcpServers: sources.mcpServers({ api: false, knowledge: true }), cwd: workDir || dir,
+    builtin: ['Read', 'Grep', 'Glob'], readRoots: [workDir, ...repos].filter(Boolean), allow: ['mcp__sources'],
+    maxSteps: 60, timeoutMs: LIMIT_MS(), isCancelled,
+  });
+  const usage = res.usage || {};
+  if (res.cancelled) return { ...base, issues: long, error: 'cancelled' };
+  if (res.error && !res.lastText) return { ...base, issues: long, error: res.error };
+  const verdict = parseVerdict(res.lastText);
+  if (!verdict) return { ...base, issues: long, error: 'The verifier did not return a result in the expected format' };
+  const { issues, dropped } = toIssues(verdict, report);
+  return { ...base, ran: true, checked: Number(verdict.checked) || 0, issues: [...issues.slice(0, MAX_ISSUES), ...long], dropped, tokens: (usage.input || 0) + (usage.output || 0) };
+}
+
 /** Jedno przejście weryfikatora. Zwraca { ran, checked, issues, dropped, costUsd, error }. Nigdy nie rzuca. */
 function verifyReport({ report, kind, task, workDir, onProc, isCancelled }) {
   const base = { ran: false, checked: 0, issues: [], dropped: 0, costUsd: 0 };
   if (!report) return Promise.resolve(base);
   const long = longSentences(report);
   if (!enabled()) return Promise.resolve({ ...base, issues: long, error: process.env.QA_VERIFIER === '0' ? 'switched off (QA_VERIFIER=0)' : 'no CLAUDE.md in agents/claudeAgentVerifier' });
+  const cur = require('./llm').current();
+  if (cur.def.loop) {
+    if ((cur.def.needsKey && !cur.key) || !cur.model) return Promise.resolve({ ...base, issues: long, error: 'No API key or model chosen for the verifier' });
+    return verifyViaLoop({ report, kind, task, workDir, isCancelled }, cur, base, long).catch((e) => ({ ...base, issues: long, error: String(e && e.message || e) }));
+  }
   return new Promise((resolve) => {
     const dir = path.join(RUNS_DIR, 'work', 'verifier');
     fs.mkdirSync(dir, { recursive: true });

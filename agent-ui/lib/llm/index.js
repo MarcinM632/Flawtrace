@@ -4,10 +4,14 @@
 const fs = require('fs');
 const path = require('path');
 const { DATA_DIR } = require('../config');
-const { ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS } = require('./providers');
+const { ACP_MODES, ACP_PRESETS, API_MODES, CALLS, PROVIDERS } = require('./providers');
 
 const FILE = path.join(DATA_DIR, 'llm.json');
 const ENV_KEYS = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY', 'openai-compatible': 'OPENAI_COMPATIBLE_API_KEY' };
+
+// A hosted deployment (QA_HOSTED=1) has no Claude Code login and no local agent to start: only API-key providers exist.
+const hosted = () => process.env.QA_HOSTED === '1';
+const allowedIds = () => Object.keys(PROVIDERS).filter((id) => !hosted() || PROVIDERS[id].loop);
 
 function load() {
   try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (_) { return {}; }
@@ -19,12 +23,13 @@ function save(cfg) {
 /** The effective choice: saved file first, then QA_LLM and the provider's usual key variable, else the Claude Code CLI. */
 function current() {
   const c = load();
-  const id = PROVIDERS[c.provider] ? c.provider : (PROVIDERS[process.env.QA_LLM] ? process.env.QA_LLM : 'claude-cli');
+  const ok = (x) => PROVIDERS[x] && allowedIds().includes(x);
+  const id = ok(c.provider) ? c.provider : (ok(process.env.QA_LLM) ? process.env.QA_LLM : (hosted() ? 'anthropic' : 'claude-cli'));
   const def = PROVIDERS[id];
   const keys = c.keys || {};
   return {
     id, def,
-    model: c.model && c.provider === id ? c.model : (process.env.QA_LLM_MODEL || ''),
+    model: c.model && c.provider === id ? c.model : (process.env.QA_LLM_MODEL || def.defaultModel || ''),
     baseUrl: (c.baseUrls && c.baseUrls[id]) || def.baseUrl || '',
     key: keys[id] || process.env[ENV_KEYS[id]] || '',
   };
@@ -43,6 +48,16 @@ function acpCommand() {
 /** Who runs the agent of this mode: the Claude Code CLI as always, or the customer's own agent through ACP. */
 function runnerFor(mode) {
   const c = current();
+  if (c.def.loop) {
+    // An API key: the built-in agent loop runs the agent when it only needs the MCP tool servers.
+    if (API_MODES.has(mode)) {
+      if (c.def.needsKey && !c.key) return { kind: 'unsupported', note: `No API key for ${c.def.label}. Add it in Settings > AI provider.` };
+      if (!c.model) return { kind: 'unsupported', note: 'Choose a model name in Settings > AI provider.' };
+      return { kind: 'api', label: c.def.label, provider: { id: c.id, key: c.key, model: c.model, baseUrl: c.baseUrl } };
+    }
+    if (hosted()) return { kind: 'unsupported', note: 'This agent is not available with an API key yet (it needs a shell or file writing). Use QA MCP, Execution, Pentest or UI Tests.' };
+    return { kind: 'claude-cli', note: 'This agent is not available on an API key yet, so it runs on Claude Code.' };
+  }
   if (c.id !== 'acp') return { kind: 'claude-cli' };
   const a = acpCommand();
   if (!a.command) return { kind: 'claude-cli', note: 'No agent command set under Settings > AI provider, so this run uses Claude Code.' };
@@ -59,15 +74,16 @@ function view() {
   const c = current();
   return {
     selected: c.id, chosen: !!load().provider, model: c.model, baseUrl: c.baseUrl, keySet: !!c.key, keyHint: mask(c.key),
-    providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, needsKey: p.needsKey, needsModel: p.needsModel, baseUrlEditable: p.baseUrl !== false, baseUrlRequired: !!p.baseUrlRequired, agents: p.agents, note: p.note || '', modelHint: p.modelHint || '', defaultBaseUrl: p.baseUrl || '' })),
+    hosted: hosted(), apiModes: [...API_MODES],
+    providers: Object.entries(PROVIDERS).filter(([id]) => allowedIds().includes(id)).map(([id, p]) => ({ id, label: p.label, needsKey: p.needsKey, needsModel: p.needsModel, baseUrlEditable: p.baseUrl !== false, baseUrlRequired: !!p.baseUrlRequired, agents: p.agents, loop: !!p.loop, note: p.note || '', modelHint: p.modelHint || '', defaultBaseUrl: p.baseUrl || '' })),
     acp: c.id === 'acp' ? { preset: acpCommand().preset, command: load().acpCommand || '', presets: Object.entries(ACP_PRESETS).map(([id, p]) => ({ id, label: p.label })), ported: [...ACP_MODES] } : null,
-    agentsNote: c.id === 'acp' ? `Ported to your own agent so far: ${[...ACP_MODES].join(', ')}. The other agents still run on Claude Code and the run log says so.` : c.def.agents ? '' : 'Agents (Analyses, QA MCP, UI Tests, Autotests) still run on Claude Code. This provider serves the single-step features until the agent loop is built.',
+    agentsNote: c.id === 'acp' ? `Ported to your own agent so far: ${[...ACP_MODES].join(', ')}. The other agents still run on Claude Code and the run log says so.` : c.def.agents ? '' : `With this key these agents run on the built-in agent loop: ${[...API_MODES].join(', ')}. ${hosted() ? 'The other agents are not available yet.' : 'The other agents still run on Claude Code.'}`,
   };
 }
 
 function update(b) {
   const id = String(b.provider || '');
-  if (!PROVIDERS[id]) throw Object.assign(new Error('Unknown provider'), { code: 400 });
+  if (!PROVIDERS[id] || !allowedIds().includes(id)) throw Object.assign(new Error('Unknown provider'), { code: 400 });
   const cfg = load();
   cfg.provider = id;
   cfg.model = String(b.model || '').trim().slice(0, 200);
@@ -94,7 +110,7 @@ function update(b) {
 /** One step: text in, text out, with the selected provider. */
 async function complete(system, input, { timeoutMs = 240000 } = {}) {
   const c = current();
-  if (c.id === 'claude-cli') {
+  if (c.id === 'claude-cli' && !hosted()) {
     const { claudeCliOnce } = require('../claude-once');
     return { ...(await claudeCliOnce(system, input, timeoutMs)), provider: c.id };
   }

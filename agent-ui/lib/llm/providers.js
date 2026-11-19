@@ -8,10 +8,10 @@ const PROVIDERS = {
     note: 'Uses the Claude Code CLI signed in on this machine. Runs every agent.' },
   acp: { label: 'Your own coding agent (ACP): Claude Code, Codex, Gemini CLI, ...', needsKey: false, needsModel: false, baseUrl: false, agents: true, acp: true,
     note: 'Flawtrace starts the agent you already have and gives it the task. It uses your own login or key; nothing goes through anybody else.' },
-  anthropic: { label: 'Anthropic API (Claude)', needsKey: true, needsModel: true, baseUrl: 'https://api.anthropic.com', agents: false, modelHint: 'claude-sonnet-5-5' },
-  openai: { label: 'OpenAI API (ChatGPT)', needsKey: true, needsModel: true, baseUrl: 'https://api.openai.com/v1', agents: false, modelHint: 'model id from your OpenAI console' },
-  gemini: { label: 'Google Gemini API', needsKey: true, needsModel: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', agents: false, modelHint: 'model id from Google AI Studio' },
-  'openai-compatible': { label: 'Any OpenAI-compatible endpoint (local or other)', needsKey: false, needsModel: true, baseUrl: '', baseUrlRequired: true, agents: false, modelHint: 'model name served at the address' },
+  anthropic: { label: 'Anthropic API (Claude)', needsKey: true, needsModel: true, baseUrl: 'https://api.anthropic.com', agents: false, loop: true, modelHint: 'claude-sonnet-5-5', defaultModel: 'claude-sonnet-5-5' },
+  openai: { label: 'OpenAI API (ChatGPT)', needsKey: true, needsModel: true, baseUrl: 'https://api.openai.com/v1', agents: false, loop: true, modelHint: 'model id from your OpenAI console' },
+  gemini: { label: 'Google Gemini API', needsKey: true, needsModel: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', agents: false, loop: true, modelHint: 'model id from Google AI Studio' },
+  'openai-compatible': { label: 'Any OpenAI-compatible endpoint (local or other)', needsKey: false, needsModel: true, baseUrl: '', baseUrlRequired: true, agents: false, loop: true, modelHint: 'model name served at the address' },
 };
 
 const trim = (s) => String(s || '').replace(/\/+$/, '');
@@ -55,4 +55,8 @@ const ACP_PRESETS = {
 // Agents already ported to the ACP runner. The others still run on Claude Code and say so in the run log.
 const ACP_MODES = new Set(['uitest', 'qamcp', 'execution']);
 
-module.exports = { ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS };
+// Agents that the built-in loop (lib/agent-loop.js) can run on an API key: they only need the MCP tool servers.
+// The others also need a shell or file writing and stay on Claude Code / ACP until the loop gets those tools.
+const API_MODES = new Set(['uitest', 'qamcp', 'execution', 'pentest']);
+
+module.exports = { API_MODES, ACP_MODES, ACP_PRESETS, CALLS, PROVIDERS };
