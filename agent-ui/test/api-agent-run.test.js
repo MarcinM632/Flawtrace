@@ -11,6 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const APP = path.resolve(__dirname, '..');
+const TOKEN = 'gateway-token-0123456789abcdef0123';
 let proc, base, dataDir, fake, fakeBase, requests = [];
 const freePort = () => new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 
@@ -36,7 +37,7 @@ before(async () => {
   fs.writeFileSync(path.join(dataDir, 'jira-sync.json'), JSON.stringify({ lastTry: Date.now(), lastOk: Date.now(), lastComments: Date.now(), added: 0, found: 0, error: '' }));
   const port = await freePort();
   base = 'http://127.0.0.1:' + port;
-  proc = spawn('node', ['server.js'], { cwd: APP, env: { ...process.env, PORT: String(port), QA_DATA_DIR: dataDir, QA_API_KEY: 'k', JIRA_SYNC_MINUTES: '999999', QA_HEDGE_GUARD: '0', QA_VERIFIER: '0', QA_HOSTED: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  proc = spawn('node', ['server.js'], { cwd: APP, env: { ...process.env, PORT: String(port), QA_DATA_DIR: dataDir, QA_API_KEY: 'k', JIRA_SYNC_MINUTES: '999999', QA_HEDGE_GUARD: '0', QA_VERIFIER: '0', QA_HOSTED: '1', QA_GATEWAY_TOKEN: TOKEN, QA_GUARD_ALLOW_LOOPBACK: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('server did not start')), 20000);
     proc.stdout.on('data', (c) => { if (String(c).includes('Agent UI:')) { clearTimeout(t); resolve(); } });
@@ -45,11 +46,13 @@ before(async () => {
 });
 after(() => { if (proc) proc.kill(); if (fake) fake.close(); try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch (_) { /* temp */ } });
 
-const post = (p, b) => fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+const H = { 'x-flawtrace-gateway': TOKEN };
+const get = (p) => fetch(base + p, { headers: H });
+const post = (p, b) => fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json', ...H }, body: JSON.stringify(b) });
 async function finished(id) {
   let run;
   for (let i = 0; i < 120; i++) {
-    run = await (await fetch(base + '/api/runs/' + id)).json();
+    run = await (await get('/api/runs/' + id)).json();
     if (run.meta.status !== 'running') return run;
     await new Promise((r) => setTimeout(r, 500));
   }
@@ -65,7 +68,7 @@ test('setup: a test environment API is connected (Petstore spec, nothing is call
 });
 
 test('hosted mode lists only API-key providers', async () => {
-  const v = await (await fetch(base + '/api/llm')).json();
+  const v = await (await get('/api/llm')).json();
   assert.equal(v.hosted, true);
   assert.ok(v.providers.length >= 4);
   assert.ok(!v.providers.some((p) => p.id === 'claude-cli' || p.id === 'acp'));

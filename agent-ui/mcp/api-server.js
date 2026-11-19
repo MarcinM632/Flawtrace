@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // MCP server "qa": calls the test environment through the endpoints of the imported OpenAPI specifications.
 // Every call is numbered (c1, c2, ...) and written in full to the call log, so a report can prove each value it states.
+require('../lib/net-guard').install(); // hosted only: calls reach public addresses only
 const fs = require('fs');
 const path = require('path');
 const { serve, clip } = require('./stdio');
@@ -15,7 +16,7 @@ let settings = {};
 try { settings = JSON.parse(fs.readFileSync(SOURCES_FILE, 'utf8')).api || {}; } catch (_) { /* nothing configured */ }
 const BASE = String(process.env.API_BASE_URL || settings.baseUrl || '').replace(/\/+$/, '');
 const AUTH_HEADER = settings.authHeader || 'Authorization';
-const AUTH_VALUE = process.env.API_AUTH_VALUE || settings.authValue || '';
+const AUTH_VALUE = process.env.API_AUTH_VALUE || require('../lib/secrets').open(settings.authValue || '') || '';
 const READ_ONLY = !!settings.readOnly;
 
 const cat = loadFolder(SPECS_DIR);

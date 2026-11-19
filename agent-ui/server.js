@@ -1,6 +1,7 @@
 // Lokalny UI do zlecania analiz agentom QA (claudeAgent / claudeAgentB / claudeAgentMcp).
 // Zero zależności: node server.js  ->  http://localhost:4317
 // Ten plik to tylko router HTTP; logika siedzi w lib/.
+require('./lib/net-guard').install(); // hosted only: outbound calls reach public addresses only
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -94,6 +95,12 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   let m;
   try {
+    // Hosted: only the gateway may talk to this process, and nothing that could run code or touch the host exists.
+    const hostedLib = require('./lib/hosted');
+    if (hostedLib.HOSTED) {
+      if (!hostedLib.gatewayOk(req)) return json(res, 401, { error: 'Not available' });
+      if (hostedLib.blocked(req.method, p)) return json(res, 403, { error: 'This is not available in Flawtrace Cloud.' });
+    }
     // Integration API for outside LLMs (Claude, ChatGPT, ...): /api/v1, always behind an API key.
     if (await integration.handle(req, res, p, { body, json })) return;
     // Restart the Node process itself — picks up a code change in server.js/lib/*.js, which (unlike
@@ -307,6 +314,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/sources') {
       const b = await body(req, 1e6);
       if (!b || b.__tooLarge) return json(res, 400, { error: 'Invalid settings' });
+      { const bad = await require('./lib/hosted').checkSources(b); if (bad) return json(res, 400, { error: bad }); }
       try { return json(res, 200, sources.save(b)); } catch (e) { return json(res, 400, { error: e.message }); }
     }
     if (req.method === 'POST' && p === '/api/sources/test') {
@@ -439,6 +447,7 @@ const server = http.createServer(async (req, res) => {
         let u; try { u = new URL(String(b.url).trim()); } catch (_) { return json(res, 400, { error: 'The page link is not a valid address.' }); }
         if (!/^https?:$/.test(u.protocol) || u.username || u.password) return json(res, 400, { error: 'Use an http(s) link without a user name or password in it.' });
         extra.url = u.href;
+        if (hostedLib.HOSTED) { try { await require('./lib/net-guard').assertPublicUrl(u.href); } catch (e) { return json(res, 400, { error: e.message }); } }
       }
       if (a.mode === 'uitest') {
         // UI Tests: the page is required; the login (user name and password) is optional and lives only in memory of this run.
@@ -672,7 +681,7 @@ const server = http.createServer(async (req, res) => {
       const r = runs.get(m[1]); if (!r || r.meta.status !== 'running') return json(res, 404, { error: 'Not running' });
       r.meta.status = 'cancelled';
       // QA MCP w trakcie odczytu Jiry nie ma jeszcze procesu; run zamknie się sam, gdy odczyt się skończy.
-      if (r.proc) spawn('taskkill', ['/pid', String(r.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
+      if (r.proc) { if (process.platform === 'win32') spawn('taskkill', ['/pid', String(r.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); else r.proc.kill('SIGKILL'); }
       return json(res, 200, { ok: true });
     }
     if (req.method === 'GET' && !p.startsWith('/api/')) {

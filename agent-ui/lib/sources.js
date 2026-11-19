@@ -7,6 +7,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { APP_DIR, DATA_DIR, ROOT } = require('./config');
 const openapi = require('./openapi');
+const secrets = require('./secrets');
+const HOSTED = process.env.QA_HOSTED === '1';
 
 const FILE = process.env.QA_SOURCES_FILE ? path.resolve(process.env.QA_SOURCES_FILE) : path.join(DATA_DIR, 'sources.json');
 const SPECS_DIR = path.join(DATA_DIR, 'specs');
@@ -29,6 +31,7 @@ function read() {
     const f = JSON.parse(fs.readFileSync(FILE, 'utf8'));
     for (const k of Object.keys(c)) if (f[k] !== undefined) c[k] = typeof c[k] === 'object' && !Array.isArray(c[k]) ? { ...c[k], ...f[k] } : f[k];
   } catch (_) { /* not configured yet */ }
+  for (const [a, b] of SECRETS) c[a][b] = secrets.open(c[a][b]); // sealed on disk when QA_MASTER_KEY is set
   // Environment variables win, so a hosted deployment can keep tokens out of the file.
   const env = process.env;
   if (env.JIRA_URL) c.jira.url = env.JIRA_URL;
@@ -55,13 +58,14 @@ function save(patch) {
   for (const [a, b] of SECRETS) if (!patch[a] || patch[a][b] === MASK || patch[a][b] === undefined) next[a][b] = cur[a][b];
   next.repos = Array.isArray(patch.repos) ? patch.repos.map(cleanRepo).filter(Boolean) : cur.repos;
   next.api.specs = Array.isArray(patch.api && patch.api.specs) ? patch.api.specs.map(cleanSpec).filter(Boolean) : cur.api.specs;
-  next.knowledgeDir = patch.knowledgeDir !== undefined ? String(patch.knowledgeDir || '').trim() : cur.knowledgeDir;
+  // Hosted: the knowledge folder is always the customer's own, never a path they type.
+  next.knowledgeDir = HOSTED ? '' : patch.knowledgeDir !== undefined ? String(patch.knowledgeDir || '').trim() : cur.knowledgeDir;
   next.confluence.publishSpace = String(next.confluence.publishSpace || '').trim();
   next.confluence.publishParent = String(next.confluence.publishParent || '').trim();
   for (const k of ['jira', 'confluence']) next[k].url = String(next[k].url || '').trim().replace(/\/+$/, '');
   next.api.baseUrl = String(next.api.baseUrl || '').trim().replace(/\/+$/, '');
   next.api.readOnly = !!next.api.readOnly;
-  fs.writeFileSync(FILE, JSON.stringify(next, null, 2));
+  fs.writeFileSync(FILE, JSON.stringify(secrets.mapFields(next, SECRETS, secrets.seal), null, 2), { mode: 0o600 });
   return view();
 }
 
@@ -69,6 +73,8 @@ const safeName = (s) => String(s || '').trim().replace(/[^\w.-]+/g, '-').replace
 function cleanRepo(r) {
   if (!r || !String(r.url || '').trim()) return null;
   const url = String(r.url).trim();
+  if (HOSTED && !/^https:\/\/[^\s@]+$/i.test(url)) throw new Error('Only public https:// repository addresses without a password are supported in Flawtrace Cloud.');
+  if (url.startsWith('-')) throw new Error('The repository address is not valid.');
   const name = (safeName(r.name) || safeName(path.basename(url).replace(/\.git$/, ''))).toLowerCase();
   return name ? { name, url, branch: String(r.branch || '').trim() } : null;
 }
@@ -81,7 +87,19 @@ function cleanSpec(s) {
 }
 
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/') || '.';
-const knowledgeDir = () => { const d = read().knowledgeDir; return d ? path.resolve(ROOT, d) : DEFAULT_KNOWLEDGE; };
+const knowledgeDir = () => {
+  if (HOSTED) return hostedKnowledge();
+  const d = read().knowledgeDir; return d ? path.resolve(ROOT, d) : DEFAULT_KNOWLEDGE;
+};
+/** Hosted: a private knowledge folder per customer, seeded once with the generic testing know-how shipped with the app. */
+function hostedKnowledge() {
+  const dir = path.join(DATA_DIR, 'knowledge');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    try { for (const f of fs.readdirSync(DEFAULT_KNOWLEDGE)) if (/\.md$/i.test(f)) fs.copyFileSync(path.join(DEFAULT_KNOWLEDGE, f), path.join(dir, f)); } catch (_) { /* nothing shipped */ }
+  }
+  return dir;
+}
 const confluenceBase = (c) => c.confluence.url || (c.jira.url ? c.jira.url + '/wiki' : '');
 
 /* ------------------------------------------------ Atlassian ------------------------------------------------ */
@@ -393,7 +411,7 @@ async function confluencePublish({ title, html }) {
 
 /* ------------------------------------------------ Repositories ------------------------------------------------ */
 
-const isLocal = (u) => /^([A-Za-z]:[\\/]|\/|\.{1,2}[\\/])/.test(u) && fs.existsSync(path.resolve(ROOT, u));
+const isLocal = (u) => !HOSTED && /^([A-Za-z]:[\\/]|\/|\.{1,2}[\\/])/.test(u) && fs.existsSync(path.resolve(ROOT, u));
 const repoPath = (r) => (isLocal(r.url) ? path.resolve(ROOT, r.url) : path.join(REPOS_DIR, r.name));
 
 function git(args, cwd, timeout = 300000) {
@@ -431,7 +449,8 @@ async function syncRepos() {
         res = await git(['-C', p, 'checkout', '-q', '-B', branch, 'origin/' + branch], ROOT);
       }
     } else {
-      res = await git(['clone', '-q', ...(r.branch ? ['--branch', r.branch] : []), r.url, p], ROOT);
+      if (HOSTED) { try { await require('./net-guard').assertPublicUrl(r.url, { schemes: ['https:'] }); } catch (e) { out.push({ name: r.name, ok: false, message: e.message }); continue; } }
+      res = await git(['clone', '-q', ...(r.branch ? ['--branch', r.branch] : []), '--', r.url, p], ROOT);
     }
     const head = res.code === 0 ? (await git(['-C', p, 'log', '-1', '--format=%h %s'], ROOT)).out : '';
     out.push({ name: r.name, ok: res.code === 0, message: res.code === 0 ? head : (res.err.split('\n').pop() || 'git failed') });

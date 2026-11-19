@@ -187,7 +187,11 @@ async function handle(req, res, p, { body, json }) {
       try { const b = await body(req); return json(res, 200, require('./llm/detect').startLogin(String(b.tool || ''))), true; } catch (e) { return json(res, e.code || 500, { error: e.message }), true; }
     }
     if (req.method === 'POST' && p === '/api/llm') {
-      try { return json(res, 200, llm.update(await body(req))), true; } catch (e) { return json(res, e.code || 500, { error: e.message }), true; }
+      try {
+        const b = await body(req);
+        if (require('./hosted').HOSTED && b && b.baseUrl) await require('./net-guard').assertPublicUrl(b.baseUrl, { schemes: ['https:'] }).catch((e) => { throw Object.assign(e, { code: 400 }); });
+        return json(res, 200, llm.update(b)), true;
+      } catch (e) { return json(res, e.code || 500, { error: e.message }), true; }
     }
     if (req.method === 'POST' && p === '/api/llm/test') {
       try { const r = await llm.complete('Reply with the single word OK.', 'ping', { timeoutMs: 45000 }); return json(res, 200, { ok: true, text: String(r.text).slice(0, 80), provider: r.provider, usage: r.usage || null }), true; }

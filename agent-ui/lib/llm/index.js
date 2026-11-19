@@ -13,11 +13,13 @@ const ENV_KEYS = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gem
 const hosted = () => process.env.QA_HOSTED === '1';
 const allowedIds = () => Object.keys(PROVIDERS).filter((id) => !hosted() || PROVIDERS[id].loop);
 
+const secrets = require('../secrets');
+const KEY_FIELDS = [['keys', '*']];
 function load() {
-  try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (_) { return {}; }
+  try { return secrets.mapFields(JSON.parse(fs.readFileSync(FILE, 'utf8')), KEY_FIELDS, secrets.open); } catch (_) { return {}; }
 }
 function save(cfg) {
-  fs.writeFileSync(FILE, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  fs.writeFileSync(FILE, JSON.stringify(secrets.mapFields(cfg, KEY_FIELDS, secrets.seal), null, 2), { mode: 0o600 });
 }
 
 /** The effective choice: saved file first, then QA_LLM and the provider's usual key variable, else the Claude Code CLI. */

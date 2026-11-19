@@ -2,6 +2,7 @@
 // MCP server "sources": read only access to the knowledge sources of the team.
 // Jira and Confluence through their REST APIs, the knowledge base folder, the local repository copies and the
 // contracts of the API endpoints. Nothing here writes anywhere.
+require('../lib/net-guard').install(); // hosted only: calls reach public addresses only
 const fs = require('fs');
 const path = require('path');
 const { serve, clip } = require('./stdio');
