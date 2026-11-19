@@ -348,17 +348,17 @@ Log in, open Settings, change the display name and save. The new name must appea
           <textarea id="ftTask" rows="2" placeholder="Ticket key or task description." autocomplete="off"></textarea>
           <div class="hint" id="ftPlan"></div>
         </div>
+        <div class="field">
+          <label>What to run <span class="opt">pick any combination</span></label>
+          <div class="ft-picks" id="ftPicks" role="group" aria-label="Phases to run"></div>
+          <div class="ft-presets" id="ftPresets"></div>
+        </div>
         <details class="ft-opts">
           <summary>Options</summary>
           <div class="field"><label for="ftDetails">More about the task <span class="opt">optional</span></label><textarea id="ftDetails" rows="3" placeholder="Anything the agents should know that is not in the ticket."></textarea></div>
           <div class="ft-grid">
-            <div class="field"><label for="ftWb">Whitebox</label><select id="ftWb"><option value="auto">Auto: when the change is in the code</option><option value="skip">Skip</option></select></div>
             <div class="field"><label for="ftFam">Code family</label><select id="ftFam"></select></div>
             <div class="field"><label for="ftBudget">Budget, USD <span class="opt">0 = none</span></label><input id="ftBudget" type="number" min="0" step="0.5" value="0"></div>
-          </div>
-          <div class="ft-checks">
-            <label><input type="checkbox" id="ftApi" checked> QA MCP track (API)</label> <span class="muted-note" id="ftApiNote"></span>
-            <label><input type="checkbox" id="ftUi"> UI Tests track</label>
           </div>
           <div id="ftUiBox" hidden>
             <div class="field"><label for="ftUrl">Page address</label><input id="ftUrl" placeholder="https://test.example.com/login" autocomplete="off"></div>

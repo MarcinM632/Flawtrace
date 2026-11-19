@@ -159,3 +159,28 @@ test('validation: short task, bad page address', () => {
   assert.throws(() => t.P.createCase('DEMO-6', '', { ui: true, url: 'https://u:p@x.com' }), /without a user name/);
   assert.throws(() => rig({ avail: { static: false } }).P.createCase('DEMO-6'), /Static cannot run/);
 });
+
+test('phase selection: only the chosen phases run, the rest are "not selected"', () => {
+  const t = rig();
+  const v = t.P.createCase('DEMO-7', '', { stages: { static: true, whitebox: false, design: false, api: false, ui: false } });
+  assert.equal(v.stages.design.status, 'skipped'); assert.equal(v.stages.api.status, 'skipped');
+  t.finish('r1', STATIC, 'x'); t.P.tick();
+  const c = t.P.view(t.P.get(v.id)); assert.equal(c.status, 'done'); assert.equal(t.started.length, 1);
+});
+
+test('phase selection: execution alone runs from the task text, with no static review and no design', () => {
+  const t = rig();
+  const v = t.P.createCase('Check the order limit', 'details', { stages: { static: false, whitebox: false, design: false, api: true, ui: false } });
+  assert.equal(v.stages.static.status, 'skipped');
+  const ex = lastOf(t, 'execution'); assert.ok(ex, 'the API track starts at once');
+  assert.match(ex.ticket, /Check the order limit/); assert.match(ex.ticket, /no test design was selected/);
+  assert.equal(t.started.filter((s) => s.agent === 'static' || s.agent === 'design').length, 0);
+});
+
+test('phase selection: design without a static review still gets the task; nothing selected is refused', () => {
+  const t = rig();
+  const v = t.P.createCase('DEMO-8', 'more', { stages: { static: false, whitebox: false, design: true, api: false, ui: false } });
+  const d = lastOf(t, 'design'); assert.ok(d); assert.equal(dataText(d, 'static-review.md'), null); assert.match(dataText(d, 'task.md') || '', /more/);
+  assert.throws(() => t.P.createCase('DEMO-9', '', { stages: { static: false, whitebox: false, design: false, api: false, ui: false } }), /at least one/);
+  assert.ok(v.id);
+});

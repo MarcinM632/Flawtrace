@@ -14,40 +14,55 @@ const ftPill=s=>{const [c,l]=FT_PILL[s]||FT_PILL.pending;return `<span class="pi
 const ftMoney=n=>n?'$'+Number(n).toFixed(2):'$0';
 
 /* ---- form ---- */
-const FT_KEYS=['ftWb','ftFam','ftApi','ftUi','ftUrl','ftBudget'];
+const FT_KEYS=['ftFam','ftUrl','ftBudget'];
+/* Which phases the user wants. Static and design are the base of the others, but none is forced: any subset runs. */
+const FT_PRESETS=[['all','Everything',['static','whitebox','design','api','ui']],['review','Review only',['static','whitebox']],['design','Review + design',['static','whitebox','design']],['exec','Execute only',['api','ui']]];
+const FT_DEFAULT_SEL=['static','whitebox','design','api'];
+function ftSel(){try{const a=JSON.parse(localStorage.getItem('ft.sel')||'null');if(Array.isArray(a))return a.filter(k=>FT_STAGES.some(s=>s[0]===k))}catch(_){}return FT_DEFAULT_SEL.slice()}
+function ftSetSel(a){FT.pick=a;try{localStorage.setItem('ft.sel',JSON.stringify(a))}catch(_){}ftRenderForm()}
+/* A phase that cannot run right now, with the reason (shown on the card). */
+function ftBlocked(k){
+  const ag=FT.ag;if(!ag)return '';
+  if(k==='api'&&!ag.api)return 'No test environment connected under Sources';
+  if(k==='whitebox'&&!ag.whitebox.length)return 'The Analyses agent is not available';
+  if(k==='ui'&&!ag.ui)return 'UI Tests is not available';
+  return '';
+}
+const FT_NEEDS={whitebox:'Runs only when the change is already in the code',ui:'Needs a page address'};
 function ftRestore(){try{const s=JSON.parse(localStorage.getItem('ft.opts')||'{}');for(const k of FT_KEYS){const e=$('#'+k);if(!e||s[k]===undefined)continue;if(e.type==='checkbox')e.checked=!!s[k];else e.value=s[k]}}catch(_){}}
 function ftSaveOpts(){try{const s={};for(const k of FT_KEYS){const e=$('#'+k);s[k]=e.type==='checkbox'?e.checked:e.value}localStorage.setItem('ft.opts',JSON.stringify(s))}catch(_){}}
 function ftRenderForm(){
   const ag=FT.ag||{whitebox:[],api:false,ui:true};
+  if(!FT.pick)FT.pick=ftSel();
+  FT.pick=FT.pick.filter(k=>!ftBlocked(k));
+  const on=new Set(FT.pick);
   const fam=$('#ftFam');
   const labels={core:'CORE',svc:'SVC',mcp:'mcp-server'};
   const cur=fam.value||'core';
   fam.innerHTML=['core','svc','mcp'].map(k=>`<option value="${k}"${ag.whitebox.includes(k)?'':' disabled'}>${labels[k]}${ag.whitebox.includes(k)?'':' (not available)'}</option>`).join('');
   fam.value=cur;
-  /* Until the server has answered, leave the checkbox alone: the first render must not switch the API track off. */
-  if(FT.ag){
-    $('#ftApi').disabled=!ag.api;
-    $('#ftApiNote').textContent=ag.api?'':'No test environment connected under Sources, so this track is off.';
-    if(!ag.api)$('#ftApi').checked=false;
-  }
-  $('#ftUiBox').hidden=!$('#ftUi').checked;
-  const plan=[];
-  plan.push('Static review');
-  if($('#ftWb').value!=='skip')plan.push('Whitebox (only when the change is already in the code)');
-  plan.push('Test design');
-  if($('#ftApi').checked&&ag.api)plan.push('QA MCP');
-  if($('#ftUi').checked)plan.push($('#ftUrl').value.trim()?'UI Tests':'UI Tests (needs a page address)');
-  $('#ftPlan').textContent='Runs: '+plan.join(' → ')+'. One pass each, nothing repeated. You confirm the results before autotests and documentation.';
+  /* The picker: one card per phase, any subset. A phase that cannot run says why and stays off. */
+  $('#ftPicks').innerHTML=FT_STAGES.map(([k,name,desc])=>{
+    const bl=ftBlocked(k),sel=on.has(k)&&!bl;
+    const sub=bl||(k==='whitebox'||k==='ui'?FT_NEEDS[k]:desc);
+    return `<button type="button" class="ft-pick${sel?' on':''}" data-pick="${k}" aria-pressed="${sel}" ${bl?'disabled':''}><span class="ft-pick-ck">${sel?'✓':''}</span><span class="ft-pick-tx"><b>${name}</b><small>${esc(sub)}</small></span></button>`;
+  }).join('');
+  $('#ftPresets').innerHTML='<span class="muted-note">Quick choice:</span>'+FT_PRESETS.map(([id,label,keys])=>`<button type="button" class="chip${keys.filter(k=>!ftBlocked(k)).length===FT.pick.length&&keys.filter(k=>!ftBlocked(k)).every(k=>on.has(k))?' on':''}" data-preset="${id}">${label}</button>`).join('');
+  $('#ftUiBox').hidden=!on.has('ui');
+  const names=Object.fromEntries(FT_STAGES.map(s=>[s[0],s[1]]));
+  const plan=FT_STAGES.map(s=>s[0]).filter(k=>on.has(k)).map(k=>names[k]+(k==='ui'&&!$('#ftUrl').value.trim()?' (needs a page address)':''));
+  $('#ftPlan').textContent=plan.length?'Runs: '+plan.join(' → ')+'. One pass each, nothing repeated. You confirm the results before autotests and documentation.':'Pick at least one phase to run.';
+  $('#ftGo').disabled=!plan.length;
 }
 async function ftStart(){
   $('#ftErr').textContent='';$('#ftGo').disabled=true;
   try{
     ftSaveOpts();
-    const v=await post('/api/fulltest',{task:$('#ftTask').value,details:$('#ftDetails').value,whitebox:$('#ftWb').value,family:$('#ftFam').value,api:$('#ftApi').checked,ui:$('#ftUi').checked,url:$('#ftUrl').value,username:$('#ftUser').value,password:$('#ftPass').value,budgetUsd:$('#ftBudget').value});
+    const v=await post('/api/fulltest',{task:$('#ftTask').value,details:$('#ftDetails').value,family:$('#ftFam').value,stages:Object.fromEntries(FT_STAGES.map(x=>[x[0],(FT.pick||[]).includes(x[0])])),url:$('#ftUrl').value,username:$('#ftUser').value,password:$('#ftPass').value,budgetUsd:$('#ftBudget').value});
     $('#ftTask').value='';$('#ftDetails').value='';$('#ftPass').value='';
     FT.sel=v.id;FT.decisions={};FT.docs=null;await ftRefresh(true);
   }catch(e){$('#ftErr').textContent=e.message}
-  $('#ftGo').disabled=false;
+  ftRenderForm();
 }
 
 /* ---- list ---- */
@@ -155,7 +170,9 @@ async function ftAct(a,body){
 /* ---- events ---- */
 $('#ftGo').onclick=ftStart;
 $('#ftTask').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();ftStart()}});
-['ftWb','ftApi','ftUi','ftUrl','ftFam'].forEach(k=>{$('#'+k).addEventListener('input',ftRenderForm)});
+['ftUrl','ftFam'].forEach(k=>{$('#'+k).addEventListener('input',ftRenderForm)});
+$('#ftPicks').onclick=e=>{const b=e.target.closest('[data-pick]');if(!b||b.disabled)return;const k=b.dataset.pick,s=new Set(FT.pick||[]);s.has(k)?s.delete(k):s.add(k);ftSetSel(FT_STAGES.map(x=>x[0]).filter(x=>s.has(x)))};
+$('#ftPresets').onclick=e=>{const b=e.target.closest('[data-preset]');if(!b)return;const pr=FT_PRESETS.find(x=>x[0]===b.dataset.preset);if(pr)ftSetSel(pr[2].filter(k=>!ftBlocked(k)))};
 $('#ftList').onclick=e=>{const it=e.target.closest('[data-ft]');if(it){FT.sel=it.dataset.ft;FT.decisions={};FT.docs=null;FT.sig='';ftRefresh(true)}};
 $('#ftDetail').onclick=async e=>{
   const o=e.target.closest('[data-ft-open]');

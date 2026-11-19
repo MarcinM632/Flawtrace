@@ -150,11 +150,15 @@ function create(deps) {
   function createCase(task, details, opts = {}) {
     const raw = String(task || '').trim();
     if (raw.length < 3) throw Object.assign(new Error('Enter a ticket key or a task description (at least 3 characters).'), { status: 400 });
-    if (!available('static')) throw Object.assign(new Error('Static cannot run: no CLAUDE.md for it. Check the agents folder.'), { status: 409 });
-    if (!available('design')) throw Object.assign(new Error('Test design cannot run: no CLAUDE.md for it. Check the agents folder.'), { status: 409 });
+    // Which phases to run. `opts.stages` is { static, whitebox, design, api, ui } of booleans; the older flat options still work.
+    const want = { static: true, whitebox: opts.whitebox !== 'skip', design: true, api: opts.api !== false, ui: !!opts.ui };
+    if (opts.stages && typeof opts.stages === 'object') for (const k of STAGE_KEYS) if (opts.stages[k] !== undefined) want[k] = !!opts.stages[k];
+    if (!STAGE_KEYS.some((k) => want[k])) throw Object.assign(new Error('Choose at least one phase to run.'), { status: 400 });
+    if (want.static && !available('static')) throw Object.assign(new Error('Static cannot run: no CLAUDE.md for it. Check the agents folder.'), { status: 409 });
+    if (want.design && !available('design')) throw Object.assign(new Error('Test design cannot run: no CLAUDE.md for it. Check the agents folder.'), { status: 409 });
     const family = ['core', 'svc', 'mcp'].includes(opts.family) ? opts.family : 'core';
     let url = '';
-    if (opts.ui && String(opts.url || '').trim()) {
+    if (want.ui && String(opts.url || '').trim()) {
       let u; try { u = new URL(String(opts.url).trim()); } catch (_) { throw Object.assign(new Error('The page address is not valid. Use https://host/path.'), { status: 400 }); }
       if (!/^https?:$/.test(u.protocol) || u.username || u.password) throw Object.assign(new Error('Use an http(s) address without a user name or password in it.'), { status: 400 });
       url = u.href;
@@ -164,7 +168,7 @@ function create(deps) {
     const longText = [raw.length > 300 ? raw : '', String(details || '').trim()].filter(Boolean).join('\n\n');
     const c = {
       id, ticket: short, taskText: longText, createdAt: now(), updatedAt: now(), status: 'running', pause: null,
-      options: { whitebox: opts.whitebox === 'skip' ? 'skip' : 'auto', family, api: opts.api !== false, ui: !!opts.ui, url, budgetUsd: Math.max(0, Number(opts.budgetUsd) || 0) },
+      options: { whitebox: want.whitebox ? 'auto' : 'skip', family, api: want.api, ui: want.ui, static: want.static, design: want.design, url, budgetUsd: Math.max(0, Number(opts.budgetUsd) || 0) },
       stages: { static: newStage(), whitebox: newStage(), design: newStage(), api: newStage(), ui: newStage() },
       ack: { static: false, budget: 0 }, costUsd: 0,
       confirm: { status: 'pending', items: [], note: '', auto: false },
@@ -177,6 +181,8 @@ function create(deps) {
     else if (!url) c.stages.ui = newStage('skipped', 'no page address given');
     else if (!available('uitest')) c.stages.ui = newStage('skipped', 'UI Tests is not available');
     if (c.options.whitebox === 'skip') c.stages.whitebox = newStage('skipped', 'switched off');
+    if (!want.static) c.stages.static = newStage('skipped', 'not selected');
+    if (!want.design) c.stages.design = newStage('skipped', 'not selected');
     if (url && (opts.username || opts.password)) creds.set(id, { username: String(opts.username || '').slice(0, 200), password: String(opts.password || '').slice(0, 200) });
     cases.set(id, c); save(c);
     advance(c);
@@ -227,22 +233,27 @@ function create(deps) {
     if (c.status === 'paused') { save(c); return; }
     const st = c.stages;
 
-    // 1. Static review.
-    if (st.static.status === 'pending') {
-      if (overBudget(c)) { pause(c, 'static', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
-      begin(c, 'static', 'static', c.ticket, { dataFiles: files(taskFile(c)) });
-    }
-    if (st.static.status === 'running') { save(c); return; }
-    if (st.static.status !== 'done') { pause(c, 'static', 'Static review ' + st.static.status + (st.static.note ? ': ' + st.static.note : '') + '.', ['retry', 'stop']); save(c); return; }
-    const sm = runMeta(st.static.runId);
-    if (!usable(sm)) { st.static.status = 'failed'; st.static.note = 'The review found no basis to work on.'; pause(c, 'static', st.static.note, ['retry', 'stop']); save(c); return; }
-    if (!c.static) {
-      const verdict = staticVerdict(sm.report);
-      c.static = { verdict, findings: staticFindingCount(sm.report), codeChange: codeChangeFound(sm.report) };
-      st.static.note = `${verdict || 'no verdict'}, ${c.static.findings} finding(s)`;
-    }
-    if (c.static.verdict === 'BLOCKED' && !c.ack.static) {
-      pause(c, 'static', 'The review says the task cannot be built as written (BLOCKED). Testing it further may be wasted. Read the findings, then continue or stop.', ['continue', 'stop']); save(c); return;
+    // 1. Static review (optional: when it is not selected, the later phases work from the task text alone).
+    let sm = null;
+    if (st.static.status === 'skipped') {
+      if (!c.static) c.static = { verdict: '', findings: 0, codeChange: c.options.whitebox !== 'skip', skipped: true };
+    } else {
+      if (st.static.status === 'pending') {
+        if (overBudget(c)) { pause(c, 'static', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
+        begin(c, 'static', 'static', c.ticket, { dataFiles: files(taskFile(c)) });
+      }
+      if (st.static.status === 'running') { save(c); return; }
+      if (st.static.status !== 'done') { pause(c, 'static', 'Static review ' + st.static.status + (st.static.note ? ': ' + st.static.note : '') + '.', ['retry', 'stop']); save(c); return; }
+      sm = runMeta(st.static.runId);
+      if (!usable(sm)) { st.static.status = 'failed'; st.static.note = 'The review found no basis to work on.'; pause(c, 'static', st.static.note, ['retry', 'stop']); save(c); return; }
+      if (!c.static) {
+        const verdict = staticVerdict(sm.report);
+        c.static = { verdict, findings: staticFindingCount(sm.report), codeChange: codeChangeFound(sm.report) };
+        st.static.note = `${verdict || 'no verdict'}, ${c.static.findings} finding(s)`;
+      }
+      if (c.static.verdict === 'BLOCKED' && !c.ack.static) {
+        pause(c, 'static', 'The review says the task cannot be built as written (BLOCKED). Testing it further may be wasted. Read the findings, then continue or stop.', ['continue', 'stop']); save(c); return;
+      }
     }
 
     // 2. Whitebox: only when the change exists in the code.
@@ -250,33 +261,38 @@ function create(deps) {
       if (!c.static.codeChange) { st.whitebox.status = 'skipped'; st.whitebox.note = 'no change of this task in the code yet'; }
       else if (!available(c.options.family)) { st.whitebox.status = 'skipped'; st.whitebox.note = 'the Analyses agent is not available'; }
       else if (overBudget(c)) { pause(c, 'whitebox', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
-      else begin(c, 'whitebox', c.options.family, c.ticket, { dataFiles: files({ name: 'static-review.md', text: staticDigest(sm.report) + '\n\nVerify the findings that concern the change against the diff, and do not map the existing logic again: the review above did.' }, taskFile(c)) });
+      else begin(c, 'whitebox', c.options.family, c.ticket, { dataFiles: files(sm ? { name: 'static-review.md', text: staticDigest(sm.report) + '\n\nVerify the findings that concern the change against the diff, and do not map the existing logic again: the review above did.' } : null, taskFile(c)) });
     }
     if (st.whitebox.status === 'running') { save(c); return; }
     if ((st.whitebox.status === 'failed' || st.whitebox.status === 'cancelled') && !/design goes on/.test(st.whitebox.note)) st.whitebox.note = (st.whitebox.note || 'did not finish') + '; the design goes on without it';
 
-    // 3. Test design (blackbox), fed by both digests.
-    if (st.design.status === 'pending') {
-      if (overBudget(c)) { pause(c, 'design', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
-      const wm = runMeta(st.whitebox.runId);
-      begin(c, 'design', 'design', c.ticket, { dataFiles: files(
-        { name: 'static-review.md', text: staticDigest(sm.report, { requirements: true }) },
-        wm && usable(wm) ? { name: 'whitebox-findings.md', text: whiteboxDigest(wm.report, parseAnalysis) } : null,
-        taskFile(c)) });
+    // 3. Test design (blackbox), fed by both digests. Optional: without it the execution tracks work from the task itself.
+    let dm = null;
+    if (st.design.status !== 'skipped') {
+      if (st.design.status === 'pending') {
+        if (overBudget(c)) { pause(c, 'design', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
+        const wm = runMeta(st.whitebox.runId);
+        begin(c, 'design', 'design', c.ticket, { dataFiles: files(
+          sm ? { name: 'static-review.md', text: staticDigest(sm.report, { requirements: true }) } : null,
+          wm && usable(wm) ? { name: 'whitebox-findings.md', text: whiteboxDigest(wm.report, parseAnalysis) } : null,
+          taskFile(c)) });
+      }
+      if (st.design.status === 'running') { save(c); return; }
+      if (st.design.status !== 'done') { pause(c, 'design', 'Test design ' + st.design.status + (st.design.note ? ': ' + st.design.note : '') + '.', ['retry', 'stop']); save(c); return; }
+      dm = runMeta(st.design.runId);
+      if (!usable(dm)) { st.design.status = 'failed'; st.design.note = 'The design returned no report.'; pause(c, 'design', st.design.note, ['retry', 'stop']); save(c); return; }
+      if (!st.design.note) st.design.note = `${(String(dm.report).match(/^## \d+\./gm) || []).length} point(s)`;
     }
-    if (st.design.status === 'running') { save(c); return; }
-    if (st.design.status !== 'done') { pause(c, 'design', 'Test design ' + st.design.status + (st.design.note ? ': ' + st.design.note : '') + '.', ['retry', 'stop']); save(c); return; }
-    const dm = runMeta(st.design.runId);
-    if (!usable(dm)) { st.design.status = 'failed'; st.design.note = 'The design returned no report.'; pause(c, 'design', st.design.note, ['retry', 'stop']); save(c); return; }
-    if (!st.design.note) st.design.note = `${(String(dm.report).match(/^## \d+\./gm) || []).length} point(s)`;
+    // What the execution tracks verify: the design, or (when the design was not selected) the task text itself.
+    const plan = dm ? dm.report : ['# The task to verify (no test design was selected: derive the checks from this)', c.ticket, c.taskText, sm ? staticDigest(sm.report, { requirements: true }) : ''].filter(Boolean).join('\n\n');
 
     // 4. Execution: both tracks together, one run each.
     if (st.api.status === 'pending' || st.ui.status === 'pending') {
       if (overBudget(c)) { pause(c, 'execute', 'The budget is used up.', ['continue', 'stop']); save(c); return; }
-      if (st.api.status === 'pending') begin(c, 'api', 'execution', apiProcedure(dm.report));
+      if (st.api.status === 'pending') begin(c, 'api', 'execution', apiProcedure(plan));
       if (st.ui.status === 'pending') {
         const cr = creds.get(c.id);
-        begin(c, 'ui', 'uitest', uiProcedure(dm.report), { url: c.options.url, ...(cr ? { credentials: cr } : {}) });
+        begin(c, 'ui', 'uitest', uiProcedure(plan), { url: c.options.url, ...(cr ? { credentials: cr } : {}) });
       }
     }
     if (st.api.status === 'running' || st.ui.status === 'running') { save(c); return; }

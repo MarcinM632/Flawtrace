@@ -237,7 +237,7 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET' && p === '/api/fulltest') return json(res, 200, { cases: fullTests.list(), confluence: sources.confluencePublishTarget(), agents: { whitebox: ['core', 'svc', 'mcp'].filter((k) => agentAvailable(AGENTS[k])), api: agentAvailable(AGENTS.execution), ui: agentAvailable(AGENTS.uitest) } });
         if (req.method === 'POST' && p === '/api/fulltest') {
           const b = await body(req, 2 * 1024 * 1024);
-          return json(res, 201, fullTests.createCase(b.task, b.details, { whitebox: b.whitebox, family: b.family, api: b.api, ui: b.ui, url: b.url, budgetUsd: b.budgetUsd, username: b.username, password: b.password }));
+          return json(res, 201, fullTests.createCase(b.task, b.details, { whitebox: b.whitebox, stages: b.stages, family: b.family, api: b.api, ui: b.ui, url: b.url, budgetUsd: b.budgetUsd, username: b.username, password: b.password }));
         }
         if ((m = p.match(/^\/api\/fulltest\/([\w-]+)$/)) && req.method === 'GET') return json(res, 200, fullTests.view(fullTests.get(m[1])));
         if ((m = p.match(/^\/api\/fulltest\/([\w-]+)\/(continue|retry|stop|confirm)$/)) && req.method === 'POST') return json(res, 200, fullTests.act(m[1], m[2], await body(req).catch(() => ({}))));
