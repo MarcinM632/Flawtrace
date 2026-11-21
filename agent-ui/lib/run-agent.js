@@ -18,7 +18,7 @@ const { emit, persist, runs } = require('./store');
 const { BUILTIN_TOOLS, SCOPE_NOTE, addUsage, runLimitMs, scopeFor, toolGroups } = require('./scope');
 const { glossaryFor, glossaryPrompt } = require('./glossary');
 const { writeTestScope } = require('./test-scope');
-const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, qamcpSkills, autotestSkills, QA_URL_PROMPT, mcpChatAutotestEval, mcpChatDesignEval, mcpChatQamcpEval, MCP_CHAT_AUTOTEST, MCP_CHAT_DESIGN, MCP_CHAT_QAMCP, MCP_CHAT_RE, OVERRIDE, OVERRIDE_ANALYSIS, OVERRIDE_AUTOTEST, OVERRIDE_COMPLETION, OVERRIDE_DESIGN, OVERRIDE_EXECUTION, OVERRIDE_IMPLEMENTATION, OVERRIDE_PLANNING, OVERRIDE_STATIC, OVERRIDE_QAMCP, OVERRIDE_PENTEST, CORE_UI_SRC } = require('./prompts');
+const { AUTOTEST_LAYER_API, AUTOTEST_LAYER_UI, DOMAIN_BRIEF, qamcpSkills, autotestSkills, pentestSkills, QA_URL_PROMPT, mcpChatAutotestEval, mcpChatDesignEval, mcpChatQamcpEval, MCP_CHAT_AUTOTEST, MCP_CHAT_DESIGN, MCP_CHAT_QAMCP, MCP_CHAT_RE, OVERRIDE, OVERRIDE_ANALYSIS, OVERRIDE_AUTOTEST, OVERRIDE_COMPLETION, OVERRIDE_DESIGN, OVERRIDE_EXECUTION, OVERRIDE_IMPLEMENTATION, OVERRIDE_PLANNING, OVERRIDE_STATIC, OVERRIDE_QAMCP, OVERRIDE_PENTEST, CORE_UI_SRC } = require('./prompts');
 const { extractReport, isBrowser, isEndpoint, summarizeTool } = require('./run-format');
 const { auditDesignBugs, auditDesignBusiness, auditDesignConcrete, auditDesignFlow, auditEvidence, auditQamcp, correctionPrompt } = require('./report-format');
 const uiTest = require('./uitest');
@@ -440,6 +440,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
     + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
     + (qamcpSkills(mode) ? '\n\n' + qamcpSkills(mode) : '')
     + (autotestSkills(mode) ? '\n\n' + autotestSkills(mode) : '')
+    + (pentestSkills(mode) ? '\n\n' + pentestSkills(mode) : '')
     + mcpChatBlock(mode)
     + '\n\n' + sources.brief(isQamcpLike(mode) ? 'qamcp' : mode === 'autotest' ? 'autotest' : 'qa');
 
