@@ -391,7 +391,7 @@ const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
   qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
-  pentest:['Agents','Pentest','Run a systematic penetration test of the connected test environment, following OWASP’s testing guide and API Security Top 10.'],
+  pentest:['Agents','Pentest','Run a thorough, persistent penetration test of the connected test environment — recon, threat modelling, every OWASP WSTG / API Security Top 10 category, many bypass tactics per control, and findings chained into real attack paths.'],
   uitest:['Agents','UI Tests','Verify a web page through its interface, also behind a login, and turn a fully passed run into a Playwright test.'],
   autotest:['Agents','Autotests','Write automated tests, run the Smoke and System packs or run any test from the suite.'],
   flow:['Test Flow','Test Flow','One prompt runs the whole process on a ticket: planning, analysis, design, implementation, execution and completion.'],

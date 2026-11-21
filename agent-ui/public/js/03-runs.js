@@ -78,8 +78,8 @@ const GUIDE={
   ],
   pentest:[
     ['Name an area, or leave it blank','A feature, endpoint group, or nothing for a full sweep of the whole connected API.'],
-    ['The agent runs the methodology','Authentication, access control (IDOR/BOLA), mass assignment, business logic, rate limiting, SSRF, misconfiguration and injection, from OWASP’s testing guide and API Security Top 10 — only against the environment you connected.'],
-    ['Check the evidence','Every finding cites the call that proved it, with severity and the OWASP/CWE category. A confirmed finding is retested before it is reported.'],
+    ['The agent runs a full engagement','It maps the attack surface, then works every category persistently: authentication, session and tokens, object- and function-level access control (IDOR/BOLA), mass assignment, business logic, rate limiting, SSRF, misconfiguration and injection — from OWASP WSTG and API Security Top 10, trying many bypass tactics per control, only against the environment you connected.'],
+    ['Check the evidence','Every finding cites the call that proved it, with severity and the OWASP/CWE category, and related weaknesses are chained into a real attack path. A confirmed finding is retested before it is reported.'],
   ],
   uitest:[
     ['Give the page','Enter the page address and what to verify. If the page needs a login, enter the user name and password.'],
