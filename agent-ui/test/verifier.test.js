@@ -60,3 +60,10 @@ test('qamcp skills: QA MCP gets four, Execution gets five, other modes none', ()
   assert.doesNotMatch(qamcpSkills('qamcp'), /procedure-execution/);
   for (const m of ['pentest', 'design', 'static', 'completion']) assert.equal(qamcpSkills(m), '');
 });
+
+test('autotest skills: only the Autotests mode gets the three skills', () => {
+  const { autotestSkills } = require('../lib/prompts');
+  const t = autotestSkills('autotest');
+  for (const n of ['test-from-design', 'independent-fast-tests', 'failure-triage-fix']) assert.match(t, new RegExp('SKILL ' + n));
+  for (const m of ['qamcp', 'execution', 'design', 'uitest']) assert.equal(autotestSkills(m), '');
+});
