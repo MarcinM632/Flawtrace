@@ -123,6 +123,17 @@ const DOMAIN_BRIEF = (() => {
   catch (_) { console.warn('UWAGA: brak _shared/domain-rules/brief.md w ' + AGENTS_ROOT + ' - agenci pracują bez bramki sensu biznesowego'); return ''; }
 })();
 
+// Skille QA MCP i Execution: ten tryb nie ma narzędzia Skill (tylko serwery MCP), więc ich treść trafia do promptu.
+// Źródło: Agents/_shared/qamcp-skills/<skill>/SKILL.md. procedure-execution dostaje tylko Execution (jest procedura z Fazy 5).
+const QAMCP_SKILLS_COMMON = ['result-triage', 'endpoint-error-recovery', 'test-data-and-cleanup', 'evidence-from-calls'];
+const qamcpSkills = (mode) => {
+  const names = mode === 'execution' ? [...QAMCP_SKILLS_COMMON, 'procedure-execution'] : mode === 'qamcp' ? QAMCP_SKILLS_COMMON : [];
+  return names.map((n) => {
+    try { return fs.readFileSync(path.join(AGENTS_ROOT, '_shared', 'qamcp-skills', n, 'SKILL.md'), 'utf8').replace(/^---[\s\S]*?---\s*/, '').trim(); }
+    catch (_) { console.warn('UWAGA: brak skilla ' + n + ' w _shared/qamcp-skills'); return ''; }
+  }).filter(Boolean).join('\n\n');
+};
+
 // Static: samodzielna recenzja taska jako produktu pracy (testowanie statyczne wg ISTQB) wobec istniejącego kodu i specyfikacji.
 // Nie projektuje testów i nic nie uruchamia: szuka niezgodności, rzeczy niemożliwych, błędów logiki i braków w samym zadaniu.
 const OVERRIDE_STATIC = `TRYB APLIKACJI — STATIC (nadrzędny wobec CLAUDE.md w tej sesji):
@@ -955,6 +966,7 @@ module.exports = {
   QA_URL_PROMPT,
   AUTOTEST_SETUP_EN,
   DOMAIN_BRIEF,
+  qamcpSkills,
   OVERRIDE,
   OVERRIDE_ANALYSIS,
   OVERRIDE_AUTOTEST,

@@ -29,3 +29,13 @@ test('verifier: a finding whose quote is not in the report is dropped', () => {
   assert.deepEqual(issues.map((i) => i.code), ['verify-term-not-in-sources', 'verify-cannot-verify']);
   assert.match(issues[0].text, /Opłacone/);
 });
+
+test('qamcp skills: QA MCP gets four, Execution gets five, other modes none', () => {
+  const { qamcpSkills } = require('../lib/prompts');
+  const count = (t) => (t.match(/^SKILL /gm) || []).length;
+  assert.equal(count(qamcpSkills('qamcp')), 4);
+  assert.equal(count(qamcpSkills('execution')), 5);
+  assert.match(qamcpSkills('execution'), /procedure-execution/);
+  assert.doesNotMatch(qamcpSkills('qamcp'), /procedure-execution/);
+  for (const m of ['pentest', 'design', 'static', 'completion']) assert.equal(qamcpSkills(m), '');
+});
