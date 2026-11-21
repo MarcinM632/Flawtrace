@@ -134,6 +134,14 @@ const qamcpSkills = (mode) => {
   }).filter(Boolean).join('\n\n');
 };
 
+// Skille Autotests: agent pisze w repo testów (jego cwd), gdzie nie ma folderu .claude/skills, więc treść skilli idzie do promptu.
+// Źródło: Agents/_shared/autotest-skills/<skill>/SKILL.md. Dotyczą stosu pytest, Playwright i stosów projektowych.
+const AUTOTEST_SKILL_NAMES = ['test-from-design', 'independent-fast-tests', 'failure-triage-fix'];
+const autotestSkills = (mode) => (mode !== 'autotest' ? '' : AUTOTEST_SKILL_NAMES.map((n) => {
+  try { return fs.readFileSync(path.join(AGENTS_ROOT, '_shared', 'autotest-skills', n, 'SKILL.md'), 'utf8').replace(/^---[\s\S]*?---\s*/, '').trim(); }
+  catch (_) { console.warn('UWAGA: brak skilla ' + n + ' w _shared/autotest-skills'); return ''; }
+}).filter(Boolean).join('\n\n'));
+
 // Static: samodzielna recenzja taska jako produktu pracy (testowanie statyczne wg ISTQB) wobec istniejącego kodu i specyfikacji.
 // Nie projektuje testów i nic nie uruchamia: szuka niezgodności, rzeczy niemożliwych, błędów logiki i braków w samym zadaniu.
 const OVERRIDE_STATIC = `TRYB APLIKACJI — STATIC (nadrzędny wobec CLAUDE.md w tej sesji):
@@ -967,6 +975,7 @@ module.exports = {
   AUTOTEST_SETUP_EN,
   DOMAIN_BRIEF,
   qamcpSkills,
+  autotestSkills,
   OVERRIDE,
   OVERRIDE_ANALYSIS,
   OVERRIDE_AUTOTEST,
