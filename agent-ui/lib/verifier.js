@@ -7,7 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const sources = require('./sources');
-const { AGENTS_ROOT, MODEL, RUNS_DIR } = require('./config');
+const { AGENTS_ROOT, VERIFIER_MODEL, RUNS_DIR } = require('./config');
 
 const FILE = () => path.join(AGENTS_ROOT, 'claudeAgentVerifier', 'CLAUDE.md');
 const LIMIT_MS = () => (Number(process.env.QA_VERIFIER_LIMIT_MIN) || 15) * 60000;
@@ -140,7 +140,7 @@ function verifyReport({ report, kind, task, workDir, onProc, isCancelled }) {
     fs.writeFileSync(cfg, JSON.stringify({ mcpServers: sources.mcpServers({ api: false, knowledge: true }) }));
     const repos = sources.repoList().filter((r) => r.ready).map((r) => r.path);
     const addDirs = [workDir, ...repos].filter(Boolean).flatMap((d) => ['--add-dir', d]);
-    const args = ['-p', '--model', MODEL, '--output-format', 'json', '--system-prompt-file', sysFile,
+    const args = ['-p', '--model', VERIFIER_MODEL, '--output-format', 'json', '--system-prompt-file', sysFile,
       '--mcp-config', cfg, '--strict-mcp-config', '--permission-mode', 'dontAsk', '--no-session-persistence',
       '--tools', 'Read,Grep,Glob', '--allowedTools', 'Read', 'Grep', 'Glob', 'mcp__sources', ...addDirs];
     let proc, out = '', err = '', done = false;

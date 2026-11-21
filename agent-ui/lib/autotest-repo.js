@@ -1,5 +1,6 @@
 // Repo autotestów: migawki plików, sprawdzenie zbierania testów, poczekalnia (kopia repo), uruchamianie pytest i pętla weryfikacji.
 const fs = require('fs');
+const { capAppend } = require('./buffers');
 const path = require('path');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
@@ -38,7 +39,7 @@ function collectCheck(files, repo = AUTOTEST_REPO) {
       { cwd: repo, env: { ...process.env, PLAT_ENV_FILE: PLAT_ENV_FILE, PYTHONDONTWRITEBYTECODE: '1', PYTHONIOENCODING: 'utf-8' }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     let out = '';
     const timer = setTimeout(() => { proc.kill(); resolve({ ok: null, summary: 'Syntax check timed out' }); }, 60000);
-    proc.stdout.on('data', (c) => { out += c; }); proc.stderr.on('data', (c) => { out += c; });
+    proc.stdout.on('data', (c) => { out = capAppend(out, c); }); proc.stderr.on('data', (c) => { out = capAppend(out, c); });
     proc.on('error', () => { clearTimeout(timer); resolve({ ok: null, summary: 'Python is not available, tests were not checked' }); });
     proc.on('close', (code) => {
       clearTimeout(timer);
@@ -173,7 +174,7 @@ function countTests(targets, env, repo) {
     const proc = spawn('python', ['-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', ...targets], { cwd: repo, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     let out = '';
     const timer = setTimeout(() => { proc.kill(); resolve(null); }, 60000);
-    proc.stdout.on('data', (c) => { out += c; });
+    proc.stdout.on('data', (c) => { out = capAppend(out, c); });
     proc.on('error', () => { clearTimeout(timer); resolve(null); });
     proc.on('close', () => {
       clearTimeout(timer);
@@ -201,8 +202,8 @@ async function runPytest(r, targets, secrets, repo, envFile = PLAT_ENV_FILE) {
     let out = '';
     let timedOut = false;
     const timer = setTimeout(() => { timedOut = true; spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); }, limitMs);
-    proc.stdout.on('data', (c) => { out += c; });
-    proc.stderr.on('data', (c) => { out += c; });
+    proc.stdout.on('data', (c) => { out = capAppend(out, c); });
+    proc.stderr.on('data', (c) => { out = capAppend(out, c); });
     proc.on('error', () => { clearTimeout(timer); resolve({ ok: null, unavailable: true, output: 'Python is not available' }); });
     proc.on('close', (code) => {
       clearTimeout(timer);

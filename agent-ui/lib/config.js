@@ -8,6 +8,11 @@ const PORT = process.env.PORT || 4317;
 const HOST = process.env.QA_HOST || '127.0.0.1';
 // Wszystkie runy (agent główny i subagenci) idą na jednym modelu — nigdy na domyślnym z ustawień użytkownika.
 const MODEL = process.env.QA_MODEL || 'claude-sonnet-5-5';
+// Weryfikator raportów to osobna, krótka sesja (porównuje cytaty z liniami). Domyślnie ten sam model co reszta,
+// więc nic się nie zmienia; QA_VERIFIER_MODEL (np. claude-haiku-5-5) obniża jego koszt. Sprawdź jakość na kilku raportach.
+const VERIFIER_MODEL = process.env.QA_VERIFIER_MODEL || MODEL;
+// Opcjonalny limit tur agenta (claude -p --max-turns). Domyślnie wyłączony: o końcu przebiegu decyduje limit czasu.
+const MAX_TURNS = Number(process.env.QA_MAX_TURNS) > 0 ? Math.floor(Number(process.env.QA_MAX_TURNS)) : 0;
 // APP_DIR to katalog agent-ui (kod, public/, tool-groups.json); ROOT to katalog nadrzędny (mcp-server, autotests, .mcp.json).
 const APP_DIR = path.resolve(__dirname, '..');
 const ROOT = path.resolve(APP_DIR, '..');
@@ -55,6 +60,8 @@ module.exports = {
   HOST,
   MCP_SERVER,
   MODEL,
+  VERIFIER_MODEL,
+  MAX_TURNS,
   PORT,
   QA_GIT,
   PLAT_ENV_FILE,

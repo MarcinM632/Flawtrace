@@ -400,6 +400,12 @@ const server = http.createServer(async (req, res) => {
     if (p.match(/^\/api\/bugs\/[\w-]+$/) && req.method === 'DELETE') {
       return json(res, 405, { error: 'The registry is an archive - entries are never deleted.' });
     }
+    if (req.method === 'GET' && p === '/api/costs') {
+      // ?days=N zawęża do ostatnich N dni (domyślnie wszystkie). Czyta tylko meta, nie zdarzenia.
+      const days = Number(url.searchParams.get('days')) || 0;
+      const since = days ? Date.now() - days * 86400000 : 0;
+      return json(res, 200, require('./lib/costs').summarize([...runs.values()].map((r) => r.meta).filter((m) => m.startedAt >= since)));
+    }
     if (req.method === 'GET' && p === '/api/runs') {
       // Lista na liście wystarczy kilka pól; raport, tekst końcowy i poczekalnia testów są w /api/runs/:id. Pełne meta: ?full=1.
       const full = url.searchParams.get('full') === '1';

@@ -1,5 +1,6 @@
 // Test suite: lista testów z repo (z cache), uruchamianie wybranych, historia wyników, edycja pliku.
 const path = require('path');
+const { capAppend } = require('./buffers');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
@@ -63,8 +64,8 @@ function listSuiteUncached() {
       { cwd: AUTOTEST_REPO, env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1', PYTHONIOENCODING: 'utf-8' }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     let out = '';
     const timer = setTimeout(() => { proc.kill(); resolve({ tests: [], error: 'Listing the tests timed out' }); }, 60000);
-    proc.stdout.on('data', (c) => { out += c; });
-    proc.stderr.on('data', (c) => { out += c; });
+    proc.stdout.on('data', (c) => { out = capAppend(out, c); });
+    proc.stderr.on('data', (c) => { out = capAppend(out, c); });
     proc.on('error', () => { clearTimeout(timer); resolve({ tests: [], error: 'Python is not available' }); });
     proc.on('close', (code) => {
       clearTimeout(timer);

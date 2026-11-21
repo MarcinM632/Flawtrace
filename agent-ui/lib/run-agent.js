@@ -9,12 +9,12 @@ const { AGENTS, agentAvailable, agentDir } = require('./agents');
 const { allowPolicy, runAcp, toAcpServers } = require('./acp');
 const { runLoop } = require('./agent-loop');
 const llmLib = require('./llm');
-const { AGENTS_ROOT, AUTOTEST_REPO, DATA_DIR, MCP_SERVER, MODEL, QA_GIT, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
+const { AGENTS_ROOT, AUTOTEST_REPO, DATA_DIR, MAX_TURNS, MCP_SERVER, MODEL, QA_GIT, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
 const envLock = require('./env-lock');
 const environment = require('./environment');
 const { isProject, projectFiles, stackOf, stackPrompt } = require('./stacks');
 const { collectCheck, diffSnap, hashTree, runGuard, snapTests, stageRepo, verifyAutotests } = require('./autotest-repo');
-const { emit, persist, runs } = require('./store');
+const { emit, persist, release, runs } = require('./store');
 const { BUILTIN_TOOLS, SCOPE_NOTE, addUsage, runLimitMs, scopeFor, toolGroups } = require('./scope');
 const { glossaryFor, glossaryPrompt } = require('./glossary');
 const { writeTestScope } = require('./test-scope');
@@ -436,11 +436,14 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   const mcpChatBlock = (mode) => mode === 'design' ? '\n' + MCP_CHAT_DESIGN + '\n' + mcpChatDesignEval()
     : isQamcpLike(mode) && aboutMcpChat ? '\n\n' + MCP_CHAT_QAMCP + '\n\n' + mcpChatQamcpEval()
     : mode === 'autotest' && !stack && layer !== 'ui' && aboutMcpChat ? '\n\n' + MCP_CHAT_AUTOTEST + '\n\n' + mcpChatAutotestEval() : '';
-  const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST + '\n\n' + uiTest.skillsText() : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode)) + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
-    + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
+  const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST + '\n\n' + uiTest.skillsText() : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode))
+    // Najpierw to, co jest takie samo w każdym przebiegu tego agenta (skille), potem to, co zależy od zlecenia
+    // (zakres, glossary, blok czatu MCP): stały początek promptu trafia w cache, więc kolejne przebiegi płacą za niego mało.
     + (qamcpSkills(mode) ? '\n\n' + qamcpSkills(mode) : '')
     + (autotestSkills(mode) ? '\n\n' + autotestSkills(mode) : '')
     + (pentestSkills(mode) ? '\n\n' + pentestSkills(mode) : '')
+    + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
+    + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
     + mcpChatBlock(mode)
     + '\n\n' + sources.brief(isQamcpLike(mode) ? 'qamcp' : mode === 'autotest' ? 'autotest' : 'qa');
 
@@ -487,7 +490,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   // Prompt idzie przez stdin, nie argumentem: wiersz poleceń w Windows ma 32 tys. znaków, a sam system prompt
   // Autotests zajmuje już większość. Zlecenie z długim przebiegiem i instrukcją kończyło się "spawn ENAMETOOLONG".
   const args = ['-p', '--output-format', 'stream-json', '--verbose',
-    '--model', MODEL, ...mcpArgs,
+    '--model', MODEL, ...(MAX_TURNS ? ['--max-turns', String(MAX_TURNS)] : []), ...mcpArgs,
     '--permission-mode', 'dontAsk',
     // Testy UI: agent czyta (nie pisze) źródła frontu CORE spoza poczekalni, żeby brać z nich ścieżki i etykiety.
     ...(layer === 'ui' && fs.existsSync(CORE_UI_SRC) ? ['--add-dir', CORE_UI_SRC] : []),
@@ -811,6 +814,7 @@ function finish(r) {
   persist(r);
   for (const res of r.listeners) res.end();
   r.listeners.clear();
+  release(r); // zdarzenia zostają na dysku i wracają przy pierwszym odczycie
   pruneWork();
 }
 
