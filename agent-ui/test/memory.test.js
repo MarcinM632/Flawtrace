@@ -60,8 +60,8 @@ test('capAppend keeps the tail and leaves normal output alone', () => {
 test('cost summary groups by agent and shows the cache share', () => {
   const { summarize } = require('../lib/costs');
   const s = summarize([
-    { agent: 'design', ticket: 'A-1', costUsd: 1, usage: { input: 100, output: 10, cacheRead: 300, cacheCreate: 100, turns: 5 }, startedAt: 0, finishedAt: 120000 },
-    { agent: 'design', ticket: 'A-2', costUsd: 3, usage: { input: 100, output: 10, cacheRead: 0, cacheCreate: 0, turns: 5 }, startedAt: 0, finishedAt: 60000 },
+    { agent: 'design', ticket: 'A-1', costUsd: 1, usage: { input: 100, output: 10, cacheRead: 300, cacheCreate: 100, turns: 5 }, startedAt: 1000, finishedAt: 121000 },
+    { agent: 'design', ticket: 'A-2', costUsd: 3, usage: { input: 100, output: 10, cacheRead: 0, cacheCreate: 0, turns: 5 }, startedAt: 1000, finishedAt: 61000 },
     { agent: 'static', ticket: 'A-1', costUsd: 0.5 },
   ]);
   assert.equal(s.totalUsd, 4.5);
@@ -76,4 +76,14 @@ test('the verifier model defaults to the run model and can be set separately', (
   const { MODEL, VERIFIER_MODEL, MAX_TURNS } = require('../lib/config');
   assert.equal(VERIFIER_MODEL, process.env.QA_VERIFIER_MODEL || MODEL);
   assert.equal(MAX_TURNS, 0, 'no turn limit unless QA_MAX_TURNS is set');
+});
+
+test('the whitebox agents carry exactly the shared skills (run agents/_shared/sync-whitebox-skills.sh after editing)', () => {
+  const root = path.join(__dirname, '..', '..', 'agents');
+  const src = path.join(root, '_shared', 'whitebox-skills');
+  const files = (d) => { const out = []; const w = (p) => { for (const e of fs.readdirSync(p, { withFileTypes: true })) e.isDirectory() ? w(path.join(p, e.name)) : out.push(path.relative(d, path.join(p, e.name))); }; w(d); return out.sort(); };
+  for (const a of ['claudeAgent', 'claudeAgentB', 'claudeAgentMcp']) {
+    const dst = path.join(root, a, '.claude', 'skills');
+    for (const f of files(src)) assert.equal(fs.readFileSync(path.join(dst, f), 'utf8'), fs.readFileSync(path.join(src, f), 'utf8'), a + '/' + f);
+  }
 });

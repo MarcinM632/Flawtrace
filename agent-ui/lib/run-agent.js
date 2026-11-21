@@ -696,7 +696,10 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
     if (!verifyKind || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
     try {
       const first = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
-      const v1 = await runVerifier();
+      // Gdy kontrola aplikacji już wymaga korekty (a sesja da się wznowić), drogi weryfikator czeka na poprawiony raport:
+      // jedna sesja weryfikatora zamiast dwóch. QA_VERIFIER_EARLY=1 przywraca dawne zachowanie (weryfikator przed korektą).
+      const deferVerifier = process.env.QA_VERIFIER_EARLY !== '1' && first.issues.length > 0 && !!res.sessionId && verifierLib.enabled();
+      const v1 = deferVerifier ? { ran: false, checked: 0, issues: [], dropped: 0, error: 'deferred until the report is corrected' } : await runVerifier();
       if (meta.status === 'cancelled') return;
       const all1 = [...first.issues, ...v1.issues];
       meta.audit = { ...first, issues: all1, corrected: false, verifier: verifierMeta(v1) };
@@ -709,7 +712,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
       const again = extractReport((fix && (fix.finalText || fix.lastText)) || '');
       if (again.report) { meta.report = again.report; meta.reportStatus = again.status || meta.reportStatus; meta.finalText = fix.finalText || meta.finalText; }
       const second = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
-      const v2 = again.report ? await runVerifier() : v1;
+      const v2 = (again.report || deferVerifier) ? await runVerifier() : v1;
       if (meta.status === 'cancelled') return;
       const all2 = [...second.issues, ...v2.issues];
       meta.audit = { ...second, issues: all2, corrected: !!again.report, before: all1, verifier: verifierMeta(v2) };
