@@ -2,7 +2,9 @@
 // and returns a report of numbered steps. Only a report that is VERIFIED (every step and check passed) can be
 // accepted by the user, and only an accepted one is turned into a TypeScript Playwright test.
 // Everything specific to this mode lives here, so run-agent.js only calls a few small functions.
+const fs = require('fs');
 const path = require('path');
+const { AGENTS_ROOT } = require('./config');
 
 const MAX_STEPS = Number(process.env.QA_UI_MAX_STEPS) || 80;     // browser calls in one run
 const MAX_REPEAT = 3;                                           // the same action this many times in a row = a loop
@@ -95,6 +97,14 @@ STATUS is VERIFIED only when every step and every check is PASS and at least one
 FAILED. Login or access problems make it BLOCKED. Each check is a fact a test can assert later: a visible text, a
 heading, a count, a URL, an enabled or disabled control. Write them concretely, with the exact visible words.`;
 
+// The UI Tests agent has only the Playwright tools (no Skill tool, no files), so its skills are placed in its system prompt.
+// Source: Agents/_shared/uitest-skills/<skill>/SKILL.md.
+const SKILL_NAMES = ['ui-flow-verification', 'ui-api-parity', 'ui-evidence'];
+const skillsText = () => SKILL_NAMES.map((n) => {
+  try { return fs.readFileSync(path.join(AGENTS_ROOT, '_shared', 'uitest-skills', n, 'SKILL.md'), 'utf8').replace(/^---[\s\S]*?---\s*/, '').trim(); }
+  catch (_) { console.warn('WARNING: skill ' + n + ' not found in _shared/uitest-skills'); return ''; }
+}).filter(Boolean).join('\n\n');
+
 /** The user message of a run: the goal, the page and, when given, the login. The password goes in only here. */
 function uiPrompt({ goal, url, username, password }) {
   const login = username || password
@@ -149,4 +159,4 @@ function buildFlow(meta, events) {
   ].join('\n');
 }
 
-module.exports = { MAX_STEPS, OVERRIDE_UITEST, acceptBlocker, buildFlow, guard, parseReport, playwrightServer, scrub, uiPrompt };
+module.exports = { MAX_STEPS, OVERRIDE_UITEST, acceptBlocker, buildFlow, guard, parseReport, playwrightServer, scrub, skillsText, uiPrompt };

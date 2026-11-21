@@ -67,3 +67,9 @@ test('autotest skills: only the Autotests mode gets the three skills', () => {
   for (const n of ['test-from-design', 'independent-fast-tests', 'failure-triage-fix']) assert.match(t, new RegExp('SKILL ' + n));
   for (const m of ['qamcp', 'execution', 'design', 'uitest']) assert.equal(autotestSkills(m), '');
 });
+
+test('ui tests skills: the three skills are in the text added to the UI Tests prompt', () => {
+  const t = require('../lib/uitest').skillsText();
+  for (const n of ['ui-flow-verification', 'ui-api-parity', 'ui-evidence']) assert.match(t, new RegExp('SKILL ' + n));
+  assert.match(require('../lib/uitest').OVERRIDE_UITEST, /REPORT FORMAT/, 'the report format of the app is unchanged');
+});

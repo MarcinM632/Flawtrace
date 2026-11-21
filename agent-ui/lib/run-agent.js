@@ -436,7 +436,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1â€“8): logika istniejÄ
   const mcpChatBlock = (mode) => mode === 'design' ? '\n' + MCP_CHAT_DESIGN + '\n' + mcpChatDesignEval()
     : isQamcpLike(mode) && aboutMcpChat ? '\n\n' + MCP_CHAT_QAMCP + '\n\n' + mcpChatQamcpEval()
     : mode === 'autotest' && !stack && layer !== 'ui' && aboutMcpChat ? '\n\n' + MCP_CHAT_AUTOTEST + '\n\n' + mcpChatAutotestEval() : '';
-  const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode)) + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
+  const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST + '\n\n' + uiTest.skillsText() : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode)) + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
     + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
     + (qamcpSkills(mode) ? '\n\n' + qamcpSkills(mode) : '')
     + (autotestSkills(mode) ? '\n\n' + autotestSkills(mode) : '')
