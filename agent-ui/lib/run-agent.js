@@ -337,7 +337,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniej�
       `Metryki ryzyka per serwis (śr. błędów/task i ważony wynik ryzyka, do linii "Priorytet:" w nagłówku) są w "${wd}/risk-metrics.md" — znajdź w tabeli serwis(y), których dotyczy ten task.\n` +
       `Zakres testowy serwisu (skill test-scope: czego szukać, jak testować) jest w "${wd}/test-scope.md" — przeczytaj przed wypisaniem ryzyk produktowych.\n`
     : agent.mode === 'analysis'
-    ? `Input: ${ticket}\nZanalizuj ten task zgodnie z CLAUDE.md (kroki 1–6): strategia testów, luka coverage, zasięg wpływu (zawsze, przez prawdziwe qa-git.sh find), weryfikacja założeń, zakres z priorytetem dla Fazy 4. Cały wynik po angielsku.\n` +
+    ? `Input: ${ticket}\nZanalizuj ten task zgodnie z CLAUDE.md (kroki 1–8): strategia testów, warunki testowe TC z priorytetem, dobór technik (skill technique-selection), luka coverage, zasięg wpływu (zawsze, przez prawdziwe qa-git.sh find), weryfikacja założeń, macierz pokrycia i kryteria zaliczenia taska (skill coverage-matrix), zakres z priorytetem dla Fazy 4. Cały wynik po angielsku.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md", lista istniejących autotestów (do analizy coverage, krok 3) w "${wd}/autotests-coverage.md" — przeczytaj oba przez Grep po serwisie/funkcji przed pisaniem raportu.\n` +
       `Zakres testowy serwisu (skill test-scope) jest w "${wd}/test-scope.md".\n`
     : agent.mode === 'implementation'
