@@ -20,12 +20,13 @@ When two sources disagree, the newer and more specific one wins, and the differe
 
 ## Steps
 
-1. Read the design from the input (a ticket of a design run or the pasted report). Read the risks of phase 1 and the scope of phase 3 when they are in the context.
-2. Merge all checks into one sequence. Shared setup runs once. No check may disappear.
-3. Make every step executable: the endpoint name from `mcp__sources__api_endpoints`, the parameters and body with real values, and the expected result. Test data follows how-we-test.md, for example the prefix for test records, and the procedure ends with cleanup.
-4. Priority per step or group: CRITICAL, HIGH, MEDIUM or LOW with a reason and source. No evidence of risk means LOW with the reason "no evidence of risk".
-5. Time estimate in minutes, in total and per priority.
-6. Traceability: procedure step → design section → risk or scope item. Every design section appears.
+1. Read the design from the input (a ticket of a design run or the pasted report). Read the risks of phase 1, the scope of phase 3 and the Analysis report (conditions TC, done criteria) when they are in the context. Load the skill `procedure-merge` and write `WORK_DIR/design-input.md`: one line per check of the design.
+2. Merge all checks into one sequence with `procedure-merge`: group by resource, shared setup once, order by dependency then priority, restore shared state, cleanup of everything created. No check may disappear.
+3. Load `step-executability` and make every step executable: the endpoint name from `mcp__sources__api_endpoints`, real values from `autotest-setup.md`, an expected value with its place of reading and the state afterwards. Test data follows how-we-test.md, for example the prefix for test records. A step the endpoints cannot check ends with `NOT VERIFIABLE VIA MCP`.
+4. Load `priority-and-gates`. Priority per step or group: CRITICAL, HIGH, MEDIUM or LOW with a reason and source. No evidence of risk means LOW with the reason "no evidence of risk".
+5. Time estimate in minutes by the method of the skill, in total and per priority. The numbers add up.
+6. Traceability: procedure step → design check `§n.k` → risk or scope item. Every check of `design-input.md` appears.
+7. Gates: when the input has the Analysis report, write `WORK_DIR/coverage-input.md` and the section `## Gates` (conditions → steps, thresholds of the Analysis, cut line).
 
 
 ## Rules for every step
@@ -47,7 +48,7 @@ Sources: <design run, ticket, pages, documents>
 1. <endpoint and data> => <expected state>
 
 ## Procedure
-1. [HIGH] <endpoint, parameters, body> => <expected result> (§n)
+1. [HIGH] <endpoint, parameters, body> => <expected value, place of reading, state afterwards> (§n.k)
 2. ...
 
 ## Cleanup
@@ -60,7 +61,10 @@ CRITICAL: <steps> | HIGH: <steps> | MEDIUM: <steps> | LOW: <steps> — <reasons>
 Total: <n> min | CRITICAL <n> | HIGH <n> | MEDIUM <n> | LOW <n>
 
 ## Traceability
-- Step <n> → §<n> → <risk or scope item>
+- Step <n> → §<n>.<k> → <risk or scope item>
+
+## Gates
+(only when the input has the Analysis report; see the skill priority-and-gates)
 ```
 
 ## Validation
