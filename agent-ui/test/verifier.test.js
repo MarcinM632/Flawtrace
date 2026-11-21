@@ -50,3 +50,13 @@ test('verifier: the system prompt carries the skills and only the profile of the
   assert.doesNotMatch(systemText('no-such-kind'), /Profile of this report/);
   assert.equal(profileFor('intro\n\n## kind: a\nA text\n\n## kind: b\nB text', 'b').includes('A text'), false);
 });
+
+test('qamcp skills: QA MCP gets four, Execution gets five, other modes none', () => {
+  const { qamcpSkills } = require('../lib/prompts');
+  const count = (t) => (t.match(/^SKILL /gm) || []).length;
+  assert.equal(count(qamcpSkills('qamcp')), 4);
+  assert.equal(count(qamcpSkills('execution')), 5);
+  assert.match(qamcpSkills('execution'), /procedure-execution/);
+  assert.doesNotMatch(qamcpSkills('qamcp'), /procedure-execution/);
+  for (const m of ['pentest', 'design', 'static', 'completion']) assert.equal(qamcpSkills(m), '');
+});
