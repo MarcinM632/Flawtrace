@@ -219,8 +219,9 @@ const OVERRIDE_COMPLETION = `TRYB APLIKACJI — TEST FLOW: COMPLETION (nadrzędn
 - ZERO ŻARGONU SPOZA ŹRÓDEŁ: "co to jest" i "dlaczego tak" biorą fakty z opisu/komentarzy/kodu, nigdy z domysłu. Brak udokumentowanego powodu decyzji → napisz wprost "powód wyboru tego podejścia nie jest udokumentowany w tickecie", nie zmyślaj go.
 - ZNANE DEFEKTY (ISTQB ATM 2012 §1.8, wyciągnięcie wniosków): przeczytaj $WORK_DIR/bug-registry.md przez Grep po serwisie/funkcji. Są wpisy dla tego obszaru → krótka lista (klucz + jedno zdanie). Brak → napisz wprost "Brak znanych defektów tego obszaru w rejestrze" (nie pomijaj linii).
 - STATUS TICKETU NIEKOŃCOWY nie jest powodem do przerwania — napisz to na początku wyjaśnienia i pracuj na tym, co jest.
-- Zero sekcji poza szablonem niżej. Cały wynik po angielsku, sam tekst (bez tabel, bez zagnieżdżonych list).
-- Brak walidatora bash dla tej fazy — trzymaj się szablonu dokładnie, bo UI nie parsuje tego na karty.
+- Zero sekcji poza szablonem niżej. Cały wynik po angielsku, sam tekst (bez tabel, bez pogrubień, bez zagnieżdżonych list).
+- SKILLE (ładuj narzędziem Skill): results-consolidation (linia "Stan testów:" z liczbami skopiowanymi z raportów faz, które są w wejściu — nigdy z pamięci; bez raportu: "Stan testów: no phase reports in the input"; do defektów liczą się tylko wpisy RODZAJ: PRODUKT), defect-triage (lista znanych defektów: jeden wpis na przyczynę, format "- KLUCZ: zdanie [severity; certainty]", maks. 5, bez duplikatów), lessons-check (lekcje testera z lessons/ tylko do odczytu: potwierdzone defekty → lista, fałszywe alarmy → linia "Nie jest defektem:"; nigdy nie piszesz do lessons/ — robi to aplikacja po potwierdzeniu wyników przez testera).
+- Zapisz wpis do $WORK_DIR/completion.txt i uruchom bash .claude/skills/test-completion/scripts/validate-completion.sh --report "<WORK_DIR>/completion.txt". "WYJAŚNIONO OK" → oddajesz tę treść. "WYJAŚNIONO ODRZUCONE" → popraw WSZYSTKIE problemy, maks. 2 rundy. Walidator pilnuje szablonu, limitu 3000 znaków, zdań ≤35 słów, formatu wpisów defektów i linii Stan testów.
 - Odpowiedź końcowa ma mieć dokładnie format: linia "STATUS: WYJAŚNIONO", potem blok
 --- TREŚĆ ---
 <KLUCZ> — <krótki tytuł po ludzku>
@@ -234,10 +235,14 @@ Dlaczego tak:
 Jak to działa w praktyce:
 <1 konkretny przykład>
 
-Znane defekty tego obszaru:
-<lista krótkich wpisów klucz: opis, albo "Brak znanych defektów tego obszaru w rejestrze">
+Stan testów: <jedna linia z liczbami z raportów faz albo "no phase reports in the input">
 
-Źródła: <Jira (opis + N komentarzy) | + transkrypcja nagrania | + nagranie niedostępne jako tekst>
+Znane defekty tego obszaru:
+<płaska lista "- KLUCZ|new: zdanie [severity; certainty]", albo "Brak znanych defektów tego obszaru w rejestrze">
+
+Nie jest defektem: <tylko gdy lekcje mają fałszywy alarm tego obszaru; inaczej pomiń całą linię>
+
+Źródła: <Jira (opis + N komentarzy) | + transkrypcja nagrania | + nagranie niedostępne jako tekst | + użyte raporty faz>
 --- KONIEC TREŚCI ---
 "STATUS: PRZERWANO" z jednozdaniowym powodem po angielsku tylko, gdy ticket w ogóle nie istnieje albo nie da się go odczytać.`;
 
