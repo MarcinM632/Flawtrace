@@ -94,6 +94,24 @@ if [ -z "$st" ]; then problems+=('missing verdict "STATUS: TASK OK | NEEDS REWOR
   esac
 fi
 
+# Cross-source table of facts (skill cross-source-consistency) must exist next to the report.
+wd=$(dirname "$f")
+{ [ -f "$wd/facts.md" ] && [ "$(wc -c < "$wd/facts.md")" -ge 40 ]; } || problems+=("facts.md is missing or empty in $wd (skill cross-source-consistency, step 1)")
+# Every requirement says what varies in it (skill requirement-testability).
+printf '%s\n' "$reqs" | grep -E '^R[0-9]+ ' | grep -Evq '\| *varies: *[a-z]' && problems+=('a requirement has no "| varies: <kind>" tag (use "varies: none" when nothing varies)')
+# Every scenario says which requirements it covers; those exist; every behaviour requirement is covered or excused.
+printf '%s\n' "$scen" | grep -E '^S[0-9]+ ' | grep -Evq 'covers: *R[0-9]+' && problems+=('a scenario has no "covers: R<n>" field')
+covered=" "
+for id in $(printf '%s\n' "$scen" | grep -E '^S[0-9]+ ' | grep -Eo 'covers: *R[0-9]+(, *R[0-9]+)*' | grep -Eo 'R[0-9]+' | sort -u); do
+  printf '%s\n' "$reqs" | grep -Eq "^$id " || problems+=("a scenario covers $id, which is not in \"## Requirements\"")
+  covered="$covered$id "
+done
+nocov=()
+for id in $(printf '%s\n' "$reqs" | grep -E '^R[0-9]+ \[(business rule|functional|data)\]' | grep -Eo '^R[0-9]+'); do
+  case "$covered" in *" $id "*) continue;; esac
+  printf '%s\n' "$clean" | grep -E "^- $id\b" | grep -q 'no scenario:' || nocov+=("$id")
+done
+if [ ${#nocov[@]} -gt 0 ]; then problems+=("requirement(s) of type business rule, functional or data not covered by any scenario (add them to a scenario's covers:, or write \"no scenario: <reason>\" in Checked and consistent): ${nocov[*]}"); fi
 chars=$(wc -c < "$f")
 [ "$chars" -ge 500 ] || problems+=("the report is too short ($chars characters)")
 if [ ${#problems[@]} -eq 0 ]; then echo "STATIC OK"; exit 0; fi

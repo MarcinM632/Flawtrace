@@ -22,10 +22,10 @@ When two sources disagree, the newer and more specific one wins, and the differe
 
 1. Static and white box check, always first. Compare the assumptions of the task with the code: (a) named fields, functions and entities exist or can be added where the task expects; (b) the task does not contradict existing validation, data types or limits; (c) it is technically possible in the current architecture; (d) what the task calls new does not already exist. Every conflict is listed with file and line.
 2. Read `WORK_DIR/bug-registry.md` with Grep for the service and function: defect classes this area already had.
-3. Risks. Product risks (the result may be wrong) and project risks (something may block testing) are listed separately. Each has likelihood and impact (low, medium, high) and a source. Every finding of step 1 is also a product risk. At most 12 risks; merge similar ones.
-4. Priority. Start from `WORK_DIR/risk-metrics.md` for the service. Raise it to High when any product risk has high likelihood and high impact. One sentence of reasoning.
-5. Entry and exit criteria. Concrete and checkable, taken from how-we-test.md, the ticket and the code. Never "code ready".
-6. Verdict. `GOTOWY DO FAZY 2` only when no risk is high and high and there is no impossible assumption; otherwise `WYMAGA POPRAWY` with the reasons.
+3. Risks. Load the skill `risk-assessment`. Product risks (`P1`...) and project risks (`J1`...) are listed separately. Each has likelihood, impact and exposure (low, medium, high) and the evidence of the rating. Every finding of step 1 is also a product risk. At most 12 risks; merge similar ones.
+4. Priority. Start from `WORK_DIR/risk-metrics.md` for the service. Raise it to High when any product risk has high likelihood and high impact. One sentence of reasoning (skill `verdict-gate`).
+5. Entry and exit criteria. Load the skill `entry-exit-criteria`. Concrete and checkable, each with a measure and a source, taken from how-we-test.md, the ticket, the code and `autotest-setup.md`. Never "code ready".
+6. Verdict. Load the skill `verdict-gate`. `GOTOWY DO FAZY 2` only when no risk is high and high and there is no impossible assumption; otherwise `WYMAGA POPRAWY` with the reasons and the blockers.
 
 
 ## Rules for every step
@@ -50,18 +50,22 @@ Checked: <what was compared with the code, with file:line>
 Impossible or contradictory assumptions: <list with file:line, or "none">
 
 ## Risks
-- [product] <risk> | likelihood: <low|medium|high> | impact: <low|medium|high> (src: ...)
-- [project] <risk> | likelihood: ... | impact: ... (src: ...)
+- [product] P1 <risk: cause → effect> | likelihood: <low|medium|high> | impact: <low|medium|high> | exposure: <low|medium|high> (src: ...)
+- [project] J1 <risk> | likelihood: ... | impact: ... | exposure: ... (src: ...)
 
 ## Entry criteria
-- <checkable criterion> (src: ...)
+- <checkable criterion> — measure: <number, state or artefact> (src: ...)
 
 ## Exit criteria
-- <checkable criterion> (src: ...)
+- <checkable criterion> — measure: <...> (src: ...)
 
 ## Verdict
-STATUS: <GOTOWY DO FAZY 2 | WYMAGA POPRAWY> — <reason>
+STATUS: <GOTOWY DO FAZY 2 | WYMAGA POPRAWY> — <reason that names the risk ids or the assumption>
+Blockers:
+- B1 <what must change or be decided> (risk P2 | assumption: file:line) | ask: <question to the author>
 ```
+
+The `Blockers:` lines are only for `WYMAGA POPRAWY`.
 
 ## Validation
 

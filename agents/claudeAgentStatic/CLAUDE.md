@@ -41,7 +41,9 @@ Do not describe code you did not read. A rule you cannot find stays unknown and 
 
 ### 2. Break the task into requirements
 
-Write `WORK_DIR/requirements.md` and copy the list into the report. One atomic statement per line, numbered `R1`, `R2`, and so on, each with its source: description sentence, acceptance criterion, comment, subtask, Confluence rule. Add a type: business rule, functional, data, interface, non-functional, constraint. Split compound sentences. Keep the exact words of the task so the quote can be checked.
+Load the skill `requirement-testability` and follow it: atomic requirements, six attributes each, the tag `| varies: <kind>` and the type. Load the skill `cross-source-consistency` and write `WORK_DIR/facts.md`, the table of facts compared across the ticket, the comments, the subtasks, Confluence, the code, the API contract and the knowledge base.
+
+Write `WORK_DIR/requirements.md` and copy the list into the report. One atomic statement per line, numbered `R1`, `R2`, and so on, each with its source: description sentence, acceptance criterion, comment, subtask, Confluence rule. Add a type: business rule, functional, data, interface, non-functional, constraint. Split compound sentences. Keep the exact words of the task so the quote can be checked. Every line ends with `| varies: <kind>` (see the skill).
 
 ### 3. Review each requirement with the checklist
 
@@ -61,7 +63,7 @@ Walk every requirement through every row. A row that does not apply is skipped o
 
 ### 4. Walk business scenarios through the task and the code (dry run)
 
-This is the step that finds logic errors that reading alone does not.
+This is the step that finds logic errors that reading alone does not. Load the skill `scenario-dry-run` and follow it. Every requirement of type business rule, functional or data is covered by a scenario (`covers: Rn`), or is listed in "Checked and consistent" with `no scenario: <reason>`.
 
 1. Write at least three concrete business scenarios with real values from the sources or the code (not letters): the normal case, a boundary case, and a combination of two rules or a repeated action. Cover the main acceptance criteria.
 2. For each, compute the result the TASK demands, then trace the same input through the EXISTING code with `file:line` for each step, and compute the result the code gives.
@@ -124,8 +126,8 @@ Sources: <ticket, subtasks, comments, pages, files used>
 Review: static, checklist-based + scenario-based + role-based | requirements: <n> | findings: <n> | scenarios: <n> | code files read: <n>
 
 ## Requirements
-R1 [<type>] <statement, quoted> (src: ...)
-R2 [<type>] ...
+R1 [<type>] <statement, quoted> (src: ...) | varies: <kind>
+R2 [<type>] ... | varies: <kind>
 
 ## Existing logic
 - <rule, flow or limit of the system today> (src: path/File.kt:88)
@@ -140,11 +142,12 @@ Question for the author: <one concrete question that can be answered>
 Suggested wording: <replacement text for the task>
 
 ## Scenarios
-S1 <business scenario with real values> | task expects: <result> | system gives: <result> (src: ...) | MATCH
-S2 ... | MISMATCH → finding 1
+S1 <business scenario with real values> | covers: R1, R2 | task expects: <result> | system gives: <result> (src: ...) | MATCH
+S2 ... | covers: R3 | ... | MISMATCH → finding 1
 
 ## Checked and consistent
 - R1: <what was checked and against what> (src: ...)
+- R4: no scenario: <reason>; <what was checked> (src: ...)
 
 ## Open questions
 - <decision that no source answers, with the two readings>

@@ -327,12 +327,12 @@ function startRun(agentKey, ticket, notes, extra = {}) {
       `Wykonaj go przez serwer MCP \`qa\` i zwróć raport w formacie z system promptu.`
     : agent.mode === 'static'
     ? `Input: ${ticket}
-Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniejącego systemu, wymagania R1…Rn, checklista, dry run min. 3 scenariuszy, finding z próbą obalenia, werdykt. Cały wynik po angielsku.
+Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami requirement-testability, cross-source-consistency, scenario-dry-run: logika istniejącego systemu, wymagania R1…Rn z tagiem varies, tabela faktów facts.md, checklista, dry run scenariuszy z polem covers, finding z próbą obalenia, werdykt. Cały wynik po angielsku.
 ` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md" (Grep po serwisie/funkcji), zakres testowy serwisu w "${wd}/test-scope.md".
 `
     : agent.mode === 'planning'
-    ? `Input: ${ticket}\nSprawdź ten task zgodnie z CLAUDE.md (kroki 1–6): static/white-box check jest najważniejszy i zawsze pierwszy, potem ryzyka (wszystkie, nie tylko najważniejsze), priorytet, entry/exit criteria i werdykt. Cały wynik po angielsku.\n` +
+    ? `Input: ${ticket}\nSprawdź ten task zgodnie z CLAUDE.md (kroki 1–6) i ze skillami risk-assessment, entry-exit-criteria, verdict-gate: static/white-box check jest najważniejszy i zawsze pierwszy, potem ryzyka (wszystkie, nie tylko najważniejsze), priorytet, entry/exit criteria i werdykt. Cały wynik po angielsku.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera (wzorce błędów podobnych tasków) jest w "${wd}/bug-registry.md": przeczytaj go przez Grep po serwisie/funkcji, ZANIM wypiszesz ryzyka — bierz z niego flow i klasę błędu, nigdy gotowy przypadek do skopiowania.\n` +
       `Metryki ryzyka per serwis (śr. błędów/task i ważony wynik ryzyka, do linii "Priorytet:" w nagłówku) są w "${wd}/risk-metrics.md" — znajdź w tabeli serwis(y), których dotyczy ten task.\n` +
       `Zakres testowy serwisu (skill test-scope: czego szukać, jak testować) jest w "${wd}/test-scope.md" — przeczytaj przed wypisaniem ryzyk produktowych.\n`

@@ -18,6 +18,7 @@ const posix = (p) => p.split(path.sep).join('/');
 const check = (text) => {
   const f = path.join(tmp, 'r' + Math.random().toString(36).slice(2) + '.txt');
   fs.writeFileSync(f, text);
+  fs.writeFileSync(path.join(tmp, 'facts.md'), '| fact | source |\n|---|---|\n| maxOpenOrders default 5 | DEMO-101 |\n| the check compares with > | LimitService.kt:41 |\n');
   try { return { ok: true, out: execFileSync('bash', [posix(VALIDATOR), '--report', posix(f)]).toString() }; }
   catch (e) { return { ok: false, out: e.stdout.toString() }; }
 };
@@ -47,4 +48,15 @@ test('static validator: it rejects what makes a review shallow or inconsistent',
   bad(GOOD.replace(/\| MISMATCH → finding 1/, '| MISMATCH'), /does not point at a finding/);
   bad(GOOD.replace(/^## Existing logic\n(- .*\n)+/m, '## Existing logic\n- the code has the rules\n'), /no file:line/);
   bad(GOOD.replace('findings: 2', 'findings: 5'), /Review line says 5 findings/);
+});
+
+test('static and planning: skills exist and are named in the prompts', () => {
+  const root = path.join(__dirname, '..', '..', 'agents');
+  for (const [dir, names, ov] of [
+    ['claudeAgentStatic', ['requirement-testability', 'cross-source-consistency', 'scenario-dry-run'], prompts.OVERRIDE_STATIC],
+    ['claudeAgentTestFlowPlanning', ['risk-assessment', 'entry-exit-criteria', 'verdict-gate'], prompts.OVERRIDE_PLANNING],
+  ]) for (const n of names) {
+    assert.ok(fs.existsSync(path.join(root, dir, '.claude', 'skills', n, 'SKILL.md')), n);
+    assert.ok(ov.includes(n), n + ' in override');
+  }
 });

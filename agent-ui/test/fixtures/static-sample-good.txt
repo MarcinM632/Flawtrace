@@ -4,10 +4,10 @@ Sources: DEMO-101, comment of the author, billing-svc LimitService.kt, LimitCont
 Review: static, checklist-based + scenario-based + role-based | requirements: 4 | findings: 2 | scenarios: 3 | code files read: 7
 
 ## Requirements
-R1 [business rule] "A new order is rejected when the customer already has maxOpenOrders open orders or more." (src: DEMO-101)
-R2 [data] "maxOpenOrders is 1..1000, default 5." (src: DEMO-101)
-R3 [interface] "GET /limits/check rejects the order with reason 'too many open orders' when openOrders >= maxOpenOrders." (src: DEMO-101)
-R4 [functional] "The limit.changed event carries the new field." (src: DEMO-101)
+R1 [business rule] "A new order is rejected when the customer already has maxOpenOrders open orders or more." (src: DEMO-101) | varies: boundary
+R2 [data] "maxOpenOrders is 1..1000, default 5." (src: DEMO-101) | varies: boundary
+R3 [interface] "GET /limits/check rejects the order with reason 'too many open orders' when openOrders >= maxOpenOrders." (src: DEMO-101) | varies: none
+R4 [functional] "The limit.changed event carries the new field." (src: DEMO-101) | varies: none
 
 ## Existing logic
 - Exposure check rejects only when exposure > maxExposure, an exposure equal to the limit is allowed (src: src/main/kotlin/billing/limits/LimitService.kt:38)
@@ -31,11 +31,12 @@ Question for the author: are the existing event field names kept, and is the new
 Suggested wording: "limit.changed keeps customerLimit and adds maxOpenOrders."
 
 ## Scenarios
-S1 customer c1, maxOpenOrders 5, 4 open orders, new order | task expects: allowed | system gives: no open-order check exists, allowed (src: src/main/kotlin/billing/limits/LimitService.kt:38) | MATCH
-S2 customer c1, maxOpenOrders 5, 5 open orders, new order | task expects: rejected (">= maxOpenOrders") | system gives: the existing exposure check compares with ">" and would allow the equal case if reused (src: src/main/kotlin/billing/limits/LimitService.kt:41) | MISMATCH → finding 1
-S3 existing rule without the new field, order check | task expects: default 5 applies | system gives: the table has no such column for old rows (src: src/main/resources/db/migration/V1__limit_rule.sql:1) | MISMATCH → finding 1
+S1 customer c1, maxOpenOrders 5, 4 open orders, new order | covers: R1 | task expects: allowed | system gives: no open-order check exists, allowed (src: src/main/kotlin/billing/limits/LimitService.kt:38) | MATCH
+S2 customer c1, maxOpenOrders 5, 5 open orders, new order | covers: R1, R3 | task expects: rejected (">= maxOpenOrders") | system gives: the existing exposure check compares with ">" and would allow the equal case if reused (src: src/main/kotlin/billing/limits/LimitService.kt:41) | MISMATCH → finding 1
+S3 existing rule without the new field, order check | covers: R2 | task expects: default 5 applies | system gives: the table has no such column for old rows (src: src/main/resources/db/migration/V1__limit_rule.sql:1) | MISMATCH → finding 1
 
 ## Checked and consistent
+- R4: no scenario: an event field, covered by the contract check
 - R1: the rule matches the existing exposure rule except the boundary, covered by S2 (src: src/main/kotlin/billing/limits/LimitService.kt:41)
 - R2: the bounds 1..1000 fit the existing validator style (src: src/main/kotlin/billing/limits/LimitRuleValidator.kt:7)
 
