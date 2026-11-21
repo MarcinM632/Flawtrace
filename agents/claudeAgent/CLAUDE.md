@@ -14,7 +14,7 @@ WORK_DIR is given in the message of every run. The ISTQB library mentioned in th
 
 The system prompt lists the knowledge sources that are connected. Use every one of them before you decide anything. Facts come from sources, never from memory.
 
-1. Knowledge base. Call `mcp__sources__knowledge_list`, then read `how-we-test.md` and `test-process.md` with `mcp__sources__knowledge_read`. Read `performance-testing.md` when the task mentions response time, load, users, throughput, capacity or stability. Read any product document whose title matches the task. The knowledge base describes how this team tests and wins over general habits.
+1. Knowledge base. Call `mcp__sources__knowledge_list`, then read `how-we-test.md` and `test-process.md` with `mcp__sources__knowledge_read`. Read `performance-testing.md` when the task mentions response time, load, users, throughput, capacity or stability. Read any product document whose title matches the task. Read every file in `product/` that touches the task (glossary, business rules, flows, known defects), and `lessons/confirmed-defects.md` and `lessons/false-alarms.md` when they exist: a confirmed defect marks where this product breaks, and a false alarm is not reported again unless the task or the specification changed. The knowledge base describes how this team tests and wins over general habits.
 2. Ticket. When the input contains a ticket key, read it with `mcp__sources__jira_get_issue`, then every subtask and the parent the same way. Read every comment: decisions, answers and edge cases live there. Without a key, search with `mcp__sources__jira_search` using the main terms of the task, for example `text ~ "order limit" ORDER BY updated DESC`, and use the ticket you find.
 3. Specification. Search Confluence with `mcp__sources__confluence_search` using the feature terms and read the newest relevant pages with `mcp__sources__confluence_get_page`. When several versions exist, only the newest counts.
 4. Code. The connected repositories are listed in the system prompt with their local paths. Find the right one with `bash "<qa-git.sh path from the system prompt>" find "<regex of task terms>"` and prepare it with `prepare`, or read the listed path directly with Read, Grep and Glob. The code tells what really exists, what changed and which validation rules apply.
@@ -49,6 +49,8 @@ A diff shows what changed, not what the feature does. Read the slice first.
 
 You cannot judge a change before `map.md` exists.
 
+5. Load the skill `missing-handling` with the Skill tool and write `WORK_DIR/trace.md` with it: every requirement traced to the code, every place that must know a new value, the failure and lifecycle paths, and the comparison with the closest sibling feature. What is absent is a finding, even when no line of the diff is wrong.
+
 ### 4. Check the change hunk by hunk, by kind of code
 
 For each hunk decide which kinds below it contains and walk through the matching rows. A kind that appears in the diff and is not walked through is a gap.
@@ -72,6 +74,8 @@ For each hunk decide which kinds below it contains and walk through the matching
 
 Also compare `kod-przed` to `kod-po` for what disappeared: a removed check, a removed log, a removed permission, a removed default is a change in behaviour even when nothing was added.
 
+Load the skill `edge-cases` with the Skill tool for every hunk that has a condition, a number, a date, a collection or state, and write `WORK_DIR/edge-cases.md` with it. A condition is judged at its border, not only at the normal value: run each border value through the code and compare the result with the wording of the source. A kind of code that the table or the skill covers and that you did not walk through is a gap.
+
 ### 5. Integration with other services and clients
 
 For every externally visible element that the change adds, removes, renames, retypes or gives a new meaning (endpoint path, request or response field, event or topic, queue, table or column, config key, feature flag, enum value, error code, shared library function):
@@ -81,6 +85,7 @@ For every externally visible element that the change adds, removes, renames, ret
 3. Do the reverse. For everything the changed code sends or calls (outbound client, event it publishes, row it writes), read the receiving side and check that it accepts what the code now sends.
 4. Compare the code with `mcp__sources__api_endpoints` and the specification. A contract that differs from the code is a finding.
 5. When the ticket has a backend and a frontend part, read both sides against each other: field names, types, required fields, statuses, error handling.
+6. Load the skill `mapping-check` with the Skill tool and write `WORK_DIR/mapping.md` with it: every changed field, enum value, default and key checked layer by layer, from the database to the UI and every other consumer.
 
 Write one line per contact: `producer → consumer: result (src: ...)`. A contact you could not read goes to "Do sprawdzenia ręcznie" with the reason.
 
@@ -103,6 +108,7 @@ Before a case goes into the report:
 3. If you find a guard, drop the case or explain why the guard does not hold.
 4. A case that you cannot prove from code and sources goes to "Do sprawdzenia ręcznie", not to the numbered list.
 5. Mark the origin: new in this change, or `stan zastany (sprzed tej zmiany)`. Mark a case that repeats a registry entry as known, with its key.
+6. Load the skill `impact-in-reality` with the Skill tool and give every case its consequence in the real world: trigger, result, who is affected, whether it is noticed, severity, and whether the sources confirm it or it is an assumption. Order the numbered cases by severity, the most severe first.
 
 ### 8. Report and validation
 
@@ -118,6 +124,7 @@ Every file in the diff appears in the report by its file name: in a finding, or 
 - Every statement about the system cites its source: `(src: PRJ-123)`, `(src: conf:<page title>)`, `(src: path/File.kt:88)`, `(src: endpoint <name>)` or `(src: bug:PRJ-45)`.
 - No finding without a `file:line` that exists in `kod-po` or `kod-przed`. No business rule from memory: take it from the ticket, Confluence or code, and put an unknown rule into "Do sprawdzenia ręcznie".
 - Plain, formal English. Short sentences. No filler.
+- Skills give method, never facts. A boundary value, a mapping or a consequence is taken from the sources, and what no source says is an assumption marked as such or a question in "Do sprawdzenia ręcznie".
 - A validator script that does not exist is not a blocker: check the format yourself against the section "Output format" and continue.
 
 ## Output format
@@ -126,11 +133,11 @@ The report, in English except for the field labels, which the application parses
 
 ```
 <TICKET or NOTICKET-0>
-whitebox: <n files read> | diff: <n lines> | mode: <whitebox | static> | repos: <n> | contacts: <n> | callers: <n>
+whitebox: <n files read> | diff: <n lines> | mode: <whitebox | static> | repos: <n> | contacts: <n> | callers: <n> | edge: <n> | maps: <n> | reqs: <implemented>/<total>
 1. <short title of the defect>
 Co się dzieje: <actual behaviour>
 Powinno być: <expected behaviour> (src: ...)
-Dlaczego to groźne: <impact>
+Dlaczego to groźne: Wyzwalacz: <real situation>; Skutek: <wrong result>; Dotyczy: <who, how many>; Wykrywalność: <cicha|głośna>; Dotkliwość: <krytyczna|wysoka|średnia|niska>; Pewność: <potwierdzone (src: ...)|założenie: ...>
 Ścieżka do replikacji: 1) <step> 2) <step> 3) <observation>
 Dowód: <file:line and quote>
 2. ...
@@ -142,6 +149,8 @@ Sprawdzone i czyste: <file or area: what was verified> ; <next> ...
 
 - `files read` counts the files you opened in full. It is at least the number of changed files.
 - `repos` is the number of repositories read, `contacts` the number of integration contacts checked, `callers` the number of callers of changed symbols checked.
+- `edge` is the number of rows in `WORK_DIR/edge-cases.md`, `maps` the number of rows in `WORK_DIR/mapping.md`, `reqs` the number of requirements marked `IMPLEMENTED` out of all requirements in `WORK_DIR/trace.md`. A work file with nothing to check still exists and says why in one line, and its count is 0.
+- The line `Dlaczego to groźne:` has the fixed structure above (skill `impact-in-reality`). The numbered cases are ordered by severity.
 - `Integracje:` and `Poza zmianą:` are always present. When there is truly nothing to check, say why in one sentence (for example `no externally visible element changed: only an internal helper body`).
 - With no findings, write the line `Brak krytycznych przypadków` with one sentence of reasoning instead of the numbered cases. The lines `Integracje:`, `Poza zmianą:` and `Sprawdzone i czyste:` are still required: a clean result is credible only when it shows what was checked.
 
@@ -152,5 +161,7 @@ Before you answer, save the report to the file named in the system prompt and ru
 ```
 bash .claude/skills/raport-qa/scripts/validate-report.sh --report "<WORK_DIR>/report.txt"
 ```
+
+The validator also checks that `edge-cases.md`, `mapping.md` and `trace.md` exist in WORK_DIR and that every case carries `Dotkliwość:` in its `Dlaczego to groźne:` line.
 
 When it rejects the report, fix every listed problem and run it again, at most two rounds.

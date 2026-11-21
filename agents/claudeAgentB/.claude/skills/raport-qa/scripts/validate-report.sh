@@ -27,9 +27,26 @@ hdr=$(grep -Em1 '^whitebox:' "$f" || true)
 if [ -z "$hdr" ]; then
   problems+=('missing header line "whitebox: <n files read> | diff: <n lines> | mode: <whitebox|static> | repos: <n> | contacts: <n> | callers: <n>"')
 else
-  for k in diff mode repos contacts callers; do
+  for k in diff mode repos contacts callers edge maps reqs; do
     printf '%s' "$hdr" | grep -Eiq "\| *$k:" || problems+=("the whitebox header has no \"$k:\" field")
   done
+fi
+
+printf '%s' "$hdr" | grep -Eiq '\| *reqs: *[0-9]+/[0-9]+' || problems+=('the "reqs:" field must be <implemented>/<total>, for example reqs: 4/5')
+
+# Consequence of every finding: the fixed structure of "Dlaczego to groźne:".
+if ! grep -Eiq 'Brak krytycznych przypadk' "$f"; then
+  nf2=$(grep -Ec '^[0-9]+\. ' "$f")
+  for lab in 'Dotkliwość' 'Wykrywalność' 'Pewność'; do
+    nl=$(grep -Ec "^Dlaczego to groźne:.*$lab:" "$f" || true)
+    [ "$nl" -ge "$nf2" ] || problems+=("$nf2 numbered findings but only $nl \"Dlaczego to groźne:\" lines with \"$lab:\": every finding needs trigger, result, who, detectability, severity and confidence")
+  done
+  if grep -E '^Dlaczego to groźne:' "$f" | grep -Evq 'Dotkliwość: *(krytyczna|wysoka|średnia|niska)'; then
+    problems+=('"Dotkliwość:" must be one of: krytyczna, wysoka, średnia, niska')
+  fi
+  if grep -E '^Dlaczego to groźne:' "$f" | grep -Evq 'Pewność: *(potwierdzone|założenie)'; then
+    problems+=('"Pewność:" must start with "potwierdzone (src: ...)" or "założenie:"')
+  fi
 fi
 
 # The three jobs: the feature, its contacts, and the rest of the system.
@@ -41,8 +58,15 @@ for k in 'Integracje' 'Poza zmianą'; do
   if [ -n "$v" ] && [ "${#v}" -lt 25 ]; then problems+=("\"$k:\" is too short to show what was checked (${#v} characters)"); fi
 done
 
-# Every changed file of the diff is accounted for by name (a finding or "Sprawdzone i czyste").
+# Work files of the skills (edge-cases, mapping-check, missing-handling) exist in the folder of the report.
 wd=$(dirname "$f")
+for w in edge-cases.md mapping.md trace.md; do
+  if [ ! -f "$wd/$w" ]; then problems+=("$w is missing in the work folder: load the matching skill and write it (one line saying why is enough when nothing applies)")
+  elif [ "$(wc -c < "$wd/$w")" -lt 40 ]; then problems+=("$w is empty: write the table, or one line saying why nothing applies")
+  fi
+done
+
+# Every changed file of the diff is accounted for by name (a finding or "Sprawdzone i czyste").
 missing=()
 files_in_diff=0
 for d in "$wd"/*.diff; do
