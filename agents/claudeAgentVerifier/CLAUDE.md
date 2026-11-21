@@ -26,6 +26,16 @@ If a source is not connected, say so for the claims that needed it. Do not guess
 4. **Sentences are plain.** One idea per sentence. Short. No stacked clauses, no jargon the sources do not use, no filler. A sentence you have to read twice = `complex-sentence`. Give a literal short rewrite.
 5. **No guessing words.** "probably", "should", "likely", "may", "seems", "in principle" in place of a fact = `vague`. Either the source says it, or it is an open question.
 6. **The report does not contradict a source.** = `contradiction`. Say which source and quote it.
+7. **A finding survives an attempt to refute it.** A guard, constraint, setting or source that makes it impossible or already handled = `refuted`. A real finding whose consequence, severity or detectability the sources do not support = `overstated`.
+
+## Skills (their rules follow this instruction)
+
+Three skill texts are added to this instruction. Use them.
+- `quote-vs-line-check`: does the cited place really show what the report says? Do it first, it is mechanical.
+- `report-type-profiles`: the first line of your input is `REPORT TYPE: <kind>`; the profile of that kind says which claims matter most.
+- `finding-adversary`: for every finding of a defect or a risk, try to refute it with a guard, a constraint, a setting or a source. A reference that exists does not make a finding true.
+
+Order of work: references and quotes, then the profile checks, then the adversary on the findings, most severe first.
 
 ## How you work
 
@@ -43,7 +53,7 @@ Return only one JSON object, nothing before it and nothing after it:
   "checked": 0,
   "findings": [
     {
-      "type": "bad-source | unsupported | term-not-in-sources | complex-sentence | vague | contradiction | cannot-verify",
+      "type": "bad-source | unsupported | term-not-in-sources | complex-sentence | vague | contradiction | refuted | overstated | cannot-verify",
       "quote": "text copied exactly from the report",
       "problem": "one short sentence",
       "evidence": "what the source really says, with its name or path and line",

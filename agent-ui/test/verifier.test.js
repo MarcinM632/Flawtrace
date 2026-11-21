@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { longSentences, parseVerdict, toIssues } = require('../lib/verifier');
+const { longSentences, parseVerdict, profileFor, systemText, toIssues } = require('../lib/verifier');
 
 const REPORT = 'Status zamówienia zmienia się na Zapłacone (PRJ-12). Kwota nie może być ujemna.';
 
@@ -28,4 +28,25 @@ test('verifier: a finding whose quote is not in the report is dropped', () => {
   assert.equal(dropped, 1);
   assert.deepEqual(issues.map((i) => i.code), ['verify-term-not-in-sources', 'verify-cannot-verify']);
   assert.match(issues[0].text, /Opłacone/);
+});
+
+test('verifier: refuted and overstated findings are accepted and labelled', () => {
+  const v = { checked: 2, findings: [
+    { type: 'refuted', quote: 'Kwota nie może być ujemna', problem: 'A validator stops it', evidence: 'OrderDto.kt:14 @Min(0)', fix: 'remove' },
+    { type: 'overstated', quote: 'Status zamówienia zmienia się', problem: 'No second step shown', evidence: 'x', fix: 'narrow' },
+  ] };
+  const { issues } = toIssues(v, REPORT);
+  assert.deepEqual(issues.map((i) => i.code), ['verify-refuted', 'verify-overstated']);
+  assert.match(issues[0].text, /Refuted by the code/);
+});
+
+test('verifier: the system prompt carries the skills and only the profile of the report type', () => {
+  const qa = systemText('qa');
+  assert.match(qa, /Finding adversary/);
+  assert.match(qa, /Quote against line/);
+  assert.match(qa, /Profile of this report \(qa\)/);
+  assert.doesNotMatch(qa, /Profile of this report \(design\)/);
+  assert.match(systemText('completion'), /Profile of this report \(completion\)/);
+  assert.doesNotMatch(systemText('no-such-kind'), /Profile of this report/);
+  assert.equal(profileFor('intro\n\n## kind: a\nA text\n\n## kind: b\nB text', 'b').includes('A text'), false);
 });
