@@ -14,6 +14,24 @@ const LIMIT_MS = () => (Number(process.env.QA_VERIFIER_LIMIT_MIN) || 15) * 60000
 const MAX_WORDS = 35; // zdanie dłuższe niż to jest "pogmatwane"
 const MAX_ISSUES = 25; // tyle zarzutów naraz da się sensownie poprawić w jednej turze
 
+// The verifier runs with Read, Grep and Glob only (no Skill tool), so its skills are placed in its system prompt:
+// the two general skills in full, and of report-type-profiles the intro plus the section of the report type.
+const SKILLS = ['quote-vs-line-check', 'finding-adversary', 'report-type-profiles'];
+const skillText = (name) => {
+  try { return fs.readFileSync(path.join(AGENTS_ROOT, 'claudeAgentVerifier', '.claude', 'skills', name, 'SKILL.md'), 'utf8').replace(/^---[\s\S]*?---\s*/, '').trim(); } catch (_) { return ''; }
+};
+function profileFor(text, kind) {
+  const parts = String(text || '').split(/^## kind: /m);
+  const intro = parts.shift().trim();
+  const hit = parts.find((p) => p.split('\n')[0].trim() === kind);
+  return hit ? `${intro}\n\n## Profile of this report (${kind})\n${hit.split('\n').slice(1).join('\n').trim()}` : intro;
+}
+/** System prompt of the verifier: its instruction, its skills (profile of the report type only) and the sources brief. */
+function systemText(kind) {
+  const skills = SKILLS.map((n) => (n === 'report-type-profiles' ? profileFor(skillText(n), kind) : skillText(n))).filter(Boolean);
+  return [fs.readFileSync(FILE(), 'utf8'), ...skills, sources.brief('qa')].join('\n\n');
+}
+
 const enabled = () => process.env.QA_VERIFIER !== '0' && fs.existsSync(FILE());
 
 const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -25,6 +43,8 @@ const LABEL = {
   'complex-sentence': 'Sentence too complex',
   vague: 'Guessing word instead of a fact',
   contradiction: 'Contradicts a source',
+  refuted: 'Refuted by the code or a source',
+  overstated: 'Not as serious as stated',
   'cannot-verify': 'Could not be checked',
 };
 
@@ -75,7 +95,7 @@ async function verifyViaLoop({ report, kind, task, workDir, isCancelled }, cur, 
   const repos = sources.repoList().filter((r) => r.ready).map((r) => r.path);
   const res = await runLoop({
     provider: { id: cur.id, key: cur.key, model: cur.model, baseUrl: cur.baseUrl },
-    system: [fs.readFileSync(FILE(), 'utf8'), sources.brief('qa')].join(String.fromCharCode(10, 10)),
+    system: systemText(kind),
     prompt: `REPORT TYPE: ${kind}
 
 TASK GIVEN TO THE AGENT:
@@ -116,7 +136,7 @@ function verifyReport({ report, kind, task, workDir, onProc, isCancelled }) {
     const tag = crypto.randomBytes(4).toString('hex');
     const sysFile = path.join(dir, tag + '.system.txt');
     const cfg = path.join(dir, tag + '.mcp.json');
-    fs.writeFileSync(sysFile, fs.readFileSync(FILE(), 'utf8') + '\n\n' + sources.brief('qa'));
+    fs.writeFileSync(sysFile, systemText(kind));
     fs.writeFileSync(cfg, JSON.stringify({ mcpServers: sources.mcpServers({ api: false, knowledge: true }) }));
     const repos = sources.repoList().filter((r) => r.ready).map((r) => r.path);
     const addDirs = [workDir, ...repos].filter(Boolean).flatMap((d) => ['--add-dir', d]);
@@ -157,7 +177,8 @@ const correctionText = (issues) => 'Zasady korekty (weryfikator): '
   + 'każde odwołanie (ticket, komentarz, strona Confluence, plik wiedzy, plik:linia, endpoint) musi istnieć i mówić to, co raport; '
   + 'każdy oczekiwany wynik ma źródło, które potrafisz wskazać; nazwy i terminy bierz dosłownie z źródeł klienta, bez synonimów i własnych słów; '
   + 'zdania są krótkie, jedna informacja w jednym zdaniu; zamiast "chyba / powinno / prawdopodobnie" podaj fakt ze źródła albo przenieś to do pytań otwartych. '
+  + 'znalezisko obalone przez kod albo źródło (guard, walidator, constraint, ustawienie) usuń albo zawęź do przypadku, który nadal zachodzi; skutek lub dotkliwość bez podstawy w źródłach zapisz węziej; cytat ma być w wskazanej linii. '
   + 'Czego nie umiesz oprzeć na źródle, usuń albo przenieś do "Do sprawdzenia ręcznie". '
   + 'Nie dodawaj nowych treści poza poprawkami.';
 
-module.exports = { correctionText, enabled, longSentences, parseVerdict, toIssues, verifyReport };
+module.exports = { correctionText, enabled, longSentences, parseVerdict, profileFor, systemText, toIssues, verifyReport };

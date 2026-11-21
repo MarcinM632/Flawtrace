@@ -444,6 +444,25 @@ test('audit: every file:line in an analysis must exist in the downloaded code', 
   assert.equal(rf.auditEvidence(rep, path.join(tmp, 'no-code')), null, 'no downloaded code, no verdict');
 });
 
+test('audit: a quoted piece of code must stand at the cited line', () => {
+  const wd = path.join(tmp, 'audit-quote-wd');
+  fs.mkdirSync(path.join(wd, 'kod-po', 'src'), { recursive: true });
+  const body = Array.from({ length: 30 }, (_, i) => `// filler ${i}`);
+  body[9] = '    if (amount > limit) { reject(order); }';
+  body[24] = '    balance = balance - fee;';
+  fs.writeFileSync(path.join(wd, 'kod-po', 'src', 'Order.kt'), body.join('\n'));
+  const ok = 'PRJ-1\n\n1. T\nDowód: Order.kt:10 `if (amount > limit) { reject(order); }`\n';
+  assert.deepEqual(rf.auditEvidence(ok, wd).issues, [], 'an exact quote passes');
+  const near = 'Dowód: Order.kt:12 `if (amount > limit)  {  reject(order); }`\n';
+  assert.deepEqual(rf.auditEvidence(near, wd).issues, [], 'spaces and a near miss of 3 lines pass');
+  const elsewhere = rf.auditEvidence('Dowód: Order.kt:2 `balance = balance - fee;`\n', wd);
+  assert.deepEqual(elsewhere.issues.map((i) => i.code), ['evidence-quote-elsewhere']);
+  assert.match(elsewhere.issues[0].items[0], /found at line 25/);
+  const missing = rf.auditEvidence('Dowód: Order.kt:10 `if (amount >= limit) { reject(order); }`\n', wd);
+  assert.deepEqual(missing.issues.map((i) => i.code), ['evidence-quote-missing']);
+  assert.deepEqual(rf.auditEvidence('Dowód: Order.kt:10 "the limit is ignored for large orders"\n', wd).issues, [], 'a paraphrase in quotation marks is not a claim about the code');
+});
+
 test('report cards: the business-rules gate line has its own field, not glued to RODZAJ', () => {
   const v = rf.parseQamcp('WYNIK: x\nKROKI:\n1. a\nBŁĘDY:\n### t\nKROK: 1\nRODZAJ: PRODUKT\nbramka: (1) nie walidacja\nSTAN KOŃCOWY: ok', 'BŁĄD');
   assert.deepEqual([v.errors[0].kind, v.errors[0].gate], ['PRODUKT', '(1) nie walidacja']);

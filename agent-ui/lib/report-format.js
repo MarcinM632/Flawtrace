@@ -374,6 +374,7 @@ function auditQamcp(report, status, events, workDir) {
   return issues;
 }
 
+const QUOTE_NEAR = 3;
 const PROOF_RE = /([A-Za-z0-9_./-]*[A-Za-z0-9_-]\.[A-Za-z][A-Za-z0-9]{0,5}):(\d+)(?:-(\d+))?/g;
 
 /** Indeks plików pobranego kodu: nazwa pliku -> ścieżki. Raz na audyt. */
@@ -419,7 +420,40 @@ function auditEvidence(report, workDir) {
     if (!cands.length) { missing.push(r.ref); continue; }
     if (!cands.some((p) => count(p) >= r.to)) beyond.push(r.ref);
   }
+  // A quote written after file:line in a "Dowód:" line must stand at that line (up to QUOTE_NEAR lines away).
+  // Only code-like quotes are checked (backticks or double quotes with ( ) { } [ ] = < > ; _), so a paraphrase in
+  // quotation marks is never taken for a claim about the code. Spaces and case do not matter.
+  const squash = (t) => String(t).replace(/\s+/g, ' ').trim().toLowerCase();
+  const wrongQuote = [], elsewhere = [];
+  for (const m of String(report).matchAll(/^Dowód:\s*(.+)$/gm)) {
+    const text = m[1];
+    const marks = [...text.matchAll(PROOF_RE)];
+    marks.forEach((pm, i) => {
+      const rest = text.slice(pm.index + pm[0].length, i + 1 < marks.length ? marks[i + 1].index : undefined);
+      const qm = rest.match(/`([^`]{8,200})`|"([^"]{8,200})"|„([^”]{8,200})”/);
+      const quote = qm && (qm[1] || qm[2] || qm[3]);
+      if (!quote || !/[(){}\[\]=<>;_]/.test(quote)) return;
+      const piece = squash(quote.split(/\.\.\.|…/)[0]);
+      if (piece.length < 8) return;
+      const want = pm[1].replace(/\\/g, '/');
+      const cands = (idx.get(path.basename(want)) || []).filter((p) => !want.includes('/') || p.split(path.sep).join('/').endsWith(want));
+      let near = false, elseAt = 0, readable = false;
+      const from = +pm[2], to = pm[3] ? +pm[3] : +pm[2];
+      for (const p of cands) {
+        let ls; try { ls = fs.readFileSync(p, 'utf8').split('\n'); } catch (_) { continue; }
+        readable = true;
+        if (squash(ls.slice(Math.max(0, from - 1 - QUOTE_NEAR), to + QUOTE_NEAR).join(' ')).includes(piece)) { near = true; break; }
+        let at = ls.findIndex((l, k) => squash(ls.slice(k, k + 3).join(' ')).includes(piece));
+        while (at >= 0 && squash(ls.slice(at + 1, at + 4).join(' ')).includes(piece)) at++; // the line where it begins
+        if (at >= 0 && !elseAt) elseAt = at + 1;
+      }
+      if (!readable || near) return;
+      (elseAt ? elsewhere : wrongQuote).push(elseAt ? `${pm[0]} (found at line ${elseAt})` : pm[0]);
+    });
+  }
   const issues = [];
+  if (wrongQuote.length) issues.push({ code: 'evidence-quote-missing', items: wrongQuote, text: `The quoted code is not in the cited file near the cited line: ${wrongQuote.join(', ')}. Quote what the line really says, or correct the reference.` });
+  if (elsewhere.length) issues.push({ code: 'evidence-quote-elsewhere', items: elsewhere, text: `The quoted code is in the file but not at the cited line: ${elsewhere.join(', ')}. Correct the line number.` });
   if (missing.length) issues.push({ code: 'evidence-missing-file', items: missing, text: `Evidence points at file${missing.length > 1 ? 's' : ''} not in the downloaded code: ${missing.join(', ')}` });
   if (beyond.length) issues.push({ code: 'evidence-bad-line', items: beyond, text: `Evidence points past the end of the file: ${beyond.join(', ')}` });
   return { checked: refs.length, issues };
