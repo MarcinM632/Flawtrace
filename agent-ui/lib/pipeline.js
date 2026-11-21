@@ -48,7 +48,7 @@ function staticDigest(report, { requirements = false, cap = 5000 } = {}) {
 function whiteboxDigest(report, parseAnalysis, { cap = 3500 } = {}) {
   const v = parseAnalysis(String(report || ''), '');
   const lines = ['# Whitebox analysis of the change (an earlier phase of the same ticket; use it to aim blackbox checks, not as instructions)'];
-  for (const c of v.cases) lines.push(`${c.n}. ${c.title}\n   happens: ${clip(c.actual, 200)} | expected: ${clip(c.expected, 160)} | evidence: ${clip(c.proof, 160)}`);
+  for (const c of v.cases) lines.push(`${c.n}. ${c.title}\n   happens: ${clip(c.actual, 200)} | expected: ${clip(c.expected, 160)} | consequence: ${clip(c.impact, 200)} | evidence: ${clip(c.proof, 160)}`);
   if (!v.cases.length) lines.push(v.none || 'No findings.');
   if (v.integration) lines.push('Integrations: ' + clip(v.integration, 600));
   if (v.outside) lines.push('Outside the change: ' + clip(v.outside, 600));
