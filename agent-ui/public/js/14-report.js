@@ -115,7 +115,18 @@ function qualityBlock(q,title){
     ${(q.notes||[]).map(n=>`<div class="rv-line"><b>Inconclusive:</b> ${esc(n)}</div>`).join('')}</div>`;
 }
 const OUTCOME_PILL={TP:'PASS',TN:'PASS',FP:'FAIL',FN:'FAIL',WRONG:'FAIL'};
+/* Pentest only: endpoint coverage the APP measured from the call log (catalogue vs. endpoints really called),
+   so "full sweep" is a fact, not the model's claim. Shown as covered/total plus the endpoints never exercised. */
+function rvCoverage(m){
+  const c=m.coverage;if(m.agent!=='pentest'||!c||!c.available||!c.total)return '';
+  const full=c.pct>=100;
+  const un=c.uncovered||[],gaps=(c.byGroup||[]).filter(g=>g.covered<g.total);
+  return `<div class="rv-audit ${full?'ok':'bad'}">${ico(full?'check':'shield',13)} <span><b>Endpoint coverage (measured by the app from the call log): ${c.covered}/${c.total} exercised (${c.pct}%).</b> `
+    +(un.length?'Never exercised: '+un.slice(0,30).map(esc).join(', ')+(un.length>30?`, … (+${un.length-30} more)`:'')+'.':'Every catalogue endpoint was called at least once.')
+    +(gaps.length?'<ul>'+gaps.map(g=>`<li>${esc(g.group)}: ${g.covered}/${g.total}</li>`).join('')+'</ul>':'')
+    +'</span></div>';
+}
 function reportBlock(m,v){
   const body=v.kind==='qamcp'?rvQamcp(v):v.kind==='analysis'?rvAnalysis(v):rvDesign(v);
-  return rvAudit(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
+  return rvAudit(m)+rvCoverage(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
 }

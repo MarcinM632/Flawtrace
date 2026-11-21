@@ -509,6 +509,50 @@ test('Pentest report: a confirmed finding audits the same way a QA MCP product d
   assert.match(v.errors[0].kind, /PRODUKT/);
 });
 
+test('Pentest coverage: the app compares the real call log with the full catalogue, not the model\'s word', () => {
+  const pc = require('../lib/pentest-coverage');
+  const sources = require('../lib/sources');
+  // Seed a tiny OpenAPI catalogue the same way the MCP qa server loads it (openapi.loadFolder).
+  fs.mkdirSync(sources.SPECS_DIR, { recursive: true });
+  fs.writeFileSync(path.join(sources.SPECS_DIR, 'unit-pentest.json'), JSON.stringify({
+    openapi: '3.0.0', info: { title: 'Unit', version: '1' },
+    paths: {
+      '/orders/{id}': { get: { operationId: 'order_get', tags: ['orders'] }, delete: { operationId: 'order_delete', tags: ['orders'] } },
+      '/admin/reset': { post: { operationId: 'admin_reset', tags: ['admin'] } },
+    },
+  }));
+  const wd = fs.mkdtempSync(path.join(tmp, 'pt-'));
+  // Only order_get was really called this run.
+  fs.writeFileSync(path.join(wd, 'calls.jsonl'),
+    JSON.stringify({ ref: 'c1', tool: 'general_call_endpoint', endpoint: 'order_get', args: { name: 'order_get' }, ok: true }) + '\n');
+
+  const cov = pc.coverage([], wd);
+  assert.equal(cov.available, true);
+  assert.equal(cov.total, 3, 'three catalogue endpoints');
+  assert.equal(cov.covered, 1);
+  assert.deepEqual(cov.uncovered.slice().sort(), ['admin_reset', 'order_delete']);
+  assert.equal(cov.pct, 33);
+  const byGroup = Object.fromEntries(cov.byGroup.map((g) => [g.group, `${g.covered}/${g.total}`]));
+  assert.equal(byGroup.orders, '1/2');
+  assert.equal(byGroup.admin, '0/1');
+
+  // On a full sweep an unaccounted endpoint is a correction issue; naming it with a reason clears it.
+  assert.equal(pc.coverageIssues(cov, 'WYNIK: nothing to report', '').length, 1, 'a silent gap on a full sweep is flagged');
+  assert.match(pc.coverageIssues(cov, 'WYNIK: x', '')[0].text, /neither exercised nor accounted for/);
+  const named = 'POKRYCIE:\n- [POZA ZAKRESEM] `admin_reset` — destructive, not exercised\n- [POZA ZAKRESEM] `order_delete` — read probes only';
+  assert.equal(pc.coverageIssues(cov, named, '').length, 0, 'endpoints named with a reason are accounted for');
+
+  // A targeted area (not a full sweep) still reports coverage but does not force the whole catalogue.
+  assert.equal(pc.coverageIssues(cov, 'WYNIK: nothing', 'Check only the order creation endpoint for BOLA').length, 0);
+  assert.equal(pc.isFullSweep(''), true);
+  assert.equal(pc.isFullSweep('Full sweep of the whole connected API, every category of the methodology.'), true);
+  assert.equal(pc.isFullSweep('Check only the login endpoint for user enumeration'), false);
+
+  // Recon/general tools never count as catalogue coverage; the call log is the source of truth.
+  assert.ok(!cov.uncovered.includes('general_read_list_endpoints'));
+  fs.rmSync(path.join(sources.SPECS_DIR, 'unit-pentest.json'), { force: true });
+});
+
 test('Test design: a tester flow must be mapped and run, not replaced by config-save checks', () => {
   const flow = 'please cover PRJ-508: rejecting trades moves orders to other accounts in the matrix or the next priority; two no-funds accounts in one tranche, exposure moves to two funded ones; vary minOrderStep and maxLotPerTrade per account';
   assert.equal(rf.hasTesterFlow('PRJ-508', ''), false, 'a bare ticket key is not a flow');

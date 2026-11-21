@@ -582,6 +582,12 @@ function correctionPrompt(mode, issues) {
       + (issues.some((i) => i.code === 'chat-too-few')
         ? 'Za mało pytań czatu MCP: general_read_ask_mcp_chat_battery to ODCZYT, więc teraz uruchom JEDNĄ baterię z brakującymi pytaniami dla wszystkich wskazanych narzędzi MCP (szablony × dane, tyle pytań, ile brakuje do minimum, z expect z wyroczni PLAT odczytanej w tym runie, intent = nazwa narzędzia MCP) i oprzyj raport na ich metrykach. '
         : '')
+      + (issues.some((i) => i.code === 'pentest-uncovered')
+        ? 'POKRYCIE KATALOGU: aplikacja porównała PEŁNY katalog endpointów z tym, co naprawdę wywołałeś w tym runie. '
+          + 'Wymienione endpointy nie były ani wywołane, ani wyjaśnione. Dla KAŻDEGO z nich albo wykonaj stosowne sprawdzenia '
+          + '(odczyt wystarcza do pokrycia; nie zapisuj niczego poza zasobami AUTOTEST), albo wpisz go w blok POKRYCIE pod STAN KOŃCOWY '
+          + 'z jednozdaniowym powodem, dlaczego jest poza zakresem. Full sweep nie może cicho pominąć żadnego endpointu z katalogu. '
+        : '')
       + 'Zwróć CAŁĄ odpowiedź końcową od nowa, w tym samym formacie (STATUS, --- TREŚĆ ---, --- KONIEC TREŚCI ---).';
   }
   const flow = issues.some((i) => /^flow-/.test(i.code))

@@ -671,7 +671,17 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   // Gdy coś się nie zgadza, ta sama sesja dostaje jedną turę korekty; to, czego agent nie poprawi, zostaje w meta.audit.
   const auditKind = isQamcpLike(agent.mode) ? 'qamcp' : agent.mode === 'design' ? 'design' : agent.mode === 'planning' ? 'planning' : agent.mode === 'static' ? 'static' : agent.mode === 'analysis' ? 'analysis' : agent.mode === 'implementation' ? 'implementation' : !agent.mode ? 'qa' : null;
   const runAudit = () => {
-    if (auditKind === 'qamcp') return { checked: null, issues: auditQamcp(meta.report, meta.reportStatus, r.events, workDir) };
+    if (auditKind === 'qamcp') {
+      const issues = auditQamcp(meta.report, meta.reportStatus, r.events, workDir);
+      // Pentest: the app itself checks catalogue coverage (endpoints really called vs. the full catalogue),
+      // so a "full sweep" is a fact, not the model's claim. A silent gap becomes a correction issue.
+      if (agent.mode === 'pentest') {
+        const pc = require('./pentest-coverage');
+        meta.coverage = pc.coverage(r.events, workDir);
+        issues.push(...pc.coverageIssues(meta.coverage, meta.report, ticket));
+      }
+      return { checked: null, issues };
+    }
     const ev = auditEvidence(meta.report, workDir) || { checked: null, issues: [], noCode: true };
     if (auditKind === 'design') {
       const fl = [...auditDesignFlow(meta.report, ticket, notes), ...auditDesignBugs(meta.report, bugsLib.bugs, `${ticket}\n${notes || ''}`, workDir), ...auditDesignConcrete(meta.report, workDir), ...auditDesignBusiness(meta.report)];

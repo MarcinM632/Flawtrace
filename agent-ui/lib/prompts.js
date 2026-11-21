@@ -655,6 +655,21 @@ Rzeczy, których serwer MCP nie pokaże (TLS/szyfrowanie transportu, nagłówki 
 XSS/CSRF/clickjacking w UI, zależności z podatnościami znanymi z CVE) oznacz [NIE DA SIĘ PRZEZ MCP] w ZLECENIE —
 XSS/CSRF/clickjacking sugeruj sprawdzić w zakładce UI Tests, resztę narzędziem dedykowanym (skaner zależności, SAST).
 
+MACIERZ POKRYCIA I MACIERZ DOSTĘPU (nadrzędne — to jest różnica między "przejrzałem" a "sprawdziłem wszystko")
+- MACIERZ POKRYCIA. Katalog z \`general_read_list_endpoints\` to Twoja lista kontrolna, nie luźna inspiracja. Każdy
+  endpoint z katalogu kończy run w jednym z trzech stanów: WYWOŁANY (dotknięty stosownymi sprawdzeniami), [POZA
+  ZAKRESEM] z jednozdaniowym powodem, albo [NIE DA SIĘ PRZEZ MCP] z powodem. Przy pełnym przeglądzie (puste zlecenie
+  albo "full sweep") APLIKACJA porównuje katalog z dziennikiem Twoich wywołań i ZWRACA Ci do poprawy KAŻDY endpoint,
+  którego ani nie wywołałeś, ani nie wyjaśniłeś — cicho pominięty endpoint to niezaliczony test, nie skrót. Jeden
+  endpoint katalogu = jedna para metoda+ścieżka; manipulacja metodą (NASTAWIENIE) działa tu tylko dla metod, które
+  katalog zna — metodę spoza katalogu serwer odrzuci jako nieznany endpoint, więc to granica narzędzia, nie luka.
+- MACIERZ DOSTĘPU (authz). Kontrola dostępu (API1/API5) to najczęstsza i najgroźniejsza klasa — testuj ją
+  SYSTEMATYCZNIE, nie przy okazji. Dla każdego endpointu operującego na zasobie właściciela albo funkcji roli
+  przejdź pełną macierz tożsamości: anonim (bez tokenu) × właściciel \`AUTOTEST-pentest-a\` × obcy \`AUTOTEST-pentest-b\`
+  × (jeśli są role) konto o niższej roli wobec operacji uprzywilejowanej. Oczekiwany wynik każdej komórki znasz z góry
+  (właściciel: OK; anonim i obcy: odmowa; niższa rola na operacji admina: odmowa) — każde odstępstwo to znalezisko.
+  W bloku POKRYCIE zdaj jednym-dwoma zdaniami, które granice dostępu przeszły tę macierz i z jakim wynikiem.
+
 NOTATKI W TRAKCIE (to leci na żywo do UI)
 Przed każdą kategorią METODYKI jedno zdanie: którą kategorię sprawdzasz i na jakim koncie/zasobie. Po próbie
 jedno zdanie z wynikiem: co odczytałeś, zgodne z oczekiwanym zachowaniem czy nie. Nie opisuj mechaniki wywołań
@@ -673,8 +688,8 @@ WIERNOŚĆ DOWODOM (nadrzędne wobec reszty)
 ODPOWIEDŹ KOŃCOWA — czyta ją tester, który nie widział logu. Krótko, prostym językiem, dokładnie w tym układzie.
 Notatki o postępie poszły już do UI; tutaj tylko wynik.
 JĘZYK: notatki o postępie i cała treść odpowiedzi PO ANGIELSKU, prostym i formalnym językiem. Znaczniki układu
-(STATUS, WYNIK:, ZLECENIE:, KROKI:, BŁĘDY:, STAN KOŃCOWY:, PYTANIA: i pola błędu) zostają dokładnie takie jak
-niżej, bo aplikacja je parsuje.
+(STATUS, WYNIK:, ZLECENIE:, KROKI:, BŁĘDY:, STAN KOŃCOWY:, POKRYCIE:, AUTORYZACJA:, PYTANIA: i pola błędu) zostają
+dokładnie takie jak niżej, bo aplikacja je parsuje.
 
 STATUS: SUKCES      (albo: BŁĄD, NIEWERYFIKOWALNE, PRZERWANO)
 --- TREŚĆ ---
@@ -697,11 +712,17 @@ RODZAJ: PRODUKT — <WAŻNOŚĆ (CRITICAL/HIGH/MEDIUM/LOW/INFO)>, <kategoria OWA
    (albo, gdy to nie realna podatność: KONFIGURACJA TESTU — <ograniczenie>, lub OGRANICZENIE ŚRODOWISKA — <powód>)
 BRAMKA: <jedno zdanie: dlaczego to naprawdę wykorzystywalne (kto, bez czego, z jakim skutkiem), nie teoretyczne>
 STAN KOŃCOWY: <co przywróciłeś/usunąłeś, jakie konta AUTOTEST-pentest-* zostały i w jakim stanie>
+POKRYCIE:
+- <grupa endpointów z katalogu>: <ile wywołano z ilu> — <jedno zdanie, czego dotyczyły sprawdzenia>
+- [POZA ZAKRESEM] \`<nazwa_endpointu>\` — <powód; wpisz TU, osobno i nazwą z katalogu, KAŻDY endpoint, którego nie wywołałeś>
+- [NIE DA SIĘ PRZEZ MCP] <co, np. TLS / nagłówki HTTP / UI> — <powód>
+AUTORYZACJA: <jedno-dwa zdania: które granice dostępu przeszły pełną macierz anonim×właściciel×obcy×rola i z jakim wynikiem>
 --- KONIEC TREŚCI ---
 
 Kiedy który STATUS:
 - SUKCES — żadna kategoria z zastosowaniem nie dała podatności (wszystkie [ZROBIONO] albo [NIE DA SIĘ PRZEZ MCP]/
-  [POMINIĘTO] z powodem). Wtedy nie ma sekcji BŁĘDY.
+  [POMINIĘTO] z powodem) ORAZ każdy endpoint katalogu jest w POKRYCIE rozliczony (WYWOŁANY / [POZA ZAKRESEM] /
+  [NIE DA SIĘ PRZEZ MCP]). Wtedy nie ma sekcji BŁĘDY.
 - BŁĄD — co najmniej jedno znalezisko z RODZAJ zaczynającym się od "PRODUKT" (po przejściu CAŁEJ METODYKI, z
   WSZYSTKIMI potwierdzonymi znaleziskami, nie tylko pierwszym).
 - NIEWERYFIKOWALNE — żadne znalezisko nie jest PRODUKT, ale część METODYKI jest [NIE DA SIĘ PRZEZ MCP] albo
