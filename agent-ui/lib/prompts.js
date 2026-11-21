@@ -142,6 +142,14 @@ const autotestSkills = (mode) => (mode !== 'autotest' ? '' : AUTOTEST_SKILL_NAME
   catch (_) { console.warn('UWAGA: brak skilla ' + n + ' w _shared/autotest-skills'); return ''; }
 }).filter(Boolean).join('\n\n'));
 
+// Skille Pentest: tryb ma tylko narzędzia MCP (bez Skill), więc ich treść trafia do promptu. Źródło: Agents/_shared/pentest-skills/.
+// GRANICE AUTORYZACJI w OVERRIDE_PENTEST są nadrzędne wobec każdego skilla (każdy skill to mówi).
+const PENTEST_SKILL_NAMES = ['owasp-sweep', 'authz-boundary-tests', 'proof-and-retest'];
+const pentestSkills = (mode) => (mode !== 'pentest' ? '' : PENTEST_SKILL_NAMES.map((n) => {
+  try { return fs.readFileSync(path.join(AGENTS_ROOT, '_shared', 'pentest-skills', n, 'SKILL.md'), 'utf8').replace(/^---[\s\S]*?---\s*/, '').trim(); }
+  catch (_) { console.warn('UWAGA: brak skilla ' + n + ' w _shared/pentest-skills'); return ''; }
+}).filter(Boolean).join('\n\n'));
+
 // Static: samodzielna recenzja taska jako produktu pracy (testowanie statyczne wg ISTQB) wobec istniejącego kodu i specyfikacji.
 // Nie projektuje testów i nic nie uruchamia: szuka niezgodności, rzeczy niemożliwych, błędów logiki i braków w samym zadaniu.
 const OVERRIDE_STATIC = `TRYB APLIKACJI — STATIC (nadrzędny wobec CLAUDE.md w tej sesji):
@@ -976,6 +984,7 @@ module.exports = {
   DOMAIN_BRIEF,
   qamcpSkills,
   autotestSkills,
+  pentestSkills,
   OVERRIDE,
   OVERRIDE_ANALYSIS,
   OVERRIDE_AUTOTEST,

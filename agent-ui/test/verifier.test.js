@@ -73,3 +73,12 @@ test('ui tests skills: the three skills are in the text added to the UI Tests pr
   for (const n of ['ui-flow-verification', 'ui-api-parity', 'ui-evidence']) assert.match(t, new RegExp('SKILL ' + n));
   assert.match(require('../lib/uitest').OVERRIDE_UITEST, /REPORT FORMAT/, 'the report format of the app is unchanged');
 });
+
+test('pentest skills: only Pentest gets the three skills, and they restate that the boundaries win', () => {
+  const { pentestSkills, qamcpSkills } = require('../lib/prompts');
+  const t = pentestSkills('pentest');
+  for (const n of ['owasp-sweep', 'authz-boundary-tests', 'proof-and-retest']) assert.match(t, new RegExp('SKILL ' + n));
+  assert.match(t, /boundaries of authorisation/);
+  for (const m of ['qamcp', 'execution', 'autotest', 'design']) assert.equal(pentestSkills(m), '');
+  assert.equal(qamcpSkills('pentest'), '', 'the QA MCP skills are not added to Pentest');
+});
