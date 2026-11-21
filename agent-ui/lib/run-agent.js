@@ -344,7 +344,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniej�
     ? `Input (projekt testów z Fazy 4 — ticket albo treść wklejona wprost; dodatkowy kontekst może zawierać ryzyko z Fazy 1 i/albo zakres z priorytetem z Fazy 3): ${ticket}\nScal to zgodnie z CLAUDE.md (kroki 1–7) i ze skillami procedure-merge, step-executability, priority-and-gates: jedna procedura bez utraty żadnego sprawdzenia, wykonalne kroki z prawdziwymi wartościami, priorytety z uzasadnieniem, szacowany czas, traceability, a przy raporcie Analysis sekcja Gates. Cały wynik po angielsku.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md", stan reguł AUTOTEST (do konkretnych kont/wolumenów w procedurze) w "${wd}/autotest-setup.md", zakres testowy serwisu (skill test-scope) w "${wd}/test-scope.md".\n`
     : agent.mode === 'completion'
-    ? `Input: ${ticket}\nWyjaśnij ten zakończony task zgodnie z CLAUDE.md: co to robi, dlaczego tak, jeden przykład, znane defekty tego obszaru. Krótko, po angielsku, sam tekst.\n` +
+    ? `Input: ${ticket}\nWyjaśnij ten zakończony task zgodnie z CLAUDE.md (kroki 1–4) i ze skillami results-consolidation, defect-triage, lessons-check: co to robi, dlaczego tak, jeden przykład, stan testów z liczbami z raportów faz (tylko tych, które są w wejściu), znane defekty tego obszaru. Krótko, po angielsku, sam tekst.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md" — przeczytaj go przez Grep po serwisie/funkcji. Zakres testowy serwisu (skill test-scope) w "${wd}/test-scope.md".\n`
     : agent.mode === 'design'
     ? `Input: ${ticket}\nZaprojektuj testy zgodnie z CLAUDE.md (kroki 1–7) i ze skillami spec-checks, business-case-design i expected-result-oracle (oraz whitebox-handoff, gdy w WORK_DIR są whitebox-findings.md lub static-review.md). Cały wynik po angielsku.\n` +
@@ -390,6 +390,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniej�
     'Bash(bash *test-planning/scripts/validate-plan.sh*)',
     'Bash(bash *test-strategy/scripts/validate-strategy.sh*)',
     'Bash(bash *test-implementation/scripts/validate-implementation.sh*)',
+    'Bash(bash *test-completion/scripts/validate-completion.sh*)',
     'mcp__claude_ai_Atlassian_MCP__getJiraIssue', 'mcp__claude_ai_Atlassian_MCP__searchJiraIssuesUsingJql',
     'mcp__claude_ai_Atlassian_MCP__getConfluenceContent', 'mcp__claude_ai_Atlassian_MCP__searchConfluence',
     'mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources',

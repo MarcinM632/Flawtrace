@@ -20,9 +20,10 @@ When two sources disagree, the newer and more specific one wins, and the differe
 
 ## Steps
 
-1. Read the ticket, its comments and the pages. Read the results of execution when they are in the context.
-2. Read `WORK_DIR/bug-registry.md` with Grep for the service and function.
-3. Write the entry. Facts only from the sources; when the reason for a decision is not documented, say so.
+1. Read the ticket, its comments and the pages. Read the results of the earlier phases (execution, analysis, implementation, planning) when they are in the input or the context.
+2. Load `results-consolidation` and write the line `Stan testów:` with numbers copied from those reports. Choose the example of the entry (a real step of the execution report when there is one).
+3. Read `WORK_DIR/bug-registry.md` with Grep for the service and function. Load `defect-triage` and `lessons-check` and build the list of known defects (one entry per cause, severity and certainty) and, when the lessons have it, the line `Nie jest defektem:`.
+4. Write the entry to `WORK_DIR/completion.txt`. Facts only from the sources; when the reason for a decision is not documented, say so.
 
 
 ## Rules for every step
@@ -34,4 +35,37 @@ When two sources disagree, the newer and more specific one wins, and the differe
 
 ## Output format
 
-Follow the template in the system prompt exactly. At most 2000 characters, in English.
+At most 2000 characters (hard limit 3000), in English, plain text, no tables, no bold, flat lists only:
+
+```
+<KEY> — <short title>
+
+Co to jest:
+<1-2 sentences>
+
+Dlaczego tak:
+<1-3 sentences>
+
+Jak to działa w praktyce:
+<1 concrete example>
+
+Stan testów: <one line with numbers from the phase reports, or "no phase reports in the input">
+
+Znane defekty tego obszaru:
+- <KEY or new>: <one sentence> [<severity>; <certainty>]
+(or the single line "Brak znanych defektów tego obszaru w rejestrze")
+
+Nie jest defektem: <only when the lessons have a false alarm for this area>
+
+Źródła: <Jira (description + N comments) | + transcript | + recording unavailable as text | + phase reports used>
+```
+
+## Validation
+
+Before you answer, run:
+
+```
+bash .claude/skills/test-completion/scripts/validate-completion.sh --report "<WORK_DIR>/completion.txt"
+```
+
+When it rejects the entry, fix every listed problem and run it again, at most two rounds.
