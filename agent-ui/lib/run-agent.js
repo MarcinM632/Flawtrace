@@ -347,7 +347,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8): logika istniej�
     ? `Input: ${ticket}\nWyjaśnij ten zakończony task zgodnie z CLAUDE.md: co to robi, dlaczego tak, jeden przykład, znane defekty tego obszaru. Krótko, po angielsku, sam tekst.\n` +
       `Użyj WORK_DIR="${wd}" (nadpisz wartość z CLAUDE.md). Rejestr błędów testera jest w "${wd}/bug-registry.md" — przeczytaj go przez Grep po serwisie/funkcji. Zakres testowy serwisu (skill test-scope) w "${wd}/test-scope.md".\n`
     : agent.mode === 'design'
-    ? `Input: ${ticket}\nZaprojektuj testy zgodnie z CLAUDE.md (kroki 1–6) i ze skillem spec-checks. Cały wynik po angielsku.\n` +
+    ? `Input: ${ticket}\nZaprojektuj testy zgodnie z CLAUDE.md (kroki 1–7) i ze skillami spec-checks, business-case-design i expected-result-oracle (oraz whitebox-handoff, gdy w WORK_DIR są whitebox-findings.md lub static-review.md). Cały wynik po angielsku.\n` +
       `Użyj WORK_DIR="${wd}". Rejestr błędów testera (flow testera i klasy błędów) jest w "${wd}/bug-registry.md": ZANIM zaprojektujesz punkty, przeczytaj go przez Grep po nazwie serwisu i funkcji. Bierz z niego sposób sprawdzania i to, jakich błędów się spodziewać, nigdy gotowych przypadków (reguła REJESTR BŁĘDÓW w system prompcie).\n` +
       `Istniejące autotesty (czego już pilnują, żeby ich nie dublować) są w "${wd}/autotests-coverage.md".\n` +
       `Aktualny stan reguł AUTOTEST na test-env (konta, symbol, wagi, limity, progi, lotSize) jest w "${wd}/autotest-setup.md": przeczytaj go w całości przed projektowaniem i opisuj każde sprawdzenie na tych kontach, w lotach i nazwami pól z API (reguła OPIS NA PRZYKŁADZIE AUTOTEST).\n` +
