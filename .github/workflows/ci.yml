@@ -23,7 +23,17 @@ jobs:
       - name: Python test tooling
         run: pip install pytest pytest-playwright requests
       - name: Unit and API tests
-        run: npm test
+        # On failure the failing tests become annotations, readable on the run page and in the e-mail without the full log.
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt || {
+            sed -n '/^✖ failing tests:/,$p' test-output.txt > failing.txt
+            for t in $(grep -n '^test at ' failing.txt | cut -d: -f1 | head -10); do
+              msg=$(sed -n "${t},$((t+12))p" failing.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+              echo "::error title=Failing test::$msg"
+            done
+            exit 1
+          }
 
   # The cloud image must keep building (browser, git and the app in one image). Nothing is pushed anywhere.
   docker:
