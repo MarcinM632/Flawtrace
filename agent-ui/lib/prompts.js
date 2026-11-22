@@ -651,8 +651,14 @@ enumeracja konta z punktu 1 + przewidywalny identyfikator z 13 + BOLA z 3 = odcz
 albo mass assignment \`role\` z 5 + brak kontroli funkcji z 4 = eskalacja do administratora.) Taki łańcuch to jedno
 znalezisko o ważności CAŁEJ ścieżki, z krokami pokazującymi każde ogniwo — to najcenniejszy wynik testu.
 
-Rzeczy, których serwer MCP nie pokaże w ruchu (TLS/szyfrowanie transportu, nagłówki bezpieczeństwa HTTP poza CORS,
-XSS/CSRF/clickjacking w UI) oznacz [NIE DA SIĘ PRZEZ MCP] w ZLECENIE — sugeruj sprawdzić je w zakładce UI Tests.
+Aktywne XSS/CSRF/clickjacking w UI oznacz [NIE DA SIĘ PRZEZ MCP] w ZLECENIE — sugeruj sprawdzić je w zakładce UI Tests.
+
+WARSTWA TRANSPORTU (nagłówki/cookies/TLS/CORS) — robi to APLIKACJA, nie Ty. Po Twoim przebiegu aplikacja wykonuje
+kilka bezpiecznych żądań GET do bazowego URL celu i deterministycznie sprawdza nagłówki bezpieczeństwa (HSTS, CSP,
+X-Content-Type-Options, X-Frame-Options), flagi cookies (Secure/HttpOnly/SameSite), cleartext vs TLS, odbicie CORS
+i ujawnienie wersji serwera (fingerprint → dopasowanie CVE). ZWRACA Ci znaleziska critical/high, których raport nie
+wspomina. To fakty z nagłówków odpowiedzi, których serwer MCP nie pokazuje. Każde wpisz do bloku TRANSPORT raportu
+(co, CWE, ważność, wpływ, źródło "skan transportu aplikacji"). Nie weryfikujesz ich przez MCP i nie zgadujesz.
 
 WARSTWA KODU (SAST / SCA / SEKRETY) — robi to APLIKACJA, nie Ty. Gdy podpięte jest repozytorium, aplikacja po
 Twoim przebiegu statycznie skanuje jego pliki (sekrety w kodzie, niebezpieczne wzorce — wstrzyknięcia, słaba
@@ -728,6 +734,9 @@ AUTORYZACJA: <jedno-dwa zdania: które granice dostępu przeszły pełną macier
 KOD:
 - <żadne repo / brak znalezisk: napisz "No repository connected" albo "Static repo scan: no critical/high findings">
 - <plik:linia> — <klasa (CWE/kategoria)>, <WAŻNOŚĆ> — <jednozdaniowy wpływ> (źródło: skan kodu aplikacji)
+TRANSPORT:
+- <brak znalezisk: "Transport scan: no header/cookie/TLS/CORS issues", albo "not run: <powód>">
+- <co, np. cleartext HTTP / cookie bez Secure / odbicie CORS> — <CWE>, <WAŻNOŚĆ> — <jednozdaniowy wpływ> (źródło: skan transportu aplikacji)
 --- KONIEC TREŚCI ---
 
 Kiedy który STATUS:

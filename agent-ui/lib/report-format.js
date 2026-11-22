@@ -589,6 +589,11 @@ function correctionPrompt(mode, issues) {
           + 'To są ustalenia aplikacji z plików repo — nie weryfikuj ich przez MCP (API tego nie widzi); zreferuj je i oznacz źródło jako "skan kodu aplikacji". '
           + 'Jeśli któreś jest fałszywym trafieniem, zostaw je w raporcie z adnotacją "fałszywe trafienie: <powód>" — nie pomijaj po cichu. '
         : '')
+      + (issues.some((i) => i.code === 'pentest-transport')
+        ? 'SKAN TRANSPORTU (nagłówki/cookies/TLS/CORS): aplikacja wykonała kilka bezpiecznych GET-ów do bazowego URL celu — warstwa, której serwer MCP nie pokazuje. '
+          + 'Wymienione znaleziska critical/high (np. cleartext HTTP, cookie bez Secure, odbicie CORS z Allow-Credentials) NIE są w raporcie. '
+          + 'Dla każdego dodaj pozycję do bloku TRANSPORT: co, klasa (CWE), ważność, jednozdaniowy wpływ, źródło "skan transportu aplikacji". To fakty z nagłówków odpowiedzi, nie z pamięci modelu; nie weryfikuj ich przez MCP. '
+        : '')
       + (issues.some((i) => i.code === 'pentest-uncovered')
         ? 'POKRYCIE KATALOGU: aplikacja porównała PEŁNY katalog endpointów z tym, co naprawdę wywołałeś w tym runie. '
           + 'Wymienione endpointy nie były ani wywołane, ani wyjaśnione. Dla KAŻDEGO z nich albo wykonaj stosowne sprawdzenia '

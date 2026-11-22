@@ -141,7 +141,20 @@ function rvRepoScan(m){
     +(s.limited?'<div class="rv-line">Scan hit a size/file limit — not exhaustive. For full SAST/SCA run Semgrep/osv-scanner in a dedicated runner.</div>':'')
     +'</span></div>';
 }
+/* Pentest only: the app's transport/HTTP scan of the target (security headers, cookie flags, TLS, CORS),
+   the layer the MCP API cannot see. A few safe GETs, measured by the app. */
+function rvTransport(m){
+  const t=m.transport;if(m.agent!=='pentest'||!t)return '';
+  if(!t.available)return t.reason?`<div class="rv-audit"><span><b>Transport/HTTP scan: not run</b> (${esc(t.reason)}).</span></div>`:'';
+  const c=t.counts||{};const serious=(c.critical||0)+(c.high||0);
+  const top=(t.findings||[]).slice().sort((a,b)=>SEV_RANK[a.severity]-SEV_RANK[b.severity]).slice(0,20);
+  const head=c.total?`<b>Transport/HTTP scan (app): ${c.total} finding${c.total>1?'s':''} — ${c.critical||0} critical, ${c.high||0} high, ${c.medium||0} medium, ${c.low||0} low.</b>`
+    :`<b>Transport/HTTP scan (app): no header / cookie / TLS / CORS issues.</b>`;
+  return `<div class="rv-audit ${serious?'bad':'ok'}">${ico(serious?'shield':'check',13)} <span>${head}`
+    +(top.length?'<ul>'+top.map(f=>`<li><b>${esc(f.severity)}</b> · ${esc(f.rule)}${f.cwe?' ('+esc(f.cwe)+')':''} — ${esc(f.title||'')}</li>`).join('')+'</ul>':'')
+    +'</span></div>';
+}
 function reportBlock(m,v){
   const body=v.kind==='qamcp'?rvQamcp(v):v.kind==='analysis'?rvAnalysis(v):rvDesign(v);
-  return rvAudit(m)+rvCoverage(m)+rvRepoScan(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
+  return rvAudit(m)+rvCoverage(m)+rvRepoScan(m)+rvTransport(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
 }

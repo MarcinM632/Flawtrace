@@ -713,6 +713,16 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
     if (!verifyKind || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
     try {
       const first = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
+      // Pentest: warstwa transportu/HTTP celu (nagłówki, cookies, TLS, CORS), na którą MCP jest ślepy. Kilka
+      // bezpiecznych GET-ów do bazowego URL; async, więc tu, a nie w sync runAudit(). Na hostingu strażnik SSRF.
+      if (agent.mode === 'pentest') {
+        try {
+          const ts = require('./transport-scan');
+          const api = sources.read().api || {};
+          meta.transport = await ts.scan({ baseUrl: api.baseUrl, authHeader: api.authHeader, authValue: api.authValue }, { hosted: require('./hosted').HOSTED });
+          first.issues.push(...ts.transportIssues(meta.transport, meta.report));
+        } catch (e) { meta.transport = { available: false, reason: String(e && e.message || e) }; }
+      }
       // Gdy kontrola aplikacji już wymaga korekty (a sesja da się wznowić), drogi weryfikator czeka na poprawiony raport:
       // jedna sesja weryfikatora zamiast dwóch. QA_VERIFIER_EARLY=1 przywraca dawne zachowanie (weryfikator przed korektą).
       const deferVerifier = process.env.QA_VERIFIER_EARLY !== '1' && first.issues.length > 0 && !!res.sessionId && verifierLib.enabled();
