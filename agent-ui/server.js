@@ -577,8 +577,12 @@ const server = http.createServer(async (req, res) => {
       const blocker = uiTestLib.acceptBlocker(src.meta);
       if (blocker) return json(res, 409, { error: blocker });
       if (!agentAvailable(AGENTS.autotest)) return json(res, 409, { error: 'autotests/ was not found next to the app (no README.md in ' + AGENTS.autotest.absDir + ')' });
-      const run = startRun('autotest', src.meta.ticket.slice(0, 300), '', { stack: 'ts-playwright', url: src.meta.url, source: src.meta.id, flow: uiTestLib.buildFlow(src.meta, src.events) });
-      src.meta.accepted = { at: Date.now(), testRun: run.id };
+      const flow = uiTestLib.buildFlow(src.meta, src.events);
+      const run = startRun('autotest', src.meta.ticket.slice(0, 300), '', { stack: 'ts-playwright', url: src.meta.url, source: src.meta.id, flow });
+      // Keep the natural-language intent with the generated test, so a later failure can be self-healed by re-driving
+      // from it (the UI changed) instead of only patching the frozen code. See lib/self-heal.js.
+      if (run && run.meta) run.meta.intent = flow;
+      src.meta.accepted = { at: Date.now(), testRun: run.id, intent: flow };
       persist(src);
       return json(res, 201, run);
     }

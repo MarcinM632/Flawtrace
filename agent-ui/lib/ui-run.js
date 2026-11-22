@@ -139,6 +139,11 @@ function startTestRun(r, creds) {
       if (!parsed) return fail(t.timedOut ? `The test run timed out after ${TEST_MS / 60000} min.` : 'The tests did not run. See the output.');
       Object.assign(tr, parsed);
       tr.state = parsed.stats.failed || t.timedOut || !parsed.stats.total ? 'failed' : 'passed';
+      // Samonaprawianie: gdy test padł, klasyfikacja awarii doradza odtworzyć z intencji (zmiana UI) albo załatać.
+      if (tr.state === 'failed' && parsed.stats.failed) {
+        const bad = (parsed.tests || []).filter((x) => x.status !== 'passed' && x.error).map((x) => x.error);
+        tr.selfHeal = require('./self-heal').recommend({ failures: bad, hasIntent: !!require('./self-heal').intentFrom(m) });
+      }
       if (t.timedOut) tr.error = `Stopped after ${TEST_MS / 60000} min (QA_UI_TEST_MIN).`;
       else if (!parsed.stats.total) tr.error = 'No tests were found to run.';
     } catch (e) {
