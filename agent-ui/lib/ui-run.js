@@ -17,8 +17,10 @@ const httpErr = (code, message) => Object.assign(new Error(message), { code });
 const runDir = (meta) => path.join(path.dirname(meta.staging.dir), 'ts-run');
 const reportDir = (meta) => path.join(runDir(meta), 'flawtrace-report');
 
-/** Overrides only the evidence settings of the generated config: everything on, no retries (a flaky test must show). */
-const CONFIG_SOURCE = `import { defineConfig } from '@playwright/test';
+const browsers = require('./browsers');
+/** Overrides only the evidence settings of the generated config: everything on, no retries (a flaky test must show).
+ *  Runs the chosen browsers (UITEST_BROWSERS, default chromium) — the same test on Chromium, Firefox and WebKit. */
+const configSource = (list) => `import { defineConfig, devices } from '@playwright/test';
 import base from './playwright.config';
 
 export default defineConfig({
@@ -29,8 +31,11 @@ export default defineConfig({
   outputDir: 'test-results',
   reporter: [['list'], ['json', { outputFile: 'flawtrace-results.json' }], ['html', { outputFolder: 'flawtrace-report', open: 'never' }]],
   use: { ...base.use, actionTimeout: 8000, screenshot: 'on', video: 'on', trace: 'on' },
+  projects: ${browsers.projectsSnippet(list)},
 });
 `;
+// Domyślny wariant (chromium) — używany przez naprawę testu (ui-fix) i sprawdzany przez testy.
+const CONFIG_SOURCE = configSource(['chromium']);
 
 /** Environment of the test process: the page and the login the generated tests read. Never the app's own secrets. */
 function testEnv(meta, creds, base = process.env) {
@@ -109,7 +114,8 @@ function startTestRun(r, creds) {
         fs.cpSync(path.join(project, f), path.join(dir, f), { recursive: true, force: true });
       }
       for (const old of ['flawtrace-report', 'test-results', 'flawtrace-results.json', 'playwright']) fs.rmSync(path.join(dir, old), { recursive: true, force: true });
-      fs.writeFileSync(path.join(dir, 'flawtrace.config.ts'), CONFIG_SOURCE);
+      const browserList = browsers.parse(process.env.UITEST_BROWSERS);
+      fs.writeFileSync(path.join(dir, 'flawtrace.config.ts'), configSource(browserList));
       const env = testEnv(m, creds);
       const base = { cwd: dir, env, onData: log, onProc: (p) => { entry.proc = p; } };
 
@@ -119,8 +125,8 @@ function startTestRun(r, creds) {
         if (entry.cancelled) return;
         if (i.code !== 0) return fail(i.timedOut ? 'npm install timed out.' : 'npm install failed. See the output.');
       }
-      set('installing'); log('> npx playwright install chromium\n');
-      const b = await exec('npx', ['playwright', 'install', 'chromium'], { ...base, ms: BROWSER_MS });
+      set('installing'); log('> npx playwright install ' + browserList.join(' ') + '\n');
+      const b = await exec('npx', ['playwright', 'install', ...browserList], { ...base, ms: BROWSER_MS });
       if (entry.cancelled) return;
       if (b.code !== 0) return fail(b.timedOut ? 'Downloading the browser timed out.' : 'Could not install the browser. See the output.');
 
@@ -191,4 +197,4 @@ function serveReport(req, res, meta, rel) {
   return true;
 }
 
-module.exports = { CONFIG_SOURCE, cancelTestRun, exec, parseResults, reconcile, reportFile, serveReport, startTestRun, testEnv };
+module.exports = { CONFIG_SOURCE, configSource, cancelTestRun, exec, parseResults, reconcile, reportFile, serveReport, startTestRun, testEnv };
