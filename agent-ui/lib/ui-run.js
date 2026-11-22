@@ -117,7 +117,7 @@ function startTestRun(r, creds) {
       for (const old of ['flawtrace-report', 'test-results', 'flawtrace-results.json', 'playwright']) fs.rmSync(path.join(dir, old), { recursive: true, force: true });
       // Desktop (UITEST_BROWSERS) i/lub mobile (UITEST_DEVICE, np. "iphone,pixel"). Natywne apki iOS/Android to osobny
       // silnik (Appium/symulatory, farma urządzeń) — tu testujemy aplikację webową na emulowanych urządzeniach.
-      const plan = browsers.devicePlan({ browsers: process.env.UITEST_BROWSERS || '', devices: process.env.UITEST_DEVICE || '', browsersSet: 'UITEST_BROWSERS' in process.env });
+      const plan = browsers.devicePlan({ browsers: process.env.UITEST_BROWSERS || '', devices: m.device || process.env.UITEST_DEVICE || '', browsersSet: 'UITEST_BROWSERS' in process.env });
       const browserList = plan.install;
       fs.writeFileSync(path.join(dir, 'flawtrace.config.ts'), configSource(plan.projectsSnippet));
       const env = testEnv(m, creds);

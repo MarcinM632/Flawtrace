@@ -471,6 +471,9 @@ const server = http.createServer(async (req, res) => {
         extra.url = u.href;
         const username = String(b.username || '').slice(0, 200), password = String(b.password || '').slice(0, 200);
         if (username || password) extra.credentials = { username, password };
+        // Mobile: the tester can pick an emulated device for this run (e.g. "iphone"). Empty stays desktop.
+        // Unknown values drop to '' via parseDevices, so the picker can never inject an arbitrary engine name.
+        extra.device = require('./lib/browsers').parseDevices(b.device)[0] || '';
       }
       if (a.mode === 'qamcp' || a.mode === 'execution') extra.scope = b.scope === 'all' ? 'all' : 'auto';
       // Data files dropped/pasted into the form (e.g. CSVs, or a PDF for Analyses/Autotests): data for the
@@ -598,7 +601,8 @@ const server = http.createServer(async (req, res) => {
         let u; try { u = new URL(url); } catch (_) { return json(res, 409, { error: 'Cannot re-drive: the original page URL is invalid.' }); }
         if (hostedLib.HOSTED) { try { await require('./lib/net-guard').assertPublicUrl(u.href); } catch (e) { return json(res, 400, { error: e.message }); } }
         const goal = String((orig && orig.meta.ticket) || selfHeal.intentFrom(src.meta) || src.meta.ticket || '').slice(0, 300);
-        const extra = { url: u.href, ...(username || password ? { credentials: { username, password } } : {}) };
+        const device = (orig && orig.meta.device) || src.meta.device || '';
+        const extra = { url: u.href, ...(device ? { device } : {}), ...(username || password ? { credentials: { username, password } } : {}) };
         const run = startRun('uitest', goal, '', extra);
         run.meta.selfHealOf = src.meta.id;
         src.meta.selfHealRun = run.id; persist(src);
@@ -613,7 +617,7 @@ const server = http.createServer(async (req, res) => {
       if (blocker) return json(res, 409, { error: blocker });
       if (!agentAvailable(AGENTS.autotest)) return json(res, 409, { error: 'autotests/ was not found next to the app (no README.md in ' + AGENTS.autotest.absDir + ')' });
       const flow = uiTestLib.buildFlow(src.meta, src.events);
-      const run = startRun('autotest', src.meta.ticket.slice(0, 300), '', { stack: 'ts-playwright', url: src.meta.url, source: src.meta.id, flow });
+      const run = startRun('autotest', src.meta.ticket.slice(0, 300), '', { stack: 'ts-playwright', url: src.meta.url, source: src.meta.id, flow, device: src.meta.device || '' });
       // Keep the natural-language intent with the generated test, so a later failure can be self-healed by re-driving
       // from it (the UI changed) instead of only patching the frozen code. See lib/self-heal.js.
       if (run && run.meta) run.meta.intent = flow;

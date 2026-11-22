@@ -202,6 +202,10 @@ function startRun(agentKey, ticket, notes, extra = {}) {
   const isUi = agent.mode === 'uitest';
   const cred = isUi && extra.credentials ? extra.credentials : null;
   if (isUi) meta.hasLogin = !!(cred && (cred.username || cred.password));
+  // Mobile: the device picked for this run (preset key, '' = desktop). Carried on the UI run (drives the live
+  // agent's browser, below) and on the generated ts-playwright run (lib/ui-run), so the test runs on the same
+  // device the agent verified on. The accept flow copies it from the UI run to the test-writer run.
+  meta.device = extra.device || '';
   const r = { meta, events: [], listeners: new Set(), proc: null, repoDir: stagingDir, flow: extra.flow || null, secrets: cred && cred.password ? [cred.password] : [] }; // only the password is secret; the user name is not (reports quote it, e.g. "Logged in as anna")
   if (stagingDir) meta.staging = { dir: stagingDir, state: 'pending', base: hashTree(stagingDir) };
   runs.set(id, r);
@@ -462,13 +466,14 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
       r.secretsFile = secretsFile; // removed in finish(): the password does not stay on disk after the run
       fs.writeFileSync(secretsFile, `UI_PASSWORD=${JSON.stringify(cred.password)}\n`);
     }
-    // Mobile UI Tests: UITEST_DEVICE (e.g. "iphone") emulates a phone/tablet so the agent drives the mobile UI.
-    const mobileKey = require('./browsers').parseDevices(process.env.UITEST_DEVICE)[0];
+    // Mobile UI Tests: the per-run device picker (meta.device) emulates a phone/tablet so the agent drives the
+    // mobile UI; UITEST_DEVICE stays a fallback for runs started without the picker (e.g. the API).
+    const mobileKey = require('./browsers').parseDevices(meta.device || process.env.UITEST_DEVICE)[0];
     const device = mobileKey ? require('./browsers').DEVICE_PRESETS[mobileKey].device : '';
     acpServers = { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile, device }) };
     fs.writeFileSync(cfg, JSON.stringify({ mcpServers: acpServers }));
     mcpArgs.push('--mcp-config', cfg, '--strict-mcp-config');
-    emit(r, { type: 'status', text: `Browser: headless Chromium, page ${extra.url}${meta.hasLogin ? ', login given' : ', no login'}; limit ${uiTest.MAX_STEPS} steps` });
+    emit(r, { type: 'status', text: `Browser: headless ${device ? 'emulating ' + device : 'Chromium'}, page ${extra.url}${meta.hasLogin ? ', login given' : ', no login'}; limit ${uiTest.MAX_STEPS} steps` });
   } else if (scope) {
     // QA MCP and Execution: the qa server calls the test environment, the sources server reads the knowledge sources.
     // Autotests: only the qa server, and the allowlist lets it read endpoint contracts, never call them.

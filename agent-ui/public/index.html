@@ -291,6 +291,19 @@
           <div class="hint">Use an account of the test environment. The password is kept only for this run: it is not saved in the history and is hidden in the log and the report.</div>
         </div>
         <div class="field">
+          <label for="uDevice">Device</label>
+          <select id="uDevice">
+            <option value="">Desktop (default)</option>
+            <option value="iphone">iPhone 13</option>
+            <option value="iphone-se">iPhone SE</option>
+            <option value="iphone-15">iPhone 15</option>
+            <option value="ipad">iPad (gen 7)</option>
+            <option value="pixel">Pixel 7</option>
+            <option value="galaxy">Galaxy S9+</option>
+          </select>
+          <div class="hint">The agent drives an emulated phone or tablet (mobile viewport, touch, user-agent), and the generated Playwright test runs on the same device. Native iOS/Android apps are a separate engine.</div>
+        </div>
+        <div class="field">
           <label for="uGoal">What to verify</label>
           <div class="composer"><textarea id="uGoal" placeholder="Describe what a user does and what must be true afterwards, e.g.
 

@@ -1,6 +1,8 @@
 // lib/browsers.js: browser selection for the generated Playwright run, and its effect on the config/install.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const b = require('../lib/browsers');
 const uiRun = require('../lib/ui-run');
 
@@ -46,6 +48,18 @@ test('devicePlan: desktop default, mobile-only, and combined', () => {
   assert.deepEqual([...d2.install].sort(), ['firefox', 'webkit']);
   assert.match(d2.projectsSnippet, /name: 'firefox'/);
   assert.match(d2.projectsSnippet, /name: 'ipad'/);
+});
+
+test('the UI Tests device picker offers exactly the known presets, plus a desktop default', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const sel = html.match(/<select id="uDevice">([\s\S]*?)<\/select>/);
+  assert.ok(sel, 'the #uDevice picker exists in the form');
+  const values = [...sel[1].matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]);
+  assert.ok(values.includes(''), 'a desktop (empty) option is offered');
+  const deviceValues = values.filter(Boolean);
+  // Every non-empty picker value must be a real preset, and every preset must be offered — no drift either way.
+  for (const v of deviceValues) assert.ok(b.DEVICE_PRESETS[v], `picker value ${v} is a known device preset`);
+  assert.deepEqual(deviceValues.slice().sort(), Object.keys(b.DEVICE_PRESETS).slice().sort());
 });
 
 test('default generated config stays chromium-only and valid', () => {

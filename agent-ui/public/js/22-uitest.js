@@ -9,7 +9,7 @@ $('#uGo').onclick=async()=>{
   if(goal.length<10){err.textContent='Describe what to verify in a few words (at least 10 characters).';$('#uGoal').focus();return}
   $('#uGo').disabled=true;
   try{
-    const m=await post('/api/runs',{agent:'uitest',url,ticket:goal,username:$('#uUser').value,password:$('#uPass').value});
+    const m=await post('/api/runs',{agent:'uitest',url,ticket:goal,username:$('#uUser').value,password:$('#uPass').value,device:$('#uDevice').value});
     $('#uPass').value='';   /* the password is not kept in the form after the run starts */
     await open(m.id);
   }catch(e){err.textContent=e.message}
