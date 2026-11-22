@@ -1,1 +1,2 @@
 *.sh text eol=lf
+agent-ui/test/fixtures/*.txt text eol=lf

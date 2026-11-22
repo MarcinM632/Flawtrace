@@ -60,7 +60,7 @@ async function finished(id) {
 }
 
 test('setup: a test environment API is connected (Petstore spec, nothing is called)', async () => {
-  const text = fs.readFileSync(path.join(APP, 'specs', 'petstore.json'), 'utf8');
+  const text = fs.readFileSync(path.join(__dirname, 'fixtures', 'petstore.json'), 'utf8');
   const up = await post('/api/sources/specs/upload', { name: 'petstore', text });
   assert.equal(up.status, 200, await up.clone().text());
   const sv = await post('/api/sources', { api: { baseUrl: 'http://127.0.0.1:9', readOnly: true } });
