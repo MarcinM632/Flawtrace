@@ -43,7 +43,7 @@ test('Bash runs qa-git.sh and the validate script, nothing else', async () => {
   await bad(/Only commands of the form/, 'cat /etc/passwd');
   await bad(/Not allowed/, 'bash x.sh && cat /etc/passwd');
   await bad(/not allowed|not found/i, 'bash /bin/sh');
-  await bad(/Script not found/, 'bash ../../../etc/passwd');
+  await bad(/Script not found|not allowed/i, 'bash ../../../etc/passwd'); // exists on Linux (not allowed), not on Windows (not found)
 });
 
 test('Bash: a validator may only look at files of the run, qa-git prepare only writes into the run folder', async () => {
