@@ -21,7 +21,9 @@ const SITE = () => `localhost:${port}`, APPH = () => `app.localhost:${port}`;
 function req(host, method, p, { body, cookie, headers = {}, raw } = {}) {
   return new Promise((resolve, reject) => {
     const payload = raw !== undefined ? raw : body !== undefined ? JSON.stringify(body) : undefined;
-    const r = http.request({ host: '127.0.0.1', port, method, path: p, headers: { host: host(), ...(payload !== undefined ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } : {}), ...(cookie ? { cookie } : {}), ...headers } }, (res) => {
+    // agent:false forces a fresh socket per request: the gateway does not keep connections alive, and reusing a
+    // half-closed keep-alive socket made this suite flaky on Linux CI (an occasional empty 400 on the next request).
+    const r = http.request({ host: '127.0.0.1', port, method, path: p, agent: false, headers: { host: host(), connection: 'close', ...(payload !== undefined ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } : {}), ...(cookie ? { cookie } : {}), ...headers } }, (res) => {
       const chunks = []; res.on('data', (c) => chunks.push(c));
       res.on('end', () => { const buf = Buffer.concat(chunks); const text = buf.toString('utf8'); let json = null; try { json = JSON.parse(text); } catch (_) { /* not json */ } resolve({ status: res.statusCode, headers: res.headers, buf, text, json }); });
     });
