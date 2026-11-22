@@ -27,8 +27,11 @@ jobs:
         run: |
           set -o pipefail
           npm test 2>&1 | tee test-output.txt || {
-            sed -n '/^✖ failing tests:/,$p' test-output.txt > failing.txt
-            for t in $(grep -n '^test at ' failing.txt | cut -d: -f1 | head -10); do
+            # node --test prints TAP when stdout is not a terminal ("not ok N - name" + YAML details), spec otherwise.
+            if grep -q '^✖ failing tests:' test-output.txt; then sed -n '/^✖ failing tests:/,$p' test-output.txt > failing.txt; pat='^test at '
+            else cp test-output.txt failing.txt; pat='^ *not ok '; fi
+            [ -n "$(grep -E "$pat" failing.txt)" ] || tail -n 12 test-output.txt > failing.txt
+            for t in $(grep -nE "$pat" failing.txt | cut -d: -f1 | head -10; grep -qE "$pat" failing.txt || echo 1); do
               msg=$(sed -n "${t},$((t+12))p" failing.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
               echo "::error title=Failing test::$msg"
             done
