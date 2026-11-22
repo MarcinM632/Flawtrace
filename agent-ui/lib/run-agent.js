@@ -679,6 +679,13 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
         const pc = require('./pentest-coverage');
         meta.coverage = pc.coverage(r.events, workDir);
         issues.push(...pc.coverageIssues(meta.coverage, meta.report, ticket));
+        // Warstwa kodu, na którą pentest API jest ślepy: aplikacja statycznie skanuje lokalne kopie repo
+        // (sekrety, SAST, SCA). To czytanie plików, nie uruchamianie kodu — działa też na hostingu.
+        try {
+          const rs = require('./repo-scan');
+          meta.repoScan = rs.scan(require('./sources').repoList());
+          issues.push(...rs.repoScanIssues(meta.repoScan, meta.report));
+        } catch (e) { meta.repoScan = { available: false, reason: String(e && e.message || e) }; }
       }
       return { checked: null, issues };
     }

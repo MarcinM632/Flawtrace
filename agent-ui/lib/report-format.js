@@ -582,6 +582,13 @@ function correctionPrompt(mode, issues) {
       + (issues.some((i) => i.code === 'chat-too-few')
         ? 'Za mało pytań czatu MCP: general_read_ask_mcp_chat_battery to ODCZYT, więc teraz uruchom JEDNĄ baterię z brakującymi pytaniami dla wszystkich wskazanych narzędzi MCP (szablony × dane, tyle pytań, ile brakuje do minimum, z expect z wyroczni PLAT odczytanej w tym runie, intent = nazwa narzędzia MCP) i oprzyj raport na ich metrykach. '
         : '')
+      + (issues.some((i) => i.code === 'pentest-repo-findings')
+        ? 'SKAN KODU (SAST/SCA/SEKRETY): aplikacja statycznie przeskanowała podpięte repozytoria — klasy, na które test API jest ślepy. '
+          + 'Wymienione znaleziska (sekrety w kodzie, niebezpieczne wzorce, podatne zależności) o wadze critical/high NIE pojawiają się w raporcie. '
+          + 'Dla KAŻDEGO z nich dodaj pozycję do raportu: plik i linia (z listy aplikacji), klasa (np. CWE), waga, i jednozdaniowy wpływ. '
+          + 'To są ustalenia aplikacji z plików repo — nie weryfikuj ich przez MCP (API tego nie widzi); zreferuj je i oznacz źródło jako "skan kodu aplikacji". '
+          + 'Jeśli któreś jest fałszywym trafieniem, zostaw je w raporcie z adnotacją "fałszywe trafienie: <powód>" — nie pomijaj po cichu. '
+        : '')
       + (issues.some((i) => i.code === 'pentest-uncovered')
         ? 'POKRYCIE KATALOGU: aplikacja porównała PEŁNY katalog endpointów z tym, co naprawdę wywołałeś w tym runie. '
           + 'Wymienione endpointy nie były ani wywołane, ani wyjaśnione. Dla KAŻDEGO z nich albo wykonaj stosowne sprawdzenia '

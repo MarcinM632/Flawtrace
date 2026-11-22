@@ -651,9 +651,17 @@ enumeracja konta z punktu 1 + przewidywalny identyfikator z 13 + BOLA z 3 = odcz
 albo mass assignment \`role\` z 5 + brak kontroli funkcji z 4 = eskalacja do administratora.) Taki łańcuch to jedno
 znalezisko o ważności CAŁEJ ścieżki, z krokami pokazującymi każde ogniwo — to najcenniejszy wynik testu.
 
-Rzeczy, których serwer MCP nie pokaże (TLS/szyfrowanie transportu, nagłówki bezpieczeństwa HTTP poza CORS,
-XSS/CSRF/clickjacking w UI, zależności z podatnościami znanymi z CVE) oznacz [NIE DA SIĘ PRZEZ MCP] w ZLECENIE —
-XSS/CSRF/clickjacking sugeruj sprawdzić w zakładce UI Tests, resztę narzędziem dedykowanym (skaner zależności, SAST).
+Rzeczy, których serwer MCP nie pokaże w ruchu (TLS/szyfrowanie transportu, nagłówki bezpieczeństwa HTTP poza CORS,
+XSS/CSRF/clickjacking w UI) oznacz [NIE DA SIĘ PRZEZ MCP] w ZLECENIE — sugeruj sprawdzić je w zakładce UI Tests.
+
+WARSTWA KODU (SAST / SCA / SEKRETY) — robi to APLIKACJA, nie Ty. Gdy podpięte jest repozytorium, aplikacja po
+Twoim przebiegu statycznie skanuje jego pliki (sekrety w kodzie, niebezpieczne wzorce — wstrzyknięcia, słaba
+kryptografia, wyłączona weryfikacja TLS — i zależności podatne wg znanych CVE) i ZWRACA Ci listę znalezisk
+critical/high, których raport nie wspomina. To są fakty z plików repo, których API i serwer MCP nie widzą. Każde
+takie znalezisko wpisz do bloku KOD raportu: plik:linia (z listy aplikacji), klasa (CWE/kategoria), ważność,
+jednozdaniowy wpływ i źródło "skan kodu aplikacji". Nie weryfikujesz ich przez MCP (nie da się) i nie zgadujesz
+niczego ponad to, co aplikacja podała. Pełny, wyczerpujący SAST/SCA (Semgrep/CodeQL, osv-scanner/Trivy, gitleaks)
+to osobny, izolowany runner z jawną autoryzacją celu — ten skan to warstwa zawsze dostępna, nie jego zamiennik.
 
 MACIERZ POKRYCIA I MACIERZ DOSTĘPU (nadrzędne — to jest różnica między "przejrzałem" a "sprawdziłem wszystko")
 - MACIERZ POKRYCIA. Katalog z \`general_read_list_endpoints\` to Twoja lista kontrolna, nie luźna inspiracja. Każdy
@@ -717,6 +725,9 @@ POKRYCIE:
 - [POZA ZAKRESEM] \`<nazwa_endpointu>\` — <powód; wpisz TU, osobno i nazwą z katalogu, KAŻDY endpoint, którego nie wywołałeś>
 - [NIE DA SIĘ PRZEZ MCP] <co, np. TLS / nagłówki HTTP / UI> — <powód>
 AUTORYZACJA: <jedno-dwa zdania: które granice dostępu przeszły pełną macierz anonim×właściciel×obcy×rola i z jakim wynikiem>
+KOD:
+- <żadne repo / brak znalezisk: napisz "No repository connected" albo "Static repo scan: no critical/high findings">
+- <plik:linia> — <klasa (CWE/kategoria)>, <WAŻNOŚĆ> — <jednozdaniowy wpływ> (źródło: skan kodu aplikacji)
 --- KONIEC TREŚCI ---
 
 Kiedy który STATUS:

@@ -126,7 +126,22 @@ function rvCoverage(m){
     +(gaps.length?'<ul>'+gaps.map(g=>`<li>${esc(g.group)}: ${g.covered}/${g.total}</li>`).join('')+'</ul>':'')
     +'</span></div>';
 }
+/* Pentest only: the app's static repo scan (secrets + SAST + SCA), measured from the repo files, so the
+   code layer the MCP API cannot see is a fact, not the model's claim. Shown as counts plus the worst findings. */
+const SEV_RANK={critical:0,high:1,medium:2,low:3};
+function rvRepoScan(m){
+  const s=m.repoScan;if(m.agent!=='pentest'||!s||!s.available)return '';
+  const c=s.counts||{};const serious=(c.critical||0)+(c.high||0);
+  const top=(s.findings||[]).slice().sort((a,b)=>SEV_RANK[a.severity]-SEV_RANK[b.severity]).slice(0,20);
+  const head=c.total?`<b>Static repo scan (app, ${s.scannedFiles} files): ${c.total} finding${c.total>1?'s':''} — ${c.critical||0} critical, ${c.high||0} high, ${c.medium||0} medium, ${c.low||0} low</b> (secrets ${c.secret||0}, SAST ${c.sast||0}, SCA ${c.sca||0}).`
+    :`<b>Static repo scan (app): ${s.scannedFiles} files scanned, no secret / SAST / SCA findings.</b>`;
+  return `<div class="rv-audit ${serious?'bad':'ok'}">${ico(serious?'shield':'check',13)} <span>${head}`
+    +(top.length?'<ul>'+top.map(f=>`<li><b>${esc(f.severity)}</b> · ${esc(f.scanner)} · ${esc(f.rule)}${f.cwe?' ('+esc(f.cwe)+')':''} — ${esc(f.file||'')}${f.line?':'+f.line:''}${f.snippet?' <span class="mono">'+esc(f.snippet.slice(0,90))+'</span>':''}</li>`).join('')+'</ul>':'')
+    +(c.total>top.length?`<div class="rv-line">… and ${c.total-top.length} more.</div>`:'')
+    +(s.limited?'<div class="rv-line">Scan hit a size/file limit — not exhaustive. For full SAST/SCA run Semgrep/osv-scanner in a dedicated runner.</div>':'')
+    +'</span></div>';
+}
 function reportBlock(m,v){
   const body=v.kind==='qamcp'?rvQamcp(v):v.kind==='analysis'?rvAnalysis(v):rvDesign(v);
-  return rvAudit(m)+rvCoverage(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
+  return rvAudit(m)+rvCoverage(m)+rvRepoScan(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
 }
