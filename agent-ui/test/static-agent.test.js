@@ -50,11 +50,12 @@ test('static validator: it rejects what makes a review shallow or inconsistent',
   bad(GOOD.replace('findings: 2', 'findings: 5'), /Review line says 5 findings/);
 });
 
-test('static and planning: skills exist and are named in the prompts', () => {
+test('static, planning and analysis: skills exist and are named in the prompts', () => {
   const root = path.join(__dirname, '..', '..', 'agents');
   for (const [dir, names, ov] of [
     ['claudeAgentStatic', ['requirement-testability', 'cross-source-consistency', 'scenario-dry-run'], prompts.OVERRIDE_STATIC],
     ['claudeAgentTestFlowPlanning', ['risk-assessment', 'entry-exit-criteria', 'verdict-gate'], prompts.OVERRIDE_PLANNING],
+    ['claudeAgentTestFlowAnalysis', ['technique-selection', 'coverage-matrix', 'impact-radius'], prompts.OVERRIDE_ANALYSIS],
   ]) for (const n of names) {
     assert.ok(fs.existsSync(path.join(root, dir, '.claude', 'skills', n, 'SKILL.md')), n);
     assert.ok(ov.includes(n), n + ' in override');
