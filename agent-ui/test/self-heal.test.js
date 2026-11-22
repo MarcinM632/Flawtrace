@@ -47,3 +47,11 @@ test('intentFrom reads accepted.intent / intent / flow', () => {
 test('summary reads naturally', () => {
   assert.match(sh.summary(sh.recommend({ failures: ["waiting for locator('#x')"], hasIntent: true })), /Re-drive from intent/);
 });
+
+test('plan resolves the recommendation into a concrete step', () => {
+  assert.equal(sh.plan('patch').kind, 'patch');
+  assert.equal(sh.plan('redrive', { url: 'https://app.test' }).kind, 'redrive');
+  assert.equal(sh.plan('redrive', {}).kind, 'error', 'no URL -> cannot re-drive');
+  assert.equal(sh.plan('investigate').kind, 'investigate');
+  assert.equal(sh.plan('anything-else').kind, 'investigate');
+});

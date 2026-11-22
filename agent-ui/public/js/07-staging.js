@@ -58,7 +58,7 @@ function tsRunBlock(m){
       +(s?' · '+s.passed+' passed, '+s.failed+' failed'+(s.flaky?', '+s.flaky+' flaky':'')+(s.skipped?', '+s.skipped+' skipped':''):'')
       +(tr.finishedAt?' · '+Math.round((tr.finishedAt-tr.startedAt)/1000)+' s':'')
       +(tr.error?'<div>'+esc(tr.error)+'</div>':'')
-      +(tr.selfHeal?'<div class="chk '+(tr.selfHeal.action==='redrive'?'warn':'')+'" style="margin:.4rem 0 0">'+ico(tr.selfHeal.action==='redrive'?'refresh':'wrench',13)+' <b>'+esc({redrive:'Re-drive from intent',patch:'Patch the test',investigate:'Investigate'}[tr.selfHeal.action]||tr.selfHeal.action)+'</b> · '+esc(tr.selfHeal.reason)+'</div>':'')
+      +(tr.selfHeal?'<div class="chk '+(tr.selfHeal.action==='redrive'?'warn':'')+'" style="margin:.4rem 0 0">'+ico(tr.selfHeal.action==='redrive'?'refresh':'wrench',13)+' <b>'+esc({redrive:'Re-drive from intent',patch:'Patch the test',investigate:'Investigate'}[tr.selfHeal.action]||tr.selfHeal.action)+'</b> · '+esc(tr.selfHeal.reason)+(tr.selfHeal.action==='redrive'?'<div class="stg-act"><button class="btn sm" id="shGo">'+ico('refresh',13)+' Re-drive from intent</button></div>':'')+'</div>':'')
       +((tr.tests||[]).length?'<ul class="files">'+tr.tests.map(t=>'<li><span class="tg'+(t.status==='expected'?' ok':'')+'">'+esc(t.status==='expected'?'PASS':t.status==='unexpected'?'FAIL':String(t.status).toUpperCase())+'</span><span>'+esc(t.title)+'</span> <span class="mono">'+(t.ms/1000).toFixed(1)+' s</span>'+(t.error?'<pre>'+esc(t.error)+'</pre>':'')+'</li>').join('')+'</ul>':'')
       +(tr.hasReport?'<div class="stg-act"><a class="btn" id="trReport" target="_blank" rel="noopener" href="/api/runs/'+encodeURIComponent(m.id)+'/test-report/">'+ico('chart',13)+' Open the report with screenshots and video</a></div>':'')
       +(tr.tail?'<details><summary>output</summary><pre>'+esc(tr.tail)+'</pre></details>':'')+'</div>';
@@ -100,6 +100,8 @@ function bindTsRun(m){
   if($('#tfGo'))$('#tfGo').onclick=()=>{$('#tfGo').disabled=true;fx('/test-fix',{username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''})};
   if($('#tfApply'))$('#tfApply').onclick=()=>{$('#tfApply').disabled=true;fx('/test-fix/apply').then(()=>toast('Patch applied. Run the test again.'))};
   if($('#tfReject'))$('#tfReject').onclick=()=>fx('/test-fix/reject');
+  // Self-heal: re-drive the UI agent from the saved intent; starts a fresh UI Tests run on the original goal+URL.
+  if($('#shGo'))$('#shGo').onclick=()=>{$('#shGo').disabled=true;post('/api/runs/'+m.id+'/self-heal',{action:'redrive',username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''}).then(j=>{toast('Re-driving from intent: a new UI test run started.');if(j&&j.id)location.hash='run-'+j.id;reload(m.id)}).catch(e=>{toast(e.message,'bad');$('#shGo').disabled=false})};
   if(busy&&!trTimer)trTimer=setInterval(()=>{if(!current||current.id!==m.id){clearInterval(trTimer);trTimer=null;return}reload(m.id)},2000);
   if(!busy&&trTimer){clearInterval(trTimer);trTimer=null}
   if($('#trRun'))$('#trRun').onclick=async()=>{

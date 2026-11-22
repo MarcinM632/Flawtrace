@@ -52,6 +52,21 @@ function intentFrom(meta) {
   return String((meta.accepted && meta.accepted.intent) || meta.intent || meta.flow || '').trim();
 }
 
+/**
+ * Plan wykonania rekomendacji: z akcji (redrive/patch/investigate) i tego, czym dysponujemy, wybiera realny krok.
+ * @param action 'redrive'|'patch'|'investigate'
+ * @param ctx { url?, hasSource? } — url oryginalnej strony (do odtworzenia) i czy znamy run źródłowy.
+ * @returns { kind:'redrive'|'patch'|'investigate'|'error', reason }
+ */
+function plan(action, ctx = {}) {
+  if (action === 'patch') return { kind: 'patch', reason: 'patch the failing test on a copy and prove it' };
+  if (action === 'redrive') {
+    if (!ctx.url) return { kind: 'error', reason: 'cannot re-drive: the original page URL is unknown' };
+    return { kind: 'redrive', reason: 're-drive the UI agent from the saved intent and write a fresh test' };
+  }
+  return { kind: 'investigate', reason: 'look at the trace before changing the test' };
+}
+
 /** Jedno zdanie do UI/raportu. */
 function summary(rec) {
   if (!rec) return '';
@@ -59,4 +74,4 @@ function summary(rec) {
   return `Self-heal suggestion: ${label} — ${rec.reason}.`;
 }
 
-module.exports = { classify, recommend, intentFrom, summary };
+module.exports = { classify, recommend, intentFrom, plan, summary };

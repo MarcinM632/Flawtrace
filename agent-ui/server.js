@@ -20,6 +20,7 @@ const uiRun = require('./lib/ui-run');
 const uiFix = require('./lib/ui-fix');
 const runReport = require('./lib/run-report');
 const ciExport = require('./lib/ci-export');
+const selfHeal = require('./lib/self-heal');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -579,6 +580,31 @@ const server = http.createServer(async (req, res) => {
       if (!m[2]) { res.writeHead(302, { Location: p + '/' }); return res.end(); }
       if (uiRun.serveReport(req, res, src.meta, m[2])) return;
       return json(res, 404, { error: 'No such file in the report. Run the test first.' });
+    }
+    // Self-heal loop: a failed generated test is either re-driven from the saved intent (the UI changed) by starting
+    // a fresh UI Tests run on the original goal+URL, or patched (the existing test-fix flow). See lib/self-heal.js.
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/self-heal$/)) && req.method === 'POST') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      const tr = src.meta.testRun;
+      if (!tr || tr.state !== 'failed') return json(res, 409, { error: 'Nothing to heal: the last test run did not fail.' });
+      const b = await body(req).catch(() => ({}));
+      const action = String(b.action || (tr.selfHeal && tr.selfHeal.action) || 'investigate');
+      const orig = src.meta.source && runs.get(src.meta.source);
+      const url = (orig && orig.meta.url) || src.meta.url || '';
+      const pl = selfHeal.plan(action, { url, hasSource: !!orig });
+      const username = String(b.username || '').slice(0, 200), password = String(b.password || '').slice(0, 200);
+      if (pl.kind === 'patch') return json(res, 202, uiFix.startFix(src, { username, password }));
+      if (pl.kind === 'redrive') {
+        let u; try { u = new URL(url); } catch (_) { return json(res, 409, { error: 'Cannot re-drive: the original page URL is invalid.' }); }
+        if (hostedLib.HOSTED) { try { await require('./lib/net-guard').assertPublicUrl(u.href); } catch (e) { return json(res, 400, { error: e.message }); } }
+        const goal = String((orig && orig.meta.ticket) || selfHeal.intentFrom(src.meta) || src.meta.ticket || '').slice(0, 300);
+        const extra = { url: u.href, ...(username || password ? { credentials: { username, password } } : {}) };
+        const run = startRun('uitest', goal, '', extra);
+        run.meta.selfHealOf = src.meta.id;
+        src.meta.selfHealRun = run.id; persist(src);
+        return json(res, 201, run);
+      }
+      return json(res, 409, { error: pl.reason });
     }
     // UI Tests: the user accepts a fully passed run, and only then the TypeScript Playwright test is written from it.
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/uitest-accept$/)) && req.method === 'POST') {
