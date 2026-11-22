@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { serve, clip } = require('./stdio');
 const { TOOLS, pathParams } = require('../lib/integration');
+const { TOOLS: LOCAL_TOOLS } = require('../lib/mcp-local-tools');
 
 const BASE = String(process.env.FLAWTRACE_URL || 'http://127.0.0.1:4317').replace(/\/+$/, '');
 function key() {
@@ -33,6 +34,10 @@ async function call(t, args) {
 
 serve({
   name: 'flawtrace',
-  instructions: 'Start UI and backend tests in Flawtrace and read their reports. A started test returns a run id; poll get_run until its status is no longer "running".',
-  tools: TOOLS.map((t) => ({ name: t.name, description: t.summary, inputSchema: t.input, handler: (a) => call(t, a) })),
+  instructions: 'Flawtrace as a tool for your coding agent. Two kinds of tools: (1) local, model-free analysis that runs here and needs no running app — scan_repo (secrets/SAST/SCA), scan_transport (HTTP/TLS/CORS of a URL), select_tests (impact of a change), ci_config (CI pipeline); (2) tools that start UI and backend tests in a running Flawtrace and read their reports — a started test returns a run id; poll get_run until its status is no longer "running".',
+  // Local deterministic tools first (no app needed), then the app-proxy tools (/api/v1).
+  tools: [
+    ...LOCAL_TOOLS,
+    ...TOOLS.map((t) => ({ name: t.name, description: t.summary, inputSchema: t.input, handler: (a) => call(t, a) })),
+  ],
 });
