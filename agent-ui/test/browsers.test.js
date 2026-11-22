@@ -21,6 +21,33 @@ test('installArgs and projectsSnippet reflect the chosen browsers', () => {
   assert.match(snip, /devices\['Desktop Firefox'\]/);
 });
 
+test('parseDevices: known presets only, no default', () => {
+  assert.deepEqual(b.parseDevices(''), []);
+  assert.deepEqual(b.parseDevices('iphone,pixel'), ['iphone', 'pixel']);
+  assert.deepEqual(b.parseDevices('iphone, nokia3310'), ['iphone'], 'unknown dropped');
+  assert.deepEqual(b.parseDevices('pixel pixel'), ['pixel'], 'deduped');
+});
+
+test('devicePlan: desktop default, mobile-only, and combined', () => {
+  // Nothing set -> chromium desktop.
+  const d0 = b.devicePlan({});
+  assert.deepEqual(d0.install, ['chromium']);
+  assert.match(d0.projectsSnippet, /name: 'chromium'/);
+  // Mobile only (device set, browsers not explicit) -> no desktop, installs the devices' engines.
+  const d1 = b.devicePlan({ devices: 'iphone,pixel' });
+  assert.deepEqual(d1.mobile, ['iphone', 'pixel']);
+  assert.deepEqual(d1.desktop, []);
+  assert.deepEqual([...d1.install].sort(), ['chromium', 'webkit'], 'iphone->webkit, pixel->chromium');
+  assert.match(d1.projectsSnippet, /name: 'iphone', use: \{ \.\.\.devices\['iPhone 13'\] \}/);
+  assert.match(d1.projectsSnippet, /name: 'pixel', use: \{ \.\.\.devices\['Pixel 7'\] \}/);
+  assert.ok(!/Desktop Chrome/.test(d1.projectsSnippet), 'no desktop project when only a device is requested');
+  // Combined: explicit desktop browser + a device.
+  const d2 = b.devicePlan({ browsers: 'firefox', devices: 'ipad', browsersSet: true });
+  assert.deepEqual([...d2.install].sort(), ['firefox', 'webkit']);
+  assert.match(d2.projectsSnippet, /name: 'firefox'/);
+  assert.match(d2.projectsSnippet, /name: 'ipad'/);
+});
+
 test('default generated config stays chromium-only and valid', () => {
   assert.match(uiRun.CONFIG_SOURCE, /projects: \[\{ name: 'chromium'/);
   assert.match(uiRun.CONFIG_SOURCE, /import \{ defineConfig, devices \}/);

@@ -462,7 +462,10 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
       r.secretsFile = secretsFile; // removed in finish(): the password does not stay on disk after the run
       fs.writeFileSync(secretsFile, `UI_PASSWORD=${JSON.stringify(cred.password)}\n`);
     }
-    acpServers = { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile }) };
+    // Mobile UI Tests: UITEST_DEVICE (e.g. "iphone") emulates a phone/tablet so the agent drives the mobile UI.
+    const mobileKey = require('./browsers').parseDevices(process.env.UITEST_DEVICE)[0];
+    const device = mobileKey ? require('./browsers').DEVICE_PRESETS[mobileKey].device : '';
+    acpServers = { playwright: uiTest.playwrightServer({ origin: new URL(extra.url).origin, workDir, secretsFile, device }) };
     fs.writeFileSync(cfg, JSON.stringify({ mcpServers: acpServers }));
     mcpArgs.push('--mcp-config', cfg, '--strict-mcp-config');
     emit(r, { type: 'status', text: `Browser: headless Chromium, page ${extra.url}${meta.hasLogin ? ', login given' : ', no login'}; limit ${uiTest.MAX_STEPS} steps` });

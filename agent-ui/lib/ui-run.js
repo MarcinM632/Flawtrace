@@ -19,8 +19,9 @@ const reportDir = (meta) => path.join(runDir(meta), 'flawtrace-report');
 
 const browsers = require('./browsers');
 /** Overrides only the evidence settings of the generated config: everything on, no retries (a flaky test must show).
- *  Runs the chosen browsers (UITEST_BROWSERS, default chromium) — the same test on Chromium, Firefox and WebKit. */
-const configSource = (list) => `import { defineConfig, devices } from '@playwright/test';
+ *  Runs the chosen desktop browsers (UITEST_BROWSERS) and/or mobile devices (UITEST_DEVICE, e.g. iphone,pixel) — the
+ *  same test on Chromium/Firefox/WebKit and on emulated phones/tablets. Accepts a browser list or a projects snippet. */
+const configSource = (projectsOrList) => { const projects = Array.isArray(projectsOrList) ? browsers.projectsSnippet(projectsOrList) : String(projectsOrList); return `import { defineConfig, devices } from '@playwright/test';
 import base from './playwright.config';
 
 export default defineConfig({
@@ -31,9 +32,9 @@ export default defineConfig({
   outputDir: 'test-results',
   reporter: [['list'], ['json', { outputFile: 'flawtrace-results.json' }], ['html', { outputFolder: 'flawtrace-report', open: 'never' }]],
   use: { ...base.use, actionTimeout: 8000, screenshot: 'on', video: 'on', trace: 'on' },
-  projects: ${browsers.projectsSnippet(list)},
+  projects: ${projects},
 });
-`;
+`; };
 // Domyślny wariant (chromium) — używany przez naprawę testu (ui-fix) i sprawdzany przez testy.
 const CONFIG_SOURCE = configSource(['chromium']);
 
@@ -114,8 +115,11 @@ function startTestRun(r, creds) {
         fs.cpSync(path.join(project, f), path.join(dir, f), { recursive: true, force: true });
       }
       for (const old of ['flawtrace-report', 'test-results', 'flawtrace-results.json', 'playwright']) fs.rmSync(path.join(dir, old), { recursive: true, force: true });
-      const browserList = browsers.parse(process.env.UITEST_BROWSERS);
-      fs.writeFileSync(path.join(dir, 'flawtrace.config.ts'), configSource(browserList));
+      // Desktop (UITEST_BROWSERS) i/lub mobile (UITEST_DEVICE, np. "iphone,pixel"). Natywne apki iOS/Android to osobny
+      // silnik (Appium/symulatory, farma urządzeń) — tu testujemy aplikację webową na emulowanych urządzeniach.
+      const plan = browsers.devicePlan({ browsers: process.env.UITEST_BROWSERS || '', devices: process.env.UITEST_DEVICE || '', browsersSet: 'UITEST_BROWSERS' in process.env });
+      const browserList = plan.install;
+      fs.writeFileSync(path.join(dir, 'flawtrace.config.ts'), configSource(plan.projectsSnippet));
       const env = testEnv(m, creds);
       const base = { cwd: dir, env, onData: log, onProc: (p) => { entry.proc = p; } };
 

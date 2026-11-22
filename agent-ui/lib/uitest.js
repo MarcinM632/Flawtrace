@@ -11,9 +11,11 @@ const MAX_REPEAT = 3;                                           // the same acti
 const NOISE = /^(snapshot|wait_for|take_screenshot|console_messages|network_requests)/; // reading is not acting
 
 /** Command line of the Playwright MCP server: fast (no images to the model) and bounded (timeouts, one origin). */
-function playwrightServer({ origin, workDir, secretsFile }) {
+function playwrightServer({ origin, workDir, secretsFile, device }) {
   return require('./playwright-cmd').playwrightCommand(['--headless', '--isolated',
-    '--viewport-size', '1280x720',
+    // Mobile: a device sets its own viewport, touch and user-agent, so the agent sees the mobile UI. Opt-in via
+    // UITEST_DEVICE (default: desktop viewport, unchanged). Native iOS/Android apps are a separate engine.
+    ...(device ? ['--device', device] : ['--viewport-size', '1280x720']),
     '--image-responses', 'omit',              // the accessibility snapshot is enough; images only cost time and tokens
     '--timeout-action', '8000', '--timeout-navigation', '30000',
     '--allowed-origins', origin,              // the page under test only (a guard rail, not a security boundary)

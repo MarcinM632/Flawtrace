@@ -56,6 +56,15 @@ test('playwright server is fast and bounded: no images, timeouts, one origin, se
   assert.doesNotMatch(ui.playwrightServer({ origin: 'https://t.example.com', workDir: 'w' }).args.join(' '), /--secrets/);
 });
 
+test('mobile: a device emulates a phone (sets --device, drops the desktop viewport); default stays desktop', () => {
+  const mobile = ui.playwrightServer({ origin: 'https://t.example.com', workDir: 'w', device: 'iPhone 13' }).args.join(' ');
+  assert.match(mobile, /--device iPhone 13/);
+  assert.doesNotMatch(mobile, /--viewport-size/);
+  const desktop = ui.playwrightServer({ origin: 'https://t.example.com', workDir: 'w' }).args.join(' ');
+  assert.match(desktop, /--viewport-size 1280x720/);
+  assert.doesNotMatch(desktop, /--device/);
+});
+
 test('parseReport counts steps, checks and failures', () => {
   assert.deepStrictEqual(ui.parseReport(REPORT), { steps: 2, checks: 2, fails: 0 });
   assert.strictEqual(ui.parseReport(REPORT.replace('[a2] PASS', '[a2] FAIL')).fails, 1);
