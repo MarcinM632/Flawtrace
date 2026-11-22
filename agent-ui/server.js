@@ -19,6 +19,7 @@ const uiTestLib = require('./lib/uitest');
 const uiRun = require('./lib/ui-run');
 const uiFix = require('./lib/ui-fix');
 const runReport = require('./lib/run-report');
+const ciExport = require('./lib/ci-export');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -564,6 +565,14 @@ const server = http.createServer(async (req, res) => {
       const md = runReport.toMarkdown(src.meta, { link: `${req.headers.origin || ''}/#run-${m[1]}` });
       res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-cache' });
       return res.end(md);
+    }
+    // A ready-to-commit CI config so the generated tests run in the client's own CI (?provider=github|gitlab).
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/ci\.ya?ml$/)) && req.method === 'GET') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      const provider = /gitlab/i.test(new URL(req.url, 'http://x').searchParams.get('provider') || '') ? 'gitlab' : 'github';
+      const out = ciExport.forProvider(provider, src.meta.stack || 'ts-playwright');
+      res.writeHead(200, { 'Content-Type': 'text/yaml; charset=utf-8', 'Content-Disposition': `attachment; filename="${path.basename(out.path)}"`, 'Cache-Control': 'no-cache' });
+      return res.end(out.content);
     }
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-report(\/.*)?$/)) && req.method === 'GET') {
       const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
