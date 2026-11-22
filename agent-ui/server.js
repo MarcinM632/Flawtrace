@@ -18,6 +18,7 @@ const { loadAll, persist, runs } = require('./lib/store');
 const uiTestLib = require('./lib/uitest');
 const uiRun = require('./lib/ui-run');
 const uiFix = require('./lib/ui-fix');
+const runReport = require('./lib/run-report');
 const environment = require('./lib/environment');
 const { pruneWork, pushToNext, startRun } = require('./lib/run-agent');
 const runSummaryLib = require('./lib/run-summary');
@@ -556,6 +557,13 @@ const server = http.createServer(async (req, res) => {
         const b = await body(req);
         return json(res, 202, uiFix.startFix(src, { username: String(b.username || '').slice(0, 200), password: String(b.password || '').slice(0, 200) }));
       } catch (e) { return json(res, e.code || 500, { error: e.message }); }
+    }
+    // Shareable Markdown report of a run (paste into a PR/MR, Slack or e-mail). Deterministic, from the run's meta.
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/report\.md$/)) && req.method === 'GET') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      const md = runReport.toMarkdown(src.meta, { link: `${req.headers.origin || ''}/#run-${m[1]}` });
+      res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return res.end(md);
     }
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-report(\/.*)?$/)) && req.method === 'GET') {
       const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
