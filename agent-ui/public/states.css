@@ -1,0 +1,44 @@
+/* Stany interakcji — jedna definicja dla obu motywów (NN/g: spójność; WCAG 2.2: 1.4.11, 2.4.7, 2.4.11).
+   Tylko kolor, obramowanie, cień i obrys: bez zmiany układu, rozmiarów ani kolejności. Ładowany po tokens.css.
+   Zastępuje rozbieżne warstwy z app.css / polish.css / dark.css (jasny i ciemny motyw różniły się dla tych samych elementów). */
+
+/* Nawigacja: zaznaczenie = tło i tekst akcentu + pasek akcentu (wskaźnik >= 3:1, nie sam odcień tła) */
+.nav button:hover{background:var(--bg-hover);color:var(--text-primary)}
+.nav button:hover svg{color:var(--accent)}
+.nav button.on,.nav button.on:hover{background:var(--accent-bg);color:var(--accent-text);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.nav button.on svg,.nav button[data-tab].on svg{color:var(--accent)}
+.nav button.on .count{background:var(--accent);color:var(--text-on-accent)}
+.nav button.on .live{color:var(--accent-text)}
+
+/* Przyciski drugorzędne: obrys kontrolki >= 3:1, najechanie neutralne (akcent tylko dla działań głównych) */
+.btn{border-color:var(--border-interactive)}
+.btn:hover:not(:disabled){background:var(--bg-hover);border-color:var(--border-interactive);color:var(--text-primary)}
+.btn:hover:not(:disabled) svg{color:var(--text-primary)}
+.btn:active:not(:disabled){background:var(--bg-active)}
+.btn.danger:hover:not(:disabled){background:var(--danger);border-color:var(--danger);color:var(--text-on-status)}
+.btn.ok:hover:not(:disabled){background:var(--success);border-color:var(--success);color:var(--text-on-status)}
+.btn.danger:hover:not(:disabled) svg,.btn.ok:hover:not(:disabled) svg{color:var(--text-on-status)}
+
+/* Działania główne */
+.go,.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--text-on-accent)}
+.go:hover:not(:disabled),.btn.primary:hover:not(:disabled){background:var(--accent-hover);border-color:var(--accent-hover);color:var(--text-on-accent)}
+.go svg,.btn.primary svg,.btn.primary:hover:not(:disabled) svg{color:var(--text-on-accent)}
+
+/* Przełączniki segmentowe: zaznaczenie jasne (decyzja projektu: „selected state light instead of black”) —
+   tło i tekst akcentu + obrys akcentu jako wskaźnik >= 3:1, w obu motywach */
+.seg button.on,.seg button.on:hover{background:var(--accent-bg);color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--border-accent)}
+.seg button.on b,.seg button.on small,.seg button.on span{color:var(--accent-text)}
+
+/* Pola formularzy: granica kontrolki >= 3:1, fokus = obramowanie i poświata akcentu */
+input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{border-color:var(--border-interactive)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,textarea:focus,select:focus{border-color:var(--focus-ring);box-shadow:var(--focus-shadow);outline:none}
+.composer{border-color:var(--border-interactive)}
+.composer textarea{border-color:transparent}
+.composer:focus-within{border-color:var(--focus-ring);box-shadow:var(--focus-shadow)}
+
+/* Fokus z klawiatury: wyraźny obrys 2px (>= 3:1 wobec każdej powierzchni) */
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+input:focus-visible,textarea:focus-visible,select:focus-visible,.composer textarea:focus-visible{outline:none}
+
+/* Zaznaczenie tekstu */
+::selection{background:var(--accent-bg-strong);color:var(--text-primary)}
