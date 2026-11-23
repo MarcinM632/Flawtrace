@@ -99,3 +99,14 @@ td.r { text-align: right; }
 .status-ic.warn::after { content: "!"; color: var(--warn); font: 800 26px var(--sans); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .status-ic { animation: none; } }
+.periods { border: 0; padding: 0; margin: 0 0 4px; }
+.periods legend { font-weight: 600; font-size: 14.5px; margin: 0 0 8px; padding: 0; }
+.period-list { display: grid; gap: 8px; }
+.period { display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: center; margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); cursor: pointer; font-weight: 400; }
+.period:hover { border-color: var(--muted); }
+.period:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface); }
+.period input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.period .p-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.period .p-main small { flex-basis: 100%; color: var(--muted); font-size: 13.5px; }
+.period .p-save { font: 700 11.5px/1 var(--mono); font-style: normal; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 7px; border-radius: 999px; }
+.period .p-price { font-weight: 650; white-space: nowrap; }

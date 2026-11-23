@@ -17,7 +17,11 @@ let gw, port, data, stripe, stripeBase, stripeCalls = [], out = '';
 // Fake Stripe: prices, customers, checkout sessions (created and read back), billing portal, subscriptions.
 const stripeSessions = {}; let custN = 0;
 function fakeStripe(method, url) {
-  if (url.startsWith('/v1/prices/')) return { id: 'price_1', unit_amount: 2900, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } };
+  if (url.startsWith('/v1/prices/')) {
+    const id = url.split('/').pop();
+    return { price_1: { id, unit_amount: 2900, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } }, price_6: { id, unit_amount: 15000, currency: 'eur', recurring: { interval: 'month', interval_count: 6 } },
+      price_12: { id, unit_amount: 27600, currency: 'eur', recurring: { interval: 'year', interval_count: 1 } }, price_bad: { id, unit_amount: 100, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } } }[id] || {};
+  }
   if (method === 'POST' && url === '/v1/customers') return { id: 'cus_new_' + (++custN) };
   if (url.startsWith('/v1/customers/')) return { id: url.split('/').pop() };
   if (method === 'GET' && url.startsWith('/v1/checkout/sessions/')) return stripeSessions[decodeURIComponent(url.split('/').pop())] || { id: 'cs_x', status: 'open' };
@@ -52,7 +56,7 @@ before(async () => {
   stripeBase = 'http://127.0.0.1:' + stripe.address().port;
   port = await freePort();
   data = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-cloud-'));
-  gw = spawn('node', ['cloud/server.js'], { cwd: APP, env: { ...process.env, CLOUD_PORT: String(port), CLOUD_DATA: data, SITE_HOST: SITE(), APP_HOST: APPH(), CLOUD_MASTER_SECRET: 'test-master-secret-0123456789abcdef', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_PRICE_ID: 'price_1', STRIPE_WEBHOOK_SECRET: WH_SECRET, STRIPE_API_BASE: stripeBase, COMPANY_NAME: 'Test Co', MAX_SEATS: '3', SIGNUPS_PER_HOUR_PER_IP: '1000', PRICE_LABEL: '29 EUR / month', TRIAL_DAYS: '14' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  gw = spawn('node', ['cloud/server.js'], { cwd: APP, env: { ...process.env, CLOUD_PORT: String(port), CLOUD_DATA: data, SITE_HOST: SITE(), APP_HOST: APPH(), CLOUD_MASTER_SECRET: 'test-master-secret-0123456789abcdef', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_PRICE_ID: 'price_1', STRIPE_PRICE_SEMIANNUAL: 'price_6', STRIPE_PRICE_ANNUAL: 'price_12', PRICE_CURRENCY: 'EUR', PRICE_MONTHLY: '29', PRICE_SEMIANNUAL: '150', PRICE_ANNUAL: '276', STRIPE_WEBHOOK_SECRET: WH_SECRET, STRIPE_API_BASE: stripeBase, COMPANY_NAME: 'Test Co', MAX_SEATS: '3', SIGNUPS_PER_HOUR_PER_IP: '1000', PRICE_LABEL: '29 EUR / month', TRIAL_DAYS: '14' }, stdio: ['ignore', 'pipe', 'pipe'] });
   gw.stderr.on('data', (c) => { out += c; });
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('gateway did not start: ' + out)), 20000);
@@ -71,7 +75,13 @@ test('public site: pages render with the company data filled in and the security
     assert.equal(r.headers['x-frame-options'], 'DENY');
   }
   const home = await req(SITE, 'GET', '/');
-  assert.match(home.text, /29 EUR \/ month/);
+  assert.match(home.text, /€29<small>\/ month<\/small>/, 'monthly price');
+  assert.match(home.text, /€25<small>\/ month<\/small>[\s\S]*€150 billed every 6 months/, '6 months: price per month and per period');
+  assert.match(home.text, /Save 14%[\s\S]*Save 21%/, 'discounts computed from the monthly price');
+  assert.match(home.text, /€23<small>\/ month<\/small>[\s\S]*€276 billed once a year/);
+  assert.match(home.text, /Enterprise[\s\S]*from<\/small> \$99|Enterprise[\s\S]*from<\/small> €99/);
+  assert.match(home.text, /_gw\/signup\?plan=annual/);
+  assert.match((await req(SITE, 'GET', '/terms')).text, /29 EUR \/ month/, 'PRICE_LABEL still names the price in the terms');
   assert.match(home.text, new RegExp(`http://${APPH().replace('.', '\\.')}/_gw/signup`));
   assert.ok(!/style="/.test(home.text), 'no inline styles under a strict CSP');
   assert.equal((await req(SITE, 'GET', '/nope')).status, 404);
@@ -277,7 +287,9 @@ test('checkout flow: pages, plan from Stripe, consent required, customer + sessi
   assert.equal((await req(APPH, 'GET', '/_gw/static/checkout.js')).status, 200);
   // the price shown is the one Stripe will charge
   const plan = (await req(APPH, 'GET', '/_gw/api/plan', { cookie })).json;
-  assert.deepEqual(plan.price, { amount: 2900, currency: 'EUR', interval: 'month', intervalCount: 1, taxBehavior: null });
+  assert.deepEqual(plan.plans.map((x) => [x.id, x.priceText, x.perMonthText, x.save, x.sellable, x.matchesStripe]), [['monthly', '€29', '€29', 0, true, true], ['semiannual', '€150', '€25', 14, true, true], ['annual', '€276', '€23', 21, true, true]]);
+  assert.deepEqual(plan.plans[0].stripe, { amount: 2900, currency: 'EUR', interval: 'month', intervalCount: 1, taxBehavior: null });
+  assert.equal(plan.enterprise.seats, 25);
   assert.equal(plan.billing, true); assert.equal(plan.stripeTrialDays, 0, 'no Stripe trial when the trial needs no card');
   const o = { cookie, headers: { origin: `http://${APPH()}` } };
   // consent and a valid billing e-mail are required
@@ -292,6 +304,7 @@ test('checkout flow: pages, plan from Stripe, consent required, customer + sessi
   assert.equal(new URLSearchParams(cust.body).get('email'), 'invoices@buyer.test'); assert.equal(new URLSearchParams(cust.body).get('name'), 'Buyer Ltd');
   const sess = new URLSearchParams(stripeCalls.find((c) => c.url === '/v1/checkout/sessions').body);
   const orgId = sess.get('client_reference_id');
+  assert.equal(sess.get('line_items[0][price]'), 'price_1', 'monthly by default'); assert.equal(sess.get('metadata[plan]'), 'monthly');
   assert.match(sess.get('customer'), /^cus_new_/); assert.equal(sess.get('customer_update[address]'), 'auto');
   assert.match(sess.get('success_url'), /\/_gw\/checkout\/success\?session_id=\{CHECKOUT_SESSION_ID\}$/);
   assert.match(sess.get('cancel_url'), /\/_gw\/checkout\?canceled=1$/);
@@ -306,11 +319,21 @@ test('checkout flow: pages, plan from Stripe, consent required, customer + sessi
   assert.equal((await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: '../../v1/customers' } })).json.confirmed, false, 'only a session id is accepted');
   assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.state, 'trial');
   // the real one activates the workspace at once, before the webhook arrives
-  stripeSessions.cs_ok = { id: 'cs_ok', status: 'complete', payment_status: 'paid', client_reference_id: orgId, customer: 'cus_new_1', subscription: 'sub_ok' };
+  // the annual period is chosen; an unknown period is refused
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true, plan: 'weekly' } })).status, 400);
+  stripeCalls.length = 0;
+  await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true, plan: 'annual' } });
+  const yearly = new URLSearchParams(stripeCalls.find((c) => c.url === '/v1/checkout/sessions').body);
+  assert.equal(yearly.get('line_items[0][price]'), 'price_12'); assert.equal(yearly.get('subscription_data[metadata][plan]'), 'annual');
+  stripeSessions.cs_ok = { id: 'cs_ok', status: 'complete', payment_status: 'paid', client_reference_id: orgId, customer: 'cus_new_1', subscription: 'sub_ok', metadata: { org: orgId, plan: 'annual' } };
   const ok = (await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: 'cs_ok' } })).json;
   assert.equal(ok.confirmed, true); assert.equal(ok.access.state, 'active');
-  me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json; assert.equal(me.billing.subscribed, true);
+  me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json; assert.equal(me.billing.subscribed, true); assert.equal(me.org.plan, 'annual');
   assert.equal((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true } })).status, 409, 'no second subscription');
+  // switching the period in the billing portal arrives as a subscription update
+  const sw = JSON.stringify({ id: 'evt_sw', type: 'customer.subscription.updated', data: { object: { id: 'sub_ok', customer: 'cus_new_1', status: 'active', metadata: { org: orgId }, items: { data: [{ price: { id: 'price_6' } }] } } } });
+  await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: sw, headers: sign(sw) });
+  assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.org.plan, 'semiannual');
   // the webhook for the same checkout afterwards is harmless
   const ev = (id, type, object) => JSON.stringify({ id, type, data: { object } });
   const done = ev('evt_co_1', 'checkout.session.completed', { client_reference_id: orgId, customer: 'cus_new_1', subscription: 'sub_ok', payment_status: 'paid', metadata: { org: orgId } });
@@ -334,4 +357,31 @@ test('checkout: a delayed payment (bank transfer) gives access only when it clea
   const cleared = ev('evt_slow_2', 'checkout.session.async_payment_succeeded', { client_reference_id: orgId, customer: 'cus_s', subscription: 'sub_s', payment_status: 'paid', metadata: { org: orgId } });
   await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: cleared, headers: sign(cleared) });
   assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.state, 'active');
+});
+
+test('pricing: a Stripe price that differs from the price list is not sold; Enterprise seats and term from the operator tool', async () => {
+  const plans = require('../cloud/plans');
+  const cfgMod = require('../cloud/config');
+  const pl = { price: 29, currency: 'EUR', months: 1 };
+  assert.equal(billing.matchesCatalog(pl, { amount: 2900, currency: 'EUR', interval: 'month', intervalCount: 1 }), true);
+  assert.equal(billing.matchesCatalog(pl, { amount: 100, currency: 'EUR', interval: 'month', intervalCount: 1 }), false, 'other amount');
+  assert.equal(billing.matchesCatalog({ ...pl, months: 12 }, { amount: 2900, currency: 'EUR', interval: 'year', intervalCount: 1 }), true);
+  assert.equal(billing.matchesCatalog(pl, { amount: 2900, currency: 'USD', interval: 'month', intervalCount: 1 }), false, 'other currency');
+  assert.equal(billing.matchesCatalog(pl, null), null);
+  assert.equal(plans.money(12.5, 'USD'), '$12.50'); assert.equal(plans.money(15, 'USD'), '$15');
+  assert.ok(cfgMod.ENTERPRISE_SEATS >= 1);
+  // Enterprise: operator sets seats and a paid term; seats apply to invitations, the term to access
+  const email = 'ent@x.test';
+  const cookie = await signedIn(email);
+  const o = { cookie, headers: { origin: `http://${APPH()}` } };
+  const run = (...a) => require('node:child_process').execFileSync('node', ['cloud/admin.js', ...a], { cwd: APP, env: { ...process.env, CLOUD_DATA: data, CLOUD_MASTER_SECRET: 'test-master-secret-0123456789abcdef' } }).toString();
+  assert.match(run('enterprise', email, '8', '12'), /plan enterprise, 8 seats, paid until/);
+  let me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json;
+  assert.equal(me.seats, 8); assert.equal(me.access.state, 'active'); assert.match(me.access.label, /Enterprise agreement until/);
+  for (let i = 0; i < 3; i++) assert.equal((await req(APPH, 'POST', '/_gw/api/invite', { ...o, body: { email: `e${i}@x.test` } })).status, 200, 'more than MAX_SEATS (3) is allowed');
+  const db = new DatabaseSync(path.join(data, 'gateway.db'));
+  const orgId = db.prepare('select org_id from users where email = ?').get(email).org_id;
+  db.prepare('update orgs set paid_until = ? where id = ?').run(Date.now() - 1000, orgId); db.close();
+  me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json;
+  assert.equal(me.access.ok, false); assert.match(me.access.label, /Enterprise term has ended/);
 });

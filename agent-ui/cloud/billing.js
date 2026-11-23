@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const cfg = require('./config');
 const db = require('./db');
 
-const enabled = () => !!cfg.STRIPE_SECRET_KEY && !!cfg.STRIPE_PRICE_ID;
+const plans = require('./plans');
+const enabled = () => !!cfg.STRIPE_SECRET_KEY && plans.catalog().some((p) => p.sellable);
 const API = process.env.STRIPE_API_BASE || 'https://api.stripe.com';
 
 /** Stripe wants application/x-www-form-urlencoded with bracket keys for nested values. */
@@ -29,17 +30,26 @@ async function stripe(method, path, body) {
 }
 
 // Cena z Stripe (kwota, waluta, okres) — strona checkout pokazuje dokładnie to, co Stripe pobierze. Cache 10 min.
-let priceCache = null;
-async function priceInfo() {
-  if (!enabled()) return null;
-  if (priceCache && priceCache.at > Date.now() - 600000) return priceCache.v;
+const priceCache = new Map();
+/** Cena planu odczytana ze Stripe (kwota, waluta, okres). Cache 10 min. null, gdy plan nie ma ceny w Stripe. */
+async function priceInfo(planId = 'monthly') {
+  const plan = plans.find(planId);
+  if (!cfg.STRIPE_SECRET_KEY || !plan || !plan.sellable) return null;
+  const c = priceCache.get(plan.stripePrice);
+  if (c && c.at > Date.now() - 600000) return c.v;
   try {
-    const p = await stripe('GET', '/v1/prices/' + encodeURIComponent(cfg.STRIPE_PRICE_ID));
+    const p = await stripe('GET', '/v1/prices/' + encodeURIComponent(plan.stripePrice));
     const r = p.recurring || {};
     const v = { amount: p.unit_amount, currency: String(p.currency || '').toUpperCase(), interval: r.interval || 'month', intervalCount: r.interval_count || 1, taxBehavior: p.tax_behavior || null };
-    priceCache = { at: Date.now(), v };
+    priceCache.set(plan.stripePrice, { at: Date.now(), v });
     return v;
-  } catch (e) { return null; } // strona pokaże wtedy PRICE_LABEL
+  } catch (e) { return null; }
+}
+/** Czy cena w Stripe zgadza się z cennikiem na stronie (kwota i liczba miesięcy) — inaczej klient zapłaciłby inną kwotę. */
+function matchesCatalog(plan, info) {
+  if (!info) return null;
+  const months = info.interval === 'year' ? 12 * info.intervalCount : info.interval === 'month' ? info.intervalCount : null;
+  return info.amount === Math.round(plan.price * 100) && info.currency === plan.currency && months === plan.months;
 }
 
 /** Klient Stripe dla workspace: tworzony przed płatnością (nazwa i e-mail na fakturze), potem aktualizowany. */
@@ -57,15 +67,16 @@ function stripeTrialDays(org) {
   return cfg.TRIAL_DAYS;
 }
 
-async function checkoutUrl(org, user, { customer } = {}) {
+async function checkoutUrl(org, user, { customer, plan = plans.defaultPlan() } = {}) {
   if (!enabled()) throw Object.assign(new Error('Billing is not switched on.'), { code: 400 });
+  if (!plan || !plan.sellable) throw Object.assign(new Error('This plan is not available.'), { code: 400 });
   const trial = stripeTrialDays(org);
   const cust = customer || org.stripe_customer;
   const s = await stripe('POST', '/v1/checkout/sessions', {
-    mode: 'subscription', 'line_items': [{ price: cfg.STRIPE_PRICE_ID, quantity: 1 }],
+    mode: 'subscription', 'line_items': [{ price: plan.stripePrice, quantity: 1 }],
     ...(cust ? { customer: cust, customer_update: { address: 'auto', name: 'auto' } } : { customer_email: user.email }),
-    client_reference_id: org.id, metadata: { org: org.id },
-    subscription_data: { metadata: { org: org.id }, ...(trial ? { trial_period_days: trial } : {}) },
+    client_reference_id: org.id, metadata: { org: org.id, plan: plan.id },
+    subscription_data: { metadata: { org: org.id, plan: plan.id }, ...(trial ? { trial_period_days: trial } : {}) },
     allow_promotion_codes: 'true', billing_address_collection: 'required',
     ...(cfg.STRIPE_TAX ? { automatic_tax: { enabled: 'true' }, tax_id_collection: { enabled: 'true' } } : {}),
     success_url: `${cfg.appUrl}/_gw/checkout/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${cfg.appUrl}/_gw/checkout?canceled=1`,
@@ -84,7 +95,7 @@ async function confirmSession(org, sessionId) {
   if (!mine) return { confirmed: false, reason: 'not this workspace' };
   if (s.status !== 'complete') return { confirmed: false, reason: 'not complete' };
   if (!['paid', 'no_payment_required'].includes(s.payment_status)) return { confirmed: false, pending: true, reason: 'payment pending' };
-  db.run("update orgs set status = 'active', stripe_customer = coalesce(?, stripe_customer), stripe_subscription = coalesce(?, stripe_subscription), past_due_since = null where id = ?", s.customer || null, s.subscription || null, org.id);
+  db.run("update orgs set status = 'active', plan = coalesce(?, plan), stripe_customer = coalesce(?, stripe_customer), stripe_subscription = coalesce(?, stripe_subscription), past_due_since = null where id = ?", planOf(s.metadata), s.customer || null, s.subscription || null, org.id);
   db.audit('subscribed', { org: org.id, detail: 'confirmed on return from checkout' });
   return { confirmed: true };
 }
@@ -108,6 +119,7 @@ function verifySignature(raw, header, secret = cfg.STRIPE_WEBHOOK_SECRET, tolera
   return String(header).split(',').filter((p) => p.startsWith('v1=')).some((p) => { const g = p.slice(3); return g.length === want.length && crypto.timingSafeEqual(Buffer.from(g), Buffer.from(want)); });
 }
 
+const planOf = (m) => (m && plans.find(m.plan) ? m.plan : null);
 const STATUS = { active: 'active', trialing: 'active', past_due: 'past_due', unpaid: 'past_due', canceled: 'canceled', incomplete_expired: 'canceled' };
 
 /** Applies one Stripe event to our records. Each event id is handled once. */
@@ -128,11 +140,14 @@ function applyEvent(ev) {
     return { handled: true, org: org.id, pending: true };
   }
   if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') {
-    db.run("update orgs set status = 'active', stripe_customer = ?, stripe_subscription = ?, past_due_since = null where id = ?", o.customer || org.stripe_customer, o.subscription || org.stripe_subscription, org.id);
+    db.run("update orgs set status = 'active', plan = coalesce(?, plan), stripe_customer = ?, stripe_subscription = ?, past_due_since = null where id = ?", planOf(o.metadata), o.customer || org.stripe_customer, o.subscription || org.stripe_subscription, org.id);
     db.audit('subscribed', { org: org.id });
   } else if (ev.type === 'customer.subscription.updated' || ev.type === 'customer.subscription.deleted') {
     const st = ev.type.endsWith('deleted') ? 'canceled' : (STATUS[o.status] || org.status);
-    db.run('update orgs set status = ?, stripe_customer = coalesce(stripe_customer, ?), stripe_subscription = ?, past_due_since = ? where id = ?', st, o.customer || null, o.id || org.stripe_subscription, st === 'past_due' ? (org.past_due_since || db.now()) : null, org.id);
+    // Zmiana okresu w portalu klienta (np. miesięczny -> roczny): plan z ceny pozycji subskrypcji.
+    const priceId = o.items && o.items.data && o.items.data[0] && o.items.data[0].price && o.items.data[0].price.id;
+    const switched = priceId ? (plans.catalog().find((p) => p.stripePrice === priceId) || {}).id || null : null;
+    db.run('update orgs set status = ?, plan = coalesce(?, plan), stripe_customer = coalesce(stripe_customer, ?), stripe_subscription = ?, past_due_since = ? where id = ?', st, switched, o.customer || null, o.id || org.stripe_subscription, st === 'past_due' ? (org.past_due_since || db.now()) : null, org.id);
     db.audit('subscription_' + st, { org: org.id });
   } else if (ev.type === 'checkout.session.async_payment_failed') {
     db.audit('checkout_payment_failed', { org: org.id });
@@ -145,4 +160,4 @@ function applyEvent(ev) {
   return { handled: true, org: org.id };
 }
 
-module.exports = { applyEvent, cancelSubscription, checkoutUrl, confirmSession, enabled, ensureCustomer, form, portalUrl, priceInfo, stripeTrialDays, verifySignature };
+module.exports = { matchesCatalog, applyEvent, cancelSubscription, checkoutUrl, confirmSession, enabled, ensureCustomer, form, portalUrl, priceInfo, stripeTrialDays, verifySignature };

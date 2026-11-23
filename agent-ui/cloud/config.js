@@ -41,7 +41,15 @@ module.exports = {
   // Billing: without STRIPE_SECRET_KEY the cloud is free (closed beta) and no card is asked for.
   STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET || '',
-  STRIPE_PRICE_ID: env.STRIPE_PRICE_ID || '',
+  STRIPE_PRICE_ID: env.STRIPE_PRICE_MONTHLY || env.STRIPE_PRICE_ID || '',
+  // Cennik: ceny pokazywane na stronie (w walucie PRICE_CURRENCY) i identyfikatory cen w Stripe dla każdego okresu.
+  // Plan bez ceny w Stripe nie jest sprzedawany w checkoutcie; cena 0 ukrywa plan także na stronie.
+  PRICE_CURRENCY: (env.PRICE_CURRENCY || 'USD').toUpperCase(),
+  PRICES: { monthly: Number(env.PRICE_MONTHLY || 15), semiannual: Number(env.PRICE_SEMIANNUAL || 78), annual: Number(env.PRICE_ANNUAL || 144) },
+  STRIPE_PRICES: { monthly: env.STRIPE_PRICE_MONTHLY || env.STRIPE_PRICE_ID || '', semiannual: env.STRIPE_PRICE_SEMIANNUAL || '', annual: env.STRIPE_PRICE_ANNUAL || '' },
+  // Enterprise: umowa i faktura (bez Stripe Checkout), włączany komendą admin.js enterprise.
+  ENTERPRISE_FROM: Number(env.ENTERPRISE_FROM_MONTHLY || 99),
+  ENTERPRISE_SEATS: int(env.ENTERPRISE_SEATS, 25),
   STRIPE_TAX: env.STRIPE_TAX === '1',
   PRICE_LABEL: env.PRICE_LABEL || '',
   // Karta od razu: trial startuje dopiero po podaniu metody płatności w Stripe Checkout (pierwsza opłata po trialu).

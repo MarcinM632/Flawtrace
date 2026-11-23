@@ -22,12 +22,16 @@
       <p class="sub" id="coSub">Confirm your billing details. You pay on the next step, on a secure page run by Stripe.</p>
       <form id="coForm" novalidate>
         <div id="err" class="msg err" hidden></div>
+        <fieldset class="periods" id="periods">
+          <legend>Billing period</legend>
+          <div id="periodList" class="period-list"></div>
+        </fieldset>
         <label for="company">Company or name on the invoice</label>
         <input id="company" name="company" type="text" autocomplete="organization" maxlength="120">
         <p class="hint">Also used as the name of your workspace. Billing address and VAT ID are asked on the payment page.</p>
         <label for="billingEmail">Billing e-mail <small>(invoices and receipts go here)</small></label>
         <input id="billingEmail" name="billingEmail" type="email" autocomplete="email" required>
-        <label class="check"><input type="checkbox" id="acceptTerms" required><span id="termsText">I accept the <a href="{{SITE_URL}}/terms" target="_blank" rel="noopener">Terms of Service</a> and agree that the subscription renews automatically every month until I cancel it. I can cancel at any time in the billing portal.</span></label>
+        <label class="check"><input type="checkbox" id="acceptTerms" required><span id="termsText">I accept the <a href="{{SITE_URL}}/terms" target="_blank" rel="noopener">Terms of Service</a> and agree that the subscription renews automatically <span id="renewEvery">every month</span> until I cancel it. I can cancel at any time in the billing portal.</span></label>
         <button class="btn block" type="submit" id="payBtn">Continue to secure payment</button>
         <p class="hint center">Payments are processed by Stripe. Flawtrace never sees or stores your card.</p>
       </form>
@@ -36,7 +40,9 @@
     <aside class="panel summary" id="summary" aria-label="Order summary">
       <h2>Order summary</h2>
       <div class="sum-plan"><b id="planName">Team workspace</b><span id="planPrice">…</span></div>
+      <p class="hint" id="planPeriod"></p>
       <p class="hint" id="planSeats"></p>
+      <p class="hint" id="entNote"></p>
       <ul class="sum-lines">
         <li><span id="todayLabel">Due today</span><b id="todayAmount">…</b></li>
         <li id="thenLine" hidden><span id="thenLabel">Then</span><b id="thenAmount"></b></li>
@@ -46,7 +52,7 @@
         <li>All agents and all testing stages</li>
         <li>Your own AI key from any supported provider</li>
         <li>Data export and workspace deletion at any time</li>
-        <li>Cancel any time, no long-term contract</li>
+        <li id="cancelNote">Cancel any time, no long-term contract</li>
       </ul>
     </aside>
   </div>

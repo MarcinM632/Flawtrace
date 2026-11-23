@@ -13,6 +13,7 @@ const db = require('./db');
 const auth = require('./auth');
 const mailer = require('./mailer');
 const billing = require('./billing');
+const plans = require('./plans');
 const tenants = require('./tenants');
 const tar = require('./tar');
 
@@ -71,8 +72,15 @@ function fileFor(rel) {
 }
 const placeholders = () => ({
   GOVERNING_LAW: cfg.GOVERNING_LAW, BACKUP_DAYS: String(cfg.BACKUP_DAYS), COMPANY_NAME: cfg.COMPANY_NAME, COMPANY_ADDRESS: cfg.COMPANY_ADDRESS, COMPANY_ID: cfg.COMPANY_ID, CONTACT_EMAIL: cfg.CONTACT_EMAIL, HOSTING_REGION: cfg.HOSTING_REGION, HOSTING_PROVIDER: cfg.HOSTING_PROVIDER,
-  SITE_URL: cfg.siteUrl, APP_URL: cfg.appUrl, TRIAL_DAYS: String(cfg.TRIAL_DAYS), PRICE_LABEL: cfg.PRICE_LABEL || 'Pricing is announced at launch', TRIAL_NOTE: cfg.TRIAL_REQUIRES_CARD ? 'a card is needed to start; the first charge comes after the trial' : 'no card needed', YEAR: String(new Date().getFullYear()), TERMS_VERSION: auth.TERMS_VERSION,
+  SITE_URL: cfg.siteUrl, APP_URL: cfg.appUrl, TRIAL_DAYS: String(cfg.TRIAL_DAYS), PRICE_LABEL: plans.label(), ...pricePlaceholders(), TRIAL_NOTE: cfg.TRIAL_REQUIRES_CARD ? 'a card is needed to start; the first charge comes after the trial' : 'no card needed', YEAR: String(new Date().getFullYear()), TERMS_VERSION: auth.TERMS_VERSION,
 });
+// Cennik na stronie: {{P_MONTHLY_PRICE}}, {{P_ANNUAL_PER_MONTH}}, {{P_SEMIANNUAL_SAVE}}…, {{ENT_FROM}}, {{ENT_SEATS}}, {{SEATS}}.
+function pricePlaceholders() {
+  const out = { CURRENCY: cfg.PRICE_CURRENCY, ENT_FROM: plans.enterprise().fromText, ENT_SEATS: String(plans.enterprise().seats), SEATS: String(cfg.MAX_SEATS) };
+  for (const p of plans.PERIODS) { const c = plans.find(p.id); const k = 'P_' + p.id.toUpperCase();
+    out[k + '_PRICE'] = c ? c.priceText : ''; out[k + '_PER_MONTH'] = c ? c.perMonthText : ''; out[k + '_SAVE'] = c ? String(c.save) : '0'; }
+  return out;
+}
 const partial = (n) => { try { return fs.readFileSync(path.join(SITE_DIR, 'partials', n + '.html'), 'utf8'); } catch (_) { return ''; } };
 function serveFile(res, abs, { template = false, immutable = false } = {}) {
   const ext = path.extname(abs).toLowerCase();
@@ -109,9 +117,9 @@ const publicUser = (s) => {
   const invites = user.role === 'owner' ? db.all('select email, expires from invites where org_id = ? and used = 0 and expires > ? order by created', org.id, db.now()) : [];
   return {
     email: user.email, name: user.name, role: user.role, emailVerified: !!user.email_verified, needsVerification: cfg.REQUIRE_VERIFIED_EMAIL && !user.email_verified,
-    org: { name: org.name, status: org.status, created: org.created, trialEnds: org.trial_ends },
+    org: { name: org.name, status: org.status, created: org.created, trialEnds: org.trial_ends, plan: org.plan, paidUntil: org.paid_until || null },
     access: auth.access(org), billing: { enabled: billing.enabled(), subscribed: !!org.stripe_subscription, priceLabel: cfg.PRICE_LABEL, hasCustomer: !!org.stripe_customer },
-    members, invites, seats: cfg.MAX_SEATS, termsVersion: user.terms_version, admin: cfg.ADMIN_EMAILS.includes(user.email),
+    members, invites, seats: auth.seatsOf(org), termsVersion: user.terms_version, admin: cfg.ADMIN_EMAILS.includes(user.email),
   };
 };
 
@@ -127,8 +135,17 @@ async function api(req, res, p) {
   if (req.method === 'GET' && p === '/_gw/api/plan') {
     const s = sessionOf(req);
     const trialDays = s ? billing.stripeTrialDays(s.org) : (cfg.TRIAL_REQUIRES_CARD ? cfg.TRIAL_DAYS : 0);
-    return json(res, 200, { billing: billing.enabled(), name: cfg.PLAN_NAME, price: await billing.priceInfo(), priceLabel: cfg.PRICE_LABEL, seats: cfg.MAX_SEATS, taxAtCheckout: cfg.STRIPE_TAX,
-      trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, stripeTrialDays: trialDays, termsVersion: auth.TERMS_VERSION, siteUrl: cfg.siteUrl });
+    const list = [];
+    for (const pl of plans.catalog()) {
+      const price = await billing.priceInfo(pl.id);
+      const match = billing.matchesCatalog(pl, price);
+      if (match === false) console.error(`pricing: the Stripe price of plan "${pl.id}" (${price.amount} ${price.currency}, ${price.intervalCount} ${price.interval}) differs from the price list (${pl.price} ${pl.currency} / ${pl.months} mo)`);
+      list.push({ id: pl.id, name: pl.name, months: pl.months, every: pl.every, price: pl.price, priceText: pl.priceText, perMonthText: pl.perMonthText, save: pl.save, currency: pl.currency, sellable: pl.sellable && match !== false, stripe: price, matchesStripe: match });
+    }
+    const def = plans.defaultPlan();
+    return json(res, 200, { billing: billing.enabled(), name: cfg.PLAN_NAME, plans: list, defaultPlan: def && def.id, current: s ? s.org.plan : null, enterprise: plans.enterprise(),
+      seats: s ? auth.seatsOf(s.org) : cfg.MAX_SEATS, taxAtCheckout: cfg.STRIPE_TAX, trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, stripeTrialDays: trialDays,
+      termsVersion: auth.TERMS_VERSION, siteUrl: cfg.siteUrl, contact: cfg.CONTACT_EMAIL });
   }
   if (req.method === 'GET' && p === '/_gw/api/invite-info') { const i = auth.inviteInfo(new URL(req.url, 'http://x').searchParams.get('token')); return i ? json(res, 200, i) : json(res, 404, { error: 'This invitation is no longer valid.' }); }
   if (req.method === 'GET' && p === '/_gw/api/me') { const s = sessionOf(req); return s ? json(res, 200, publicUser(s)) : json(res, 401, { error: 'signin' }); }
@@ -210,9 +227,12 @@ async function api(req, res, p) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return json(res, 400, { error: 'Enter a valid billing e-mail address.' });
     const company = String(b.company || '').trim().slice(0, 120);
     if (company) db.run('update orgs set name = ? where id = ?', company, s.org.id);
+    const plan = plans.find(String(b.plan || '') || (plans.defaultPlan() || {}).id);
+    if (!plan || !plan.sellable) return json(res, 400, { error: 'Choose an available billing period.' });
+    if (billing.matchesCatalog(plan, await billing.priceInfo(plan.id)) === false) return json(res, 503, { error: 'This price is being updated. Try again in a few minutes or choose another period.' });
     const customer = await billing.ensureCustomer(s.org, { email, name: company || s.org.name });
-    db.audit('checkout_started', { user: s.user.id, org: s.org.id, ip, detail: `terms ${auth.TERMS_VERSION}; auto-renewal accepted` });
-    return json(res, 200, { url: await billing.checkoutUrl({ ...s.org, stripe_customer: customer }, s.user, { customer }) });
+    db.audit('checkout_started', { user: s.user.id, org: s.org.id, ip, detail: `plan ${plan.id} ${plan.priceText} ${plan.every}; terms ${auth.TERMS_VERSION}; auto-renewal accepted` });
+    return json(res, 200, { url: await billing.checkoutUrl({ ...s.org, stripe_customer: customer }, s.user, { customer, plan }) });
   }
   if (p === '/_gw/api/checkout/confirm') {
     const b = await readJson(req);

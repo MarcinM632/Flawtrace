@@ -17,7 +17,11 @@ let gw, port, data, stripe, stripeBase, stripeCalls = [], out = '';
 // Fake Stripe: prices, customers, checkout sessions (created and read back), billing portal, subscriptions.
 const stripeSessions = {}; let custN = 0;
 function fakeStripe(method, url) {
-  if (url.startsWith('/v1/prices/')) return { id: 'price_1', unit_amount: 2900, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } };
+  if (url.startsWith('/v1/prices/')) {
+    const id = url.split('/').pop();
+    return { price_1: { id, unit_amount: 2900, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } }, price_6: { id, unit_amount: 15000, currency: 'eur', recurring: { interval: 'month', interval_count: 6 } },
+      price_12: { id, unit_amount: 27600, currency: 'eur', recurring: { interval: 'year', interval_count: 1 } }, price_bad: { id, unit_amount: 100, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } } }[id] || {};
+  }
   if (method === 'POST' && url === '/v1/customers') return { id: 'cus_new_' + (++custN) };
   if (url.startsWith('/v1/customers/')) return { id: url.split('/').pop() };
   if (method === 'GET' && url.startsWith('/v1/checkout/sessions/')) return stripeSessions[decodeURIComponent(url.split('/').pop())] || { id: 'cs_x', status: 'open' };
@@ -52,7 +56,7 @@ before(async () => {
   stripeBase = 'http://127.0.0.1:' + stripe.address().port;
   port = await freePort();
   data = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-cloud-'));
-  gw = spawn('node', ['cloud/server.js'], { cwd: APP, env: { ...process.env, CLOUD_PORT: String(port), CLOUD_DATA: data, SITE_HOST: SITE(), APP_HOST: APPH(), CLOUD_MASTER_SECRET: 'test-master-secret-0123456789abcdef', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_PRICE_ID: 'price_1', STRIPE_WEBHOOK_SECRET: WH_SECRET, STRIPE_API_BASE: stripeBase, COMPANY_NAME: 'Test Co', MAX_SEATS: '3', SIGNUPS_PER_HOUR_PER_IP: '1000', PRICE_LABEL: '29 EUR / month', TRIAL_DAYS: '14', TRIAL_REQUIRES_CARD: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  gw = spawn('node', ['cloud/server.js'], { cwd: APP, env: { ...process.env, CLOUD_PORT: String(port), CLOUD_DATA: data, SITE_HOST: SITE(), APP_HOST: APPH(), CLOUD_MASTER_SECRET: 'test-master-secret-0123456789abcdef', STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_PRICE_ID: 'price_1', STRIPE_PRICE_SEMIANNUAL: 'price_6', STRIPE_PRICE_ANNUAL: 'price_12', PRICE_CURRENCY: 'EUR', PRICE_MONTHLY: '29', PRICE_SEMIANNUAL: '150', PRICE_ANNUAL: '276', STRIPE_WEBHOOK_SECRET: WH_SECRET, STRIPE_API_BASE: stripeBase, COMPANY_NAME: 'Test Co', MAX_SEATS: '3', SIGNUPS_PER_HOUR_PER_IP: '1000', PRICE_LABEL: '29 EUR / month', TRIAL_DAYS: '14', TRIAL_REQUIRES_CARD: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   gw.stderr.on('data', (c) => { out += c; });
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('gateway did not start: ' + out)), 20000);

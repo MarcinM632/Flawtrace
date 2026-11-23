@@ -60,20 +60,25 @@ Możesz to zrobić **po** starcie bety (krok 9). Bez kluczy Stripe cała chmura 
 
 1. Załóż konto na <https://stripe.com>, uzupełnij dane firmy i konto bankowe (Stripe weryfikuje to kilka dni).
 2. **Najpierw tryb testowy** (przełącznik "Test mode"). Wszystko poniżej zrób w teście, potem powtórz na żywo.
-3. "Product catalog" → dodaj produkt "Flawtrace Team workspace", cena **cykliczna** (miesięczna) → skopiuj identyfikator ceny (`price_...`) do `STRIPE_PRICE_ID`.
+3. "Product catalog" → dodaj produkt "Flawtrace Team workspace" z **trzema cenami cyklicznymi** w USD i skopiuj ich identyfikatory (`price_...`):
+   - $15 co miesiąc → `STRIPE_PRICE_MONTHLY`;
+   - $78 co 6 miesięcy (Billing period: Custom, 6 months) → `STRIPE_PRICE_SEMIANNUAL`;
+   - $144 co rok → `STRIPE_PRICE_ANNUAL`.
+   Kwoty muszą się zgadzać z cennikiem w `.env` (`PRICE_MONTHLY/SEMIANNUAL/ANNUAL`, `PRICE_CURRENCY`). Gdy coś się nie zgadza, gateway zapisze ostrzeżenie w logu i nie sprzeda tego okresu (checkout zwróci 503), żeby klient nie zapłacił innej kwoty niż na stronie.
 4. "Developers" → "API keys" → skopiuj klucz tajny (`sk_test_...`) do `STRIPE_SECRET_KEY`.
 5. "Developers" → "Webhooks" → "Add endpoint":
    - adres: `https://app.TWOJADOMENA/_gw/stripe/webhook`
    - zdarzenia: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.paid`
    - skopiuj "Signing secret" (`whsec_...`) do `STRIPE_WEBHOOK_SECRET`.
-6. "Settings" → "Billing" → "Customer portal": włącz anulowanie subskrypcji, zmianę karty i historię faktur. Bez tego przycisk "Manage billing" zwróci błąd.
+6. "Settings" → "Billing" → "Customer portal": włącz anulowanie subskrypcji, zmianę karty, historię faktur i **zmianę planu** (dodaj trzy ceny z punktu 3, żeby klient mógł przejść np. z miesięcznego na roczny; nowy okres trafia do gatewaya webhookiem `customer.subscription.updated`). Bez tego przycisk "Manage billing" zwróci błąd.
 7. VAT: włącz Stripe Tax (Settings → Tax), potem ustaw `STRIPE_TAX=1`. Ustal z księgowym stawki i numer VAT UE klientów.
 8. Wybierz model triala w `.env`:
    - `TRIAL_REQUIRES_CARD=0` (domyślnie): trial bez karty, checkout dostępny w trakcie i wymagany po końcu triala;
    - `TRIAL_REQUIRES_CARD=1`: klasyczny „karta od razu” — po rejestracji klient trafia na checkout, trial liczy Stripe, pierwsza opłata po trialu;
    - `TRIAL_DAYS=0`: płatność od razu, bez triala.
 9. Test całego flow (kartą testową `4242 4242 4242 4242`, dowolna data w przyszłości, dowolny CVC): rejestracja → potwierdzenie e-maila → `/_gw/checkout` (dane do faktury, zgoda) → płatność w Stripe → strona „You are all set” → aplikacja. Sprawdź, że workspace ma status "Active". Potem anuluj w portalu i sprawdź, że dostęp się kończy, a właściciel trafia z powrotem na checkout. Płatność odroczoną (np. polecenie zapłaty SEPA) sprawdzisz testowym numerem IBAN z dokumentacji Stripe: dostęp ma się włączyć dopiero po jej zaksięgowaniu.
-10. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i `PRICE_LABEL=49 EUR / miesiąc` (twoja cena).
+10. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i żywe identyfikatory trzech cen.
+11. Klient Enterprise (faktura, przelew): po podpisaniu umowy i opłaceniu faktury uruchom na serwerze `node cloud/admin.js enterprise <email-właściciela> <liczba-miejsc> <miesiące>`, np. `... enterprise anna@firma.pl 20 12`. Ustawia plan Enterprise, limit osób i opłacony okres (kolejne wywołanie przedłuża od obecnego końca). Po końcu okresu dostęp wygasa; `node cloud/admin.js show <email>` pokazuje plan, miejsca i datę końca.
 
 ## Krok 6. Sprawy prawne (kilka dni, koszt zależy od prawnika)
 
@@ -172,7 +177,7 @@ Warunki, żeby to zrobić:
 - [ ] Zdania na stronie `/security` są prawdziwe: dyski zaszyfrowane, kopie zaszyfrowane i trzymane `BACKUP_DAYS` dni, dostęp do serwerów ograniczony i zapisywany, region i dostawca zgodni z `HOSTING_*`.
 - [ ] Zdanie "Our staff do not open workspace content unless you ask us for support" jest regułą, której będziesz przestrzegać.
 
-Potem w `.env`: klucze Stripe żywe, `PRICE_LABEL`, usuń `BETA_CODE`, `docker compose up -d`. Dopisz do strony głównej, jak się z Tobą skontaktować, i opublikuj (LinkedIn, grupy QA, Reddit r/QualityAssurance, Product Hunt).
+Potem w `.env`: klucze Stripe żywe i trzy żywe ceny (`STRIPE_PRICE_MONTHLY/SEMIANNUAL/ANNUAL`), usuń `BETA_CODE`, `docker compose up -d`. Dopisz do strony głównej, jak się z Tobą skontaktować, i opublikuj (LinkedIn, grupy QA, Reddit r/QualityAssurance, Product Hunt).
 
 ---
 
