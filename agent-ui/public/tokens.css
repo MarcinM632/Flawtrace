@@ -1,0 +1,127 @@
+/* TOKENY KOLORÓW — wygenerowane przez scripts/build-tokens.js; nie edytuj ręcznie, zmień generator i uruchom go.
+   Ładowany jako ostatni arkusz: jedyne źródło kolorów aplikacji. Skale 12-stopniowe (Radix / Material 3), role semantyczne
+   (Apple HIG / Material 3), kontrast sprawdzany przez scripts/contrast-check.js (WCAG 2.2: tekst >= 4.5:1, UI >= 3:1). */
+:root{
+  color-scheme:light;
+  --neutral-0:#ffffff; --neutral-1:#f9fcfe; --neutral-2:#f3f8fc; --neutral-3:#ebf3f8; --neutral-4:#e4edf4; --neutral-5:#dde7ee; --neutral-6:#d4e1ea; --neutral-7:#c5d3de; --neutral-8:#7e8e9a; --neutral-9:#657785; --neutral-10:#546a7a; --neutral-11:#3e5769; --neutral-12:#092435;
+  --accent-1:#f9fcfe; --accent-2:#f0f8fe; --accent-3:#e4f3fe; --accent-4:#d3ecfe; --accent-5:#c2e5ff; --accent-6:#abdbfe; --accent-7:#78c7fd; --accent-8:#2a93d1; --accent-9:#057bb5; --accent-10:#036da1; --accent-11:#036da1; --accent-12:#023753;
+  --success-1:#f7fef9; --success-2:#eefbf3; --success-3:#dff7e8; --success-4:#d2f3de; --success-5:#c3edd2; --success-6:#b1e4c4; --success-7:#95d5ae; --success-8:#71be91; --success-9:#1d8554; --success-10:#057747; --success-11:#027646; --success-12:#02381f;
+  --warning-1:#fffbf8; --warning-2:#fef6ee; --warning-3:#feeddd; --warning-4:#ffe4cc; --warning-5:#fddaba; --warning-6:#f7cda6; --warning-7:#ecb988; --warning-8:#d79d63; --warning-9:#a76616; --warning-10:#965802; --warning-11:#965802; --warning-12:#442601;
+  --danger-1:#fefbfa; --danger-2:#fef5f4; --danger-3:#ffebe8; --danger-4:#ffe2dd; --danger-5:#fed7d0; --danger-6:#ffc6bd; --danger-7:#ffab9f; --danger-8:#f88475; --danger-9:#cb473a; --danger-10:#b63328; --danger-11:#b63328; --danger-12:#56100b;
+  --cat-cyan-strong:#0c8fa7; --cat-blue:#3b76bf; --cat-teal:#0a8287; --cat-purple:#8861c4; --cat-green:#32844a; --cat-crimson:#ba5561; --cat-orange:#b1601c; --cat-indigo:#5f6cce; --cat-cyan:#70d5ed; --cat-magenta:#b2548d; --cat-wine:#7d2e3f;
+  --r-2xs:3px; --r-xs:6px; --r-sm:8px; --r:12px; --r-pill:999px; /* jedna skala promieni */
+  --shadow:var(--elev-1); --shadow-lift:var(--elev-2); --shadow-lg:var(--elev-3); --glow:none;
+  /* powierzchnie (app < surface < subtle/component < overlay) */
+  --bg-app:var(--neutral-2); --bg-surface:var(--neutral-0); --bg-subtle:var(--neutral-1);
+  --bg-component:var(--neutral-3); --bg-hover:var(--neutral-4); --bg-active:var(--neutral-5);
+  --bg-field:var(--neutral-0); --bg-overlay:var(--neutral-0);
+  --bg-inverse:var(--neutral-12); --text-on-inverse:var(--neutral-0);
+  /* obramowania */
+  --border-subtle:var(--neutral-6); --border-default:var(--neutral-7); --border-interactive:var(--neutral-8);
+  /* tekst */
+  --text-primary:var(--neutral-12); --text-secondary:var(--neutral-11); --text-tertiary:var(--neutral-10);
+  /* akcent: działania główne, zaznaczenie, linki */
+  --accent:var(--accent-9); --accent-hover:var(--accent-10); --accent-bg:var(--accent-3); --accent-bg-strong:var(--accent-4);
+  --accent-border:var(--accent-7); --accent-text:var(--accent-11); --text-on-accent:#ffffff;
+  --focus-ring:var(--accent-8); --border-accent:var(--accent-8); --accent-fill:var(--accent);
+  /* tekst i nakładki na pełnych, ciemnych wypełnieniach (biel w obu motywach) */
+  --on-solid:#ffffff;
+  /* szyna kreatora konfiguracji (ciemny pas po lewej w obu motywach) */
+  --bg-rail:var(--neutral-12); --text-on-rail:#ffffff; --bg-rail-on:#ffffff; --text-on-rail-on:var(--neutral-12);
+  /* podglądy motywów w Ustawieniach — zawsze pokazują swój motyw */
+  --preview-light-1:#f3f8fc; --preview-light-2:#ffffff; --preview-dark-1:#0d151e; --preview-dark-2:#151e28;
+  /* statusy — tylko do statusu */
+  --success:var(--success-11); --success-bg:var(--success-3); --success-border:var(--success-6);
+  --warning:var(--warning-11); --warning-bg:var(--warning-3); --warning-border:var(--warning-6);
+  --danger:var(--danger-11); --danger-bg:var(--danger-3); --danger-border:var(--danger-6);
+  --info:var(--accent-11); --info-bg:var(--accent-3); --info-border:var(--accent-6);
+  --text-on-status:#ffffff;
+  /* kategorie (dataviz): pełne tło + tekst na nim */
+  --text-on-cat:#ffffff;
+  --cat-whitebox:#f6f8fb; --cat-whitebox-text:#141a21; --cat-whitebox-border:#7b8794;
+  --cat-blackbox:#131a22; --cat-blackbox-text:#ffffff; --cat-blackbox-border:#7b8794;
+  --cat-greybox:#98a4b1; --cat-greybox-text:#10161d;
+  --cat-cyan-text:var(--neutral-12); --cat-cyan-border:var(--cat-cyan-strong);
+  --cat-root:var(--neutral-12); --cat-root-text:var(--text-on-inverse);
+  /* role zależne (aplikacje, fazy, metody HTTP, wykresy) */
+  --app-1:var(--cat-indigo); --app-2:var(--cat-purple); --app-3:var(--accent-text); --app-3-soft:var(--accent-bg);
+  --ph-planning:var(--accent-text); --ph-tfmonitor:var(--accent-text); --ph-analysis:var(--cat-indigo); --ph-design:var(--cat-green);
+  --ph-implementation:var(--cat-orange); --ph-execution:var(--cat-purple); --ph-completion:var(--cat-teal); --ph-runsummary:var(--accent-text);
+  --m-get:var(--cat-blue); --m-post:var(--cat-green); --m-put:var(--cat-orange); --m-del:var(--cat-crimson);
+  --m-get-soft:color-mix(in srgb,var(--cat-blue) 14%,var(--bg-surface)); --m-post-soft:color-mix(in srgb,var(--cat-green) 14%,var(--bg-surface));
+  --m-put-soft:color-mix(in srgb,var(--cat-orange) 14%,var(--bg-surface)); --m-del-soft:color-mix(in srgb,var(--cat-crimson) 14%,var(--bg-surface));
+  --viz-grid:var(--neutral-6); --viz-axis:var(--neutral-7); --viz-muted:var(--text-tertiary);
+  --viz-seq-1:var(--accent-11); --viz-seq-2:var(--accent-9); --viz-seq-3:var(--accent-7);
+  --diff-add-bg:var(--success-bg); --diff-add:var(--success); --diff-del-bg:var(--danger-bg); --diff-del:var(--danger);
+  /* nakładki i cienie */
+  --scrim:color-mix(in srgb,var(--neutral-12) 42%,transparent);
+  --shadow-color:var(--neutral-12);
+  --sheen:color-mix(in srgb,#ffffff 22%,transparent);
+  --translucent-surface:color-mix(in srgb,var(--bg-surface) 92%,transparent);
+  --elev-1:0 1px 2px color-mix(in srgb,var(--shadow-color) 5%,transparent),0 8px 20px -12px color-mix(in srgb,var(--shadow-color) 14%,transparent);
+  --elev-2:0 2px 4px color-mix(in srgb,var(--shadow-color) 6%,transparent),0 18px 40px -18px color-mix(in srgb,var(--shadow-color) 26%,transparent);
+  --elev-3:0 24px 60px -20px color-mix(in srgb,var(--shadow-color) 25%,transparent);
+  --focus-shadow:0 0 0 3px color-mix(in srgb,var(--focus-ring) 28%,transparent);
+  --app-glow:radial-gradient(1200px 420px at 70% -120px,var(--accent-2) 0,transparent 70%);
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --neutral-0:#0d151e; --neutral-1:#0d151e; --neutral-2:#151e28; --neutral-3:#19242f; --neutral-4:#1e2a37; --neutral-5:#23303e; --neutral-6:#2b3949; --neutral-7:#39495b; --neutral-8:#637486; --neutral-9:#738292; --neutral-10:#8c9aa9; --neutral-11:#b3c0ce; --neutral-12:#e8eff8;
+  --accent-1:#0c1b26; --accent-2:#072232; --accent-3:#0d344b; --accent-4:#0b3c58; --accent-5:#084465; --accent-6:#0d5279; --accent-7:#0e6a9b; --accent-8:#017cb7; --accent-9:#3a9dda; --accent-10:#55aee8; --accent-11:#6bbaf0; --accent-12:#cce9fe;
+  --success-1:#0e1913; --success-2:#112118; --success-3:#122d1f; --success-4:#133624; --success-5:#14402b; --success-6:#1b5136; --success-7:#226a48; --success-8:#2f875d; --success-9:#4ebd87; --success-10:#5cca93; --success-11:#5cca93; --success-12:#cbf3db;
+  --warning-1:#1b150d; --warning-2:#241b0f; --warning-3:#312410; --warning-4:#3c2a10; --warning-5:#483210; --warning-6:#5a3f16; --warning-7:#76531c; --warning-8:#966b29; --warning-9:#d09945; --warning-10:#dda552; --warning-11:#dda552; --warning-12:#fbe4c5;
+  --danger-1:#1f1211; --danger-2:#2b1715; --danger-3:#3b1d1a; --danger-4:#47211e; --danger-5:#562622; --danger-6:#6b312d; --danger-7:#8c403b; --danger-8:#b1544d; --danger-9:#f47b72; --danger-10:#ff8b81; --danger-11:#ff8b81; --danger-12:#fee0dc;
+  --cat-cyan-strong:#0a96af; --cat-blue:#4c88d3; --cat-teal:#1c989e; --cat-purple:#956ed2; --cat-green:#4a9a5e; --cat-crimson:#c8626d; --cat-orange:#c16e2d; --cat-indigo:#6d7cdf; --cat-cyan:#92dff2; --cat-magenta:#c06099; --cat-wine:#e78d9b;
+  /* powierzchnie (app < surface < subtle/component < overlay) */
+  --bg-app:var(--neutral-2); --bg-surface:var(--neutral-2); --bg-subtle:var(--neutral-3);
+  --bg-component:var(--neutral-4); --bg-hover:var(--neutral-4); --bg-active:var(--neutral-5);
+  --bg-field:var(--neutral-1); --bg-overlay:var(--neutral-3);
+  --bg-inverse:var(--neutral-12); --text-on-inverse:var(--neutral-1);
+  /* obramowania */
+  --border-subtle:var(--neutral-6); --border-default:var(--neutral-7); --border-interactive:var(--neutral-8);
+  /* tekst */
+  --text-primary:var(--neutral-12); --text-secondary:var(--neutral-11); --text-tertiary:var(--neutral-10);
+  /* akcent: działania główne, zaznaczenie, linki */
+  --accent:var(--accent-9); --accent-hover:var(--accent-10); --accent-bg:var(--accent-3); --accent-bg-strong:var(--accent-4);
+  --accent-border:var(--accent-7); --accent-text:var(--accent-11); --text-on-accent:var(--neutral-1);
+  --focus-ring:var(--accent-8); --border-accent:var(--accent-8); --accent-fill:var(--accent);
+  /* tekst i nakładki na pełnych, ciemnych wypełnieniach (biel w obu motywach) */
+  --on-solid:#ffffff;
+  /* szyna kreatora konfiguracji (ciemny pas po lewej w obu motywach) */
+  --bg-rail:var(--neutral-1); --text-on-rail:#ffffff; --bg-rail-on:var(--neutral-4); --text-on-rail-on:var(--neutral-12);
+  /* podglądy motywów w Ustawieniach — zawsze pokazują swój motyw */
+  --preview-light-1:#f3f8fc; --preview-light-2:#ffffff; --preview-dark-1:#0d151e; --preview-dark-2:#151e28;
+  /* statusy — tylko do statusu */
+  --success:var(--success-11); --success-bg:var(--success-3); --success-border:var(--success-6);
+  --warning:var(--warning-11); --warning-bg:var(--warning-3); --warning-border:var(--warning-6);
+  --danger:var(--danger-11); --danger-bg:var(--danger-3); --danger-border:var(--danger-6);
+  --info:var(--accent-11); --info-bg:var(--accent-3); --info-border:var(--accent-6);
+  --text-on-status:var(--neutral-1);
+  /* kategorie (dataviz): pełne tło + tekst na nim */
+  --text-on-cat:var(--neutral-1);
+  --cat-whitebox:#f6f8fb; --cat-whitebox-text:#141a21; --cat-whitebox-border:#7b8794;
+  --cat-blackbox:#131a22; --cat-blackbox-text:#ffffff; --cat-blackbox-border:#7b8794;
+  --cat-greybox:#98a4b1; --cat-greybox-text:#10161d;
+  --cat-cyan-text:var(--neutral-1); --cat-cyan-border:var(--cat-cyan-strong);
+  --cat-root:var(--neutral-12); --cat-root-text:var(--text-on-inverse);
+  /* role zależne (aplikacje, fazy, metody HTTP, wykresy) */
+  --app-1:var(--cat-indigo); --app-2:var(--cat-purple); --app-3:var(--accent-text); --app-3-soft:var(--accent-bg);
+  --ph-planning:var(--accent-text); --ph-tfmonitor:var(--accent-text); --ph-analysis:var(--cat-indigo); --ph-design:var(--cat-green);
+  --ph-implementation:var(--cat-orange); --ph-execution:var(--cat-purple); --ph-completion:var(--cat-teal); --ph-runsummary:var(--accent-text);
+  --m-get:var(--cat-blue); --m-post:var(--cat-green); --m-put:var(--cat-orange); --m-del:var(--cat-crimson);
+  --m-get-soft:color-mix(in srgb,var(--cat-blue) 14%,var(--bg-surface)); --m-post-soft:color-mix(in srgb,var(--cat-green) 14%,var(--bg-surface));
+  --m-put-soft:color-mix(in srgb,var(--cat-orange) 14%,var(--bg-surface)); --m-del-soft:color-mix(in srgb,var(--cat-crimson) 14%,var(--bg-surface));
+  --viz-grid:var(--neutral-6); --viz-axis:var(--neutral-7); --viz-muted:var(--text-tertiary);
+  --viz-seq-1:var(--accent-11); --viz-seq-2:var(--accent-9); --viz-seq-3:var(--accent-7);
+  --diff-add-bg:var(--success-bg); --diff-add:var(--success); --diff-del-bg:var(--danger-bg); --diff-del:var(--danger);
+  /* nakładki i cienie */
+  --scrim:color-mix(in srgb,var(--neutral-1) 70%,transparent);
+  --shadow-color:#000000;
+  --sheen:color-mix(in srgb,#ffffff 10%,transparent);
+  --translucent-surface:color-mix(in srgb,var(--bg-surface) 92%,transparent);
+  --elev-1:0 1px 2px color-mix(in srgb,var(--shadow-color) 40%,transparent),0 8px 20px -12px color-mix(in srgb,var(--shadow-color) 60%,transparent);
+  --elev-2:0 2px 4px color-mix(in srgb,var(--shadow-color) 40%,transparent),0 18px 40px -18px color-mix(in srgb,var(--shadow-color) 70%,transparent);
+  --elev-3:0 24px 60px -20px color-mix(in srgb,var(--shadow-color) 70%,transparent);
+  --focus-shadow:0 0 0 3px color-mix(in srgb,var(--focus-ring) 35%,transparent);
+  --app-glow:radial-gradient(1200px 420px at 70% -120px,var(--accent-2) 0,transparent 70%);
+}
