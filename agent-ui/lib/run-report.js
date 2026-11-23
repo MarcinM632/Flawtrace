@@ -26,6 +26,8 @@ function factLines(meta) {
   if (rs && rs.available) { const k = rs.counts || {}; out.push(k.total ? `**Static repo scan:** ${k.critical || 0} critical, ${k.high || 0} high, ${k.medium || 0} medium, ${k.low || 0} low (secrets ${k.secret || 0}, SAST ${k.sast || 0}, SCA ${k.sca || 0})` : '**Static repo scan:** clean'); }
   const t = meta.transport;
   if (t && t.available) { const k = t.counts || {}; out.push(k.total ? `**Transport/HTTP:** ${k.critical || 0} critical, ${k.high || 0} high, ${k.medium || 0} medium, ${k.low || 0} low` : '**Transport/HTTP:** clean'); }
+  const en = meta.engine;
+  if (en) out.push(`**Pentest engine:** engagement ${en.id} — ${en.verified} finding(s) proven by the app, checklist coverage ${en.coverage}% (${en.pending} item(s) left)`);
   const a = meta.audit;
   if (a && a.issues) out.push(a.issues.length ? `**Report check:** ${a.issues.length} unresolved problem(s)` : '**Report check:** passed');
   return out;

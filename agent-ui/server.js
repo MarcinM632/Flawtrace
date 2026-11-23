@@ -50,7 +50,7 @@ const defectLifecycle = require('./lib/defect-lifecycle');
 const integration = require('./lib/integration');
 // Silnik pentestowy (fazy 0–7): engagementy z zakresem i autoryzacją, Recon → Web-Vuln → Authz, kolejka zatwierdzeń.
 // Ruch wychodzący idzie przez globalny fetch, czyli w trybie hosted przez strażnika SSRF (net-guard).
-const pentestEngine = require('./lib/pentest-engine').createEngine({ dataDir: DATA_DIR });
+const pentestEngine = require('./lib/pentest-engine').setShared(require('./lib/pentest-engine').createEngine({ dataDir: DATA_DIR }));
 
 /** What the app has loaded from Jira so far, per page, for the Jira data check in Sources. */
 function jiraLoaded() {

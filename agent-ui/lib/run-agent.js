@@ -440,6 +440,17 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   const mcpChatBlock = (mode) => mode === 'design' ? '\n' + MCP_CHAT_DESIGN + '\n' + mcpChatDesignEval()
     : isQamcpLike(mode) && aboutMcpChat ? '\n\n' + MCP_CHAT_QAMCP + '\n\n' + mcpChatQamcpEval()
     : mode === 'autotest' && !stack && layer !== 'ui' && aboutMcpChat ? '\n\n' + MCP_CHAT_AUTOTEST + '\n\n' + mcpChatAutotestEval() : '';
+  // Pentest: fakty silnika engagementów (lib/pentest-engine.js) dla środowiska z Sources — co już udowodnione, co nie
+  // pokryte, treść celu tylko w ogrodzeniu. Na końcu promptu (zmienne), więc nie psuje cache stałego początku.
+  const pentestEngineBlock = () => {
+    try {
+      const eng = require('./pentest-engine').shared();
+      const ctx = eng && eng.agentContext((sources.read().api || {}).baseUrl);
+      if (!ctx) return '';
+      meta.engine = { id: ctx.id, verified: ctx.verified, pending: ctx.pending, coverage: ctx.coverage };
+      return '\n\n' + ctx.text;
+    } catch (_) { return ''; }
+  };
   const sysFor = (mode) => mode === 'uitest' ? uiTest.OVERRIDE_UITEST + '\n\n' + uiTest.skillsText() : (DOMAIN_BRIEF ? sysBase(mode) + '\n\n' + DOMAIN_BRIEF : sysBase(mode))
     // Najpierw to, co jest takie samo w każdym przebiegu tego agenta (skille), potem to, co zależy od zlecenia
     // (zakres, glossary, blok czatu MCP): stały początek promptu trafia w cache, więc kolejne przebiegi płacą za niego mało.
@@ -449,6 +460,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
     + (isQamcpLike(mode) && scope && scope.groups ? SCOPE_NOTE : '')
     + (isQamcpLike(mode) && glossary ? glossaryPrompt(glossary) : '')
     + mcpChatBlock(mode)
+    + (mode === 'pentest' ? pentestEngineBlock() : '')
     + '\n\n' + sources.brief(isQamcpLike(mode) ? 'qamcp' : mode === 'autotest' ? 'autotest' : 'qa');
 
   // Z katalogu autotests/ projektowy .mcp.json wisi na zatwierdzeniu i ma ścieżkę względną, więc serwer MCP
