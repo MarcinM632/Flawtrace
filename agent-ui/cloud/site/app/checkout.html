@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Checkout · Flawtrace</title><meta name="robots" content="noindex"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell checkout">
+  <div class="topbar">
+    <a class="brand" href="{{SITE_URL}}"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a>
+    <div class="row"><span class="secure"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Secure checkout</span><a class="btn ghost small" href="/_gw/account">Account</a></div>
+  </div>
+
+  <ol class="steps" aria-label="Checkout progress">
+    <li class="done"><span>1</span>Account</li>
+    <li class="on" aria-current="step"><span>2</span>Billing details</li>
+    <li><span>3</span>Payment</li>
+    <li><span>4</span>Done</li>
+  </ol>
+
+  <div id="notice" class="msg" hidden></div>
+
+  <div class="co-grid">
+    <section class="panel" id="formBox">
+      <h1 id="coTitle">Subscribe to Flawtrace</h1>
+      <p class="sub" id="coSub">Confirm your billing details. You pay on the next step, on a secure page run by Stripe.</p>
+      <form id="coForm" novalidate>
+        <div id="err" class="msg err" hidden></div>
+        <label for="company">Company or name on the invoice</label>
+        <input id="company" name="company" type="text" autocomplete="organization" maxlength="120">
+        <p class="hint">Also used as the name of your workspace. Billing address and VAT ID are asked on the payment page.</p>
+        <label for="billingEmail">Billing e-mail <small>(invoices and receipts go here)</small></label>
+        <input id="billingEmail" name="billingEmail" type="email" autocomplete="email" required>
+        <label class="check"><input type="checkbox" id="acceptTerms" required><span id="termsText">I accept the <a href="{{SITE_URL}}/terms" target="_blank" rel="noopener">Terms of Service</a> and agree that the subscription renews automatically every month until I cancel it. I can cancel at any time in the billing portal.</span></label>
+        <button class="btn block" type="submit" id="payBtn">Continue to secure payment</button>
+        <p class="hint center">Payments are processed by Stripe. Flawtrace never sees or stores your card.</p>
+      </form>
+    </section>
+
+    <aside class="panel summary" id="summary" aria-label="Order summary">
+      <h2>Order summary</h2>
+      <div class="sum-plan"><b id="planName">Team workspace</b><span id="planPrice">…</span></div>
+      <p class="hint" id="planSeats"></p>
+      <ul class="sum-lines">
+        <li><span id="todayLabel">Due today</span><b id="todayAmount">…</b></li>
+        <li id="thenLine" hidden><span id="thenLabel">Then</span><b id="thenAmount"></b></li>
+      </ul>
+      <p class="hint" id="taxNote"></p>
+      <ul class="sum-checks">
+        <li>All agents and all testing stages</li>
+        <li>Your own AI key from any supported provider</li>
+        <li>Data export and workspace deletion at any time</li>
+        <li>Cancel any time, no long-term contract</li>
+      </ul>
+    </aside>
+  </div>
+  <p class="foot"><a href="{{SITE_URL}}/terms">Terms</a> · <a href="{{SITE_URL}}/privacy">Privacy</a> · <a href="{{SITE_URL}}/security">Security</a> · <a href="mailto:{{CONTACT_EMAIL}}">Contact</a></p>
+</main>
+<script src="/_gw/static/gw.js"></script>
+<script src="/_gw/static/checkout.js"></script>
+</body></html>

@@ -71,7 +71,7 @@ function fileFor(rel) {
 }
 const placeholders = () => ({
   GOVERNING_LAW: cfg.GOVERNING_LAW, BACKUP_DAYS: String(cfg.BACKUP_DAYS), COMPANY_NAME: cfg.COMPANY_NAME, COMPANY_ADDRESS: cfg.COMPANY_ADDRESS, COMPANY_ID: cfg.COMPANY_ID, CONTACT_EMAIL: cfg.CONTACT_EMAIL, HOSTING_REGION: cfg.HOSTING_REGION, HOSTING_PROVIDER: cfg.HOSTING_PROVIDER,
-  SITE_URL: cfg.siteUrl, APP_URL: cfg.appUrl, TRIAL_DAYS: String(cfg.TRIAL_DAYS), PRICE_LABEL: cfg.PRICE_LABEL || 'Pricing is announced at launch', YEAR: String(new Date().getFullYear()), TERMS_VERSION: auth.TERMS_VERSION,
+  SITE_URL: cfg.siteUrl, APP_URL: cfg.appUrl, TRIAL_DAYS: String(cfg.TRIAL_DAYS), PRICE_LABEL: cfg.PRICE_LABEL || 'Pricing is announced at launch', TRIAL_NOTE: cfg.TRIAL_REQUIRES_CARD ? 'a card is needed to start; the first charge comes after the trial' : 'no card needed', YEAR: String(new Date().getFullYear()), TERMS_VERSION: auth.TERMS_VERSION,
 });
 const partial = (n) => { try { return fs.readFileSync(path.join(SITE_DIR, 'partials', n + '.html'), 'utf8'); } catch (_) { return ''; } };
 function serveFile(res, abs, { template = false, immutable = false } = {}) {
@@ -110,7 +110,7 @@ const publicUser = (s) => {
   return {
     email: user.email, name: user.name, role: user.role, emailVerified: !!user.email_verified, needsVerification: cfg.REQUIRE_VERIFIED_EMAIL && !user.email_verified,
     org: { name: org.name, status: org.status, created: org.created, trialEnds: org.trial_ends },
-    access: auth.access(org), billing: { enabled: billing.enabled(), subscribed: !!org.stripe_subscription, priceLabel: cfg.PRICE_LABEL },
+    access: auth.access(org), billing: { enabled: billing.enabled(), subscribed: !!org.stripe_subscription, priceLabel: cfg.PRICE_LABEL, hasCustomer: !!org.stripe_customer },
     members, invites, seats: cfg.MAX_SEATS, termsVersion: user.terms_version, admin: cfg.ADMIN_EMAILS.includes(user.email),
   };
 };
@@ -123,7 +123,13 @@ async function api(req, res, p) {
     let ev; try { ev = JSON.parse(raw); } catch (_) { return json(res, 400, { error: 'bad json' }); }
     return json(res, 200, billing.applyEvent(ev));
   }
-  if (req.method === 'GET' && p === '/_gw/api/config') return json(res, 200, { betaCode: !!cfg.BETA_CODE, billing: billing.enabled(), trialDays: cfg.TRIAL_DAYS, siteUrl: cfg.siteUrl, termsVersion: auth.TERMS_VERSION });
+  if (req.method === 'GET' && p === '/_gw/api/config') return json(res, 200, { betaCode: !!cfg.BETA_CODE, billing: billing.enabled(), trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, siteUrl: cfg.siteUrl, termsVersion: auth.TERMS_VERSION });
+  if (req.method === 'GET' && p === '/_gw/api/plan') {
+    const s = sessionOf(req);
+    const trialDays = s ? billing.stripeTrialDays(s.org) : (cfg.TRIAL_REQUIRES_CARD ? cfg.TRIAL_DAYS : 0);
+    return json(res, 200, { billing: billing.enabled(), name: cfg.PLAN_NAME, price: await billing.priceInfo(), priceLabel: cfg.PRICE_LABEL, seats: cfg.MAX_SEATS, taxAtCheckout: cfg.STRIPE_TAX,
+      trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, stripeTrialDays: trialDays, termsVersion: auth.TERMS_VERSION, siteUrl: cfg.siteUrl });
+  }
   if (req.method === 'GET' && p === '/_gw/api/invite-info') { const i = auth.inviteInfo(new URL(req.url, 'http://x').searchParams.get('token')); return i ? json(res, 200, i) : json(res, 404, { error: 'This invitation is no longer valid.' }); }
   if (req.method === 'GET' && p === '/_gw/api/me') { const s = sessionOf(req); return s ? json(res, 200, publicUser(s)) : json(res, 401, { error: 'signin' }); }
   if (req.method !== 'POST' && req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
@@ -135,7 +141,9 @@ async function api(req, res, p) {
       const r = await auth.signUp({ ...b, ip });
       if (r.verifyToken) { const u = db.one('select email from users where id = ?', r.userId); mailer.verifyMail(u.email, r.verifyToken); }
       const token = auth.makeSession(r.userId, ip, req.headers['user-agent']);
-      return json(res, 201, { ok: true, next: r.verifyToken ? '/_gw/verify-needed' : '/' }, { 'set-cookie': sessionCookie(token, cfg.SESSION_DAYS * 86400) });
+      const org = db.one('select o.* from orgs o join users u on u.org_id = o.id where u.id = ?', r.userId);
+      const pay = billing.enabled() && !auth.access(org).ok && auth.access(org).state === 'payment_required';
+      return json(res, 201, { ok: true, next: r.verifyToken ? '/_gw/verify-needed' : pay ? '/_gw/checkout' : '/' }, { 'set-cookie': sessionCookie(token, cfg.SESSION_DAYS * 86400) });
     }
     if (p === '/_gw/api/login') {
       const b = await readJson(req);
@@ -192,7 +200,26 @@ async function api(req, res, p) {
     db.run('delete from users where id = ?', u.id); db.audit('member_removed', { user: s.user.id, org: s.org.id, detail: u.email });
     return json(res, 200, { ok: true });
   }
-  if (p === '/_gw/api/checkout') { needOwner(); return json(res, 200, { url: await billing.checkoutUrl(s.org, s.user) }); }
+  if (p === '/_gw/api/checkout') {
+    needOwner();
+    const b = await readJson(req);
+    if (!billing.enabled()) return json(res, 400, { error: 'Billing is not switched on: Flawtrace is free during the beta.' });
+    if (auth.access(s.org).state === 'active' && s.org.stripe_subscription) return json(res, 409, { error: 'This workspace already has an active subscription. Manage it in the billing portal.' });
+    if (b.acceptTerms !== true) return json(res, 400, { error: 'Accept the Terms of Service and the automatic monthly renewal to continue.' });
+    const email = String(b.billingEmail || s.user.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return json(res, 400, { error: 'Enter a valid billing e-mail address.' });
+    const company = String(b.company || '').trim().slice(0, 120);
+    if (company) db.run('update orgs set name = ? where id = ?', company, s.org.id);
+    const customer = await billing.ensureCustomer(s.org, { email, name: company || s.org.name });
+    db.audit('checkout_started', { user: s.user.id, org: s.org.id, ip, detail: `terms ${auth.TERMS_VERSION}; auto-renewal accepted` });
+    return json(res, 200, { url: await billing.checkoutUrl({ ...s.org, stripe_customer: customer }, s.user, { customer }) });
+  }
+  if (p === '/_gw/api/checkout/confirm') {
+    const b = await readJson(req);
+    const r = await billing.confirmSession(s.org, b.sessionId);
+    const org = db.one('select * from orgs where id = ?', s.org.id);
+    return json(res, 200, { ...r, access: auth.access(org) });
+  }
   if (p === '/_gw/api/portal') { needOwner(); return json(res, 200, { url: await billing.portalUrl(s.org) }); }
   if (p === '/_gw/api/delete-workspace') {
     needOwner(); const b = await readJson(req);
@@ -260,7 +287,7 @@ async function product(req, res, p) {
   }
   if (cfg.REQUIRE_VERIFIED_EMAIL && !s.user.email_verified) return wantsHtml(req) ? redirect(res, '/_gw/verify-needed') : json(res, 403, { error: 'Confirm your e-mail first.' });
   const acc = auth.access(s.org);
-  if (!acc.ok) return wantsHtml(req) ? redirect(res, '/_gw/account') : json(res, 402, { error: acc.label });
+  if (!acc.ok) return wantsHtml(req) ? redirect(res, s.user.role === 'owner' && billing.enabled() && acc.state !== 'suspended' ? '/_gw/checkout' : '/_gw/account') : json(res, 402, { error: acc.label, state: acc.state });
   if (req.method !== 'GET' && req.method !== 'HEAD' && !sameOrigin(req)) return json(res, 403, { error: 'Cross-site request refused.' });
   let t;
   try { t = await tenants.ensure(s.org.id); } catch (e) { return wantsHtml(req) ? send(res, e.code || 503, `<!doctype html><meta charset=utf-8><title>Flawtrace</title><p style="font:16px system-ui;max-width:520px;margin:15vh auto">${String(e.message).replace(/[<&]/g, '')}</p>`, 'text/html; charset=utf-8') : json(res, e.code || 503, { error: e.message }); }
@@ -271,11 +298,12 @@ async function product(req, res, p) {
 // ---------- the app host ----------
 function serveApp(req, res, p) {
   if (p.startsWith('/_gw/static/')) { const f = fileFor('app/' + p.slice('/_gw/static/'.length)); return f ? serveFile(res, f, { immutable: true }) : send(res, 404, 'Not found'); }
-  const PAGES = { '/_gw/login': 'login', '/_gw/signup': 'signup', '/_gw/forgot': 'forgot', '/_gw/reset': 'reset', '/_gw/account': 'account', '/_gw/verify-needed': 'verify-needed' };
+  const PAGES = { '/_gw/login': 'login', '/_gw/signup': 'signup', '/_gw/forgot': 'forgot', '/_gw/reset': 'reset', '/_gw/account': 'account', '/_gw/verify-needed': 'verify-needed', '/_gw/checkout': 'checkout', '/_gw/checkout/success': 'checkout-success' };
   if (req.method === 'GET' && PAGES[p]) {
     const s = sessionOf(req);
     if ((p === '/_gw/login' || p === '/_gw/signup') && s && !new URL(req.url, 'http://x').searchParams.get('invite')) return redirect(res, '/');
     if ((p === '/_gw/account' || p === '/_gw/verify-needed') && !s) return redirect(res, '/_gw/login');
+    if (p.startsWith('/_gw/checkout') && !s) return redirect(res, '/_gw/login?next=' + encodeURIComponent(req.url));
     const page = fileFor(`app/${PAGES[p]}.html`);
     return page ? serveFile(res, page, { template: true }) : send(res, 404, 'Not found');
   }

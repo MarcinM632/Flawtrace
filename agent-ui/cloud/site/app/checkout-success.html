@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Payment · Flawtrace</title><meta name="robots" content="noindex"><link rel="icon" href="/_gw/static/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/_gw/static/gw.css"></head>
+<body>
+<main class="shell checkout narrow">
+  <div class="topbar"><a class="brand" href="/"><img src="/_gw/static/logo.svg" alt="" width="30" height="30">Flawtrace</a></div>
+  <ol class="steps" aria-label="Checkout progress">
+    <li class="done"><span>1</span>Account</li>
+    <li class="done"><span>2</span>Billing details</li>
+    <li class="done"><span>3</span>Payment</li>
+    <li class="on" aria-current="step"><span>4</span>Done</li>
+  </ol>
+  <section class="panel center" id="okBox" data-mode="success">
+    <div class="status-ic" id="statusIc" aria-hidden="true"></div>
+    <h1 id="okTitle">Confirming your payment…</h1>
+    <p class="sub" id="okText">This takes a few seconds. Please keep this page open.</p>
+    <div class="row centered" id="okActions" hidden>
+      <a class="btn" href="/" id="openApp">Open Flawtrace</a>
+      <a class="btn ghost" href="/_gw/account">Account and billing</a>
+    </div>
+    <p class="hint" id="okHint"></p>
+  </section>
+</main>
+<script src="/_gw/static/gw.js"></script>
+<script src="/_gw/static/checkout.js"></script>
+</body></html>

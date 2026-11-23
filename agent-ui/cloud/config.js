@@ -44,6 +44,9 @@ module.exports = {
   STRIPE_PRICE_ID: env.STRIPE_PRICE_ID || '',
   STRIPE_TAX: env.STRIPE_TAX === '1',
   PRICE_LABEL: env.PRICE_LABEL || '',
+  // Karta od razu: trial startuje dopiero po podaniu metody płatności w Stripe Checkout (pierwsza opłata po trialu).
+  TRIAL_REQUIRES_CARD: env.TRIAL_REQUIRES_CARD === '1',
+  PLAN_NAME: env.PLAN_NAME || 'Team workspace',
   // Legal identity shown on the legal pages (fill in before going public).
   COMPANY_NAME: env.COMPANY_NAME || '[Company name]',
   COMPANY_ADDRESS: env.COMPANY_ADDRESS || '[Registered address]',

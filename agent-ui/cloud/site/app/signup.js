@@ -1,7 +1,15 @@
 // Sign-up page: shows the beta-code field when needed and fills in an invitation.
 (async function () {
   const { call, params, $ } = window.gw;
-  try { const c = await call('/_gw/api/config', null, 'GET'); if (c.betaCode && !params.get('invite')) $('#betaBox').hidden = false; } catch (_) { /* the form still works */ }
+  try {
+    const c = await call('/_gw/api/config', null, 'GET');
+    if (c.betaCode && !params.get('invite')) $('#betaBox').hidden = false;
+    // Płatność od razu (karta przy starcie albo brak triala): pokaż kroki, żeby było jasne, że po koncie przyjdzie płatność.
+    if (c.billing && !params.get('invite') && (c.trialRequiresCard || c.trialDays <= 0)) {
+      $('#signupSteps').hidden = false;
+      if (c.trialDays <= 0) { $('#title').textContent = 'Create your account'; $('#sub').textContent = 'Next you choose how to pay. Cancel any time.'; }
+    }
+  } catch (_) { /* the form still works */ }
   const invite = params.get('invite');
   if (invite) {
     $('#invite').value = invite;

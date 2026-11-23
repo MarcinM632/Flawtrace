@@ -64,12 +64,16 @@ Możesz to zrobić **po** starcie bety (krok 9). Bez kluczy Stripe cała chmura 
 4. "Developers" → "API keys" → skopiuj klucz tajny (`sk_test_...`) do `STRIPE_SECRET_KEY`.
 5. "Developers" → "Webhooks" → "Add endpoint":
    - adres: `https://app.TWOJADOMENA/_gw/stripe/webhook`
-   - zdarzenia: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.paid`
+   - zdarzenia: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.paid`
    - skopiuj "Signing secret" (`whsec_...`) do `STRIPE_WEBHOOK_SECRET`.
 6. "Settings" → "Billing" → "Customer portal": włącz anulowanie subskrypcji, zmianę karty i historię faktur. Bez tego przycisk "Manage billing" zwróci błąd.
 7. VAT: włącz Stripe Tax (Settings → Tax), potem ustaw `STRIPE_TAX=1`. Ustal z księgowym stawki i numer VAT UE klientów.
-8. Test: kartą testową `4242 4242 4242 4242` (dowolna data w przyszłości, dowolny CVC) przejdź cały zakup na stronie konta. Sprawdź, że workspace zmienia się na "Active". Potem anuluj w portalu i sprawdź, że dostęp się kończy.
-9. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i `PRICE_LABEL=49 EUR / miesiąc` (twoja cena).
+8. Wybierz model triala w `.env`:
+   - `TRIAL_REQUIRES_CARD=0` (domyślnie): trial bez karty, checkout dostępny w trakcie i wymagany po końcu triala;
+   - `TRIAL_REQUIRES_CARD=1`: klasyczny „karta od razu” — po rejestracji klient trafia na checkout, trial liczy Stripe, pierwsza opłata po trialu;
+   - `TRIAL_DAYS=0`: płatność od razu, bez triala.
+9. Test całego flow (kartą testową `4242 4242 4242 4242`, dowolna data w przyszłości, dowolny CVC): rejestracja → potwierdzenie e-maila → `/_gw/checkout` (dane do faktury, zgoda) → płatność w Stripe → strona „You are all set” → aplikacja. Sprawdź, że workspace ma status "Active". Potem anuluj w portalu i sprawdź, że dostęp się kończy, a właściciel trafia z powrotem na checkout. Płatność odroczoną (np. polecenie zapłaty SEPA) sprawdzisz testowym numerem IBAN z dokumentacji Stripe: dostęp ma się włączyć dopiero po jej zaksięgowaniu.
+10. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i `PRICE_LABEL=49 EUR / miesiąc` (twoja cena).
 
 ## Krok 6. Sprawy prawne (kilka dni, koszt zależy od prawnika)
 

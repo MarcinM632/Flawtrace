@@ -14,6 +14,17 @@ const billing = require('../cloud/billing');
 const APP = path.resolve(__dirname, '..');
 const WH_SECRET = 'whsec_test_secret';
 let gw, port, data, stripe, stripeBase, stripeCalls = [], out = '';
+// Fake Stripe: prices, customers, checkout sessions (created and read back), billing portal, subscriptions.
+const stripeSessions = {}; let custN = 0;
+function fakeStripe(method, url) {
+  if (url.startsWith('/v1/prices/')) return { id: 'price_1', unit_amount: 2900, currency: 'eur', recurring: { interval: 'month', interval_count: 1 } };
+  if (method === 'POST' && url === '/v1/customers') return { id: 'cus_new_' + (++custN) };
+  if (url.startsWith('/v1/customers/')) return { id: url.split('/').pop() };
+  if (method === 'GET' && url.startsWith('/v1/checkout/sessions/')) return stripeSessions[decodeURIComponent(url.split('/').pop())] || { id: 'cs_x', status: 'open' };
+  if (url.includes('checkout')) return { url: 'https://checkout.stripe.test/pay' };
+  if (url.includes('portal')) return { url: 'https://billing.stripe.test/portal' };
+  return { id: 'sub_1', status: 'canceled' };
+}
 const freePort = () => new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 const SITE = () => `localhost:${port}`, APPH = () => `app.localhost:${port}`;
 
@@ -36,7 +47,7 @@ const signup = (email, extra = {}) => req(APPH, 'POST', '/_gw/api/signup', { bod
 async function signedIn(email) { const r = await signup(email); assert.equal(r.status, 201, `signup ${email} -> ${r.status} body=${JSON.stringify(r.text)} serverTail=${JSON.stringify(out.slice(-600))}`); const c = cookieOf(r); const v = mailLink(email, 'verify'); assert.ok(v, 'verification mail'); const path_ = v.replace(/^http:\/\/[^/]+/, ''); assert.equal((await req(APPH, 'GET', path_)).status, 302); return c; }
 
 before(async () => {
-  stripe = http.createServer((q, s) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => { stripeCalls.push({ method: q.method, url: q.url, body: b, auth: q.headers.authorization }); s.writeHead(200, { 'content-type': 'application/json' }); s.end(JSON.stringify(q.url.includes('portal') ? { url: 'https://billing.stripe.test/portal' } : q.url.includes('checkout') ? { url: 'https://checkout.stripe.test/pay' } : { id: 'sub_1', status: 'canceled' })); }); });
+  stripe = http.createServer((q, s) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => { stripeCalls.push({ method: q.method, url: q.url, body: b, auth: q.headers.authorization }); s.writeHead(200, { 'content-type': 'application/json' }); s.end(JSON.stringify(fakeStripe(q.method, q.url))); }); });
   await new Promise((r) => stripe.listen(0, '127.0.0.1', r));
   stripeBase = 'http://127.0.0.1:' + stripe.address().port;
   port = await freePort();
@@ -189,7 +200,7 @@ test('billing: trial, checkout, webhook signature, activation, failed payment, c
   const o = { cookie, body: {}, headers: { origin: `http://${APPH()}` } };
   let me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json;
   assert.equal(me.access.state, 'trial'); assert.ok(me.access.daysLeft >= 13);
-  const co = await req(APPH, 'POST', '/_gw/api/checkout', o);
+  const co = await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true } });
   assert.equal(co.json.url, 'https://checkout.stripe.test/pay');
   const call = stripeCalls.find((c) => c.url === '/v1/checkout/sessions');
   assert.equal(call.auth, 'Bearer sk_test_x');
@@ -214,7 +225,7 @@ test('billing: trial, checkout, webhook signature, activation, failed payment, c
   await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: gone, headers: sign(gone) });
   me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json; assert.equal(me.access.ok, false);
   assert.equal((await req(APPH, 'GET', '/api/agents', { cookie })).status, 402, 'no access without a subscription');
-  const page = await req(APPH, 'GET', '/', { cookie, headers: { accept: 'text/html' } }); assert.equal(page.status, 302); assert.match(page.headers.location, /_gw\/account/);
+  const page = await req(APPH, 'GET', '/', { cookie, headers: { accept: 'text/html' } }); assert.equal(page.status, 302); assert.match(page.headers.location, /_gw\/checkout/, 'the owner goes to the checkout');
   // a trial that ran out
   const db = new DatabaseSync(path.join(data, 'gateway.db'));
   db.prepare("update orgs set status = 'trial', trial_ends = ? where id = ?").run(Date.now() - 1000, orgId); db.close();
@@ -254,4 +265,73 @@ test('the gateway secret and payment keys do not reach the customer process', as
   const log = dirs.map((d) => { try { return fs.readFileSync(path.join(data, 'orgs', d, 'server.log'), 'utf8'); } catch (_) { return ''; } }).join('\n');
   assert.ok(!log.includes('sk_test_x') && !log.includes('test-master-secret'), 'no secret in a workspace log');
   assert.ok(fs.existsSync(path.join(data, 'gateway.db')));
+});
+
+test('checkout flow: pages, plan from Stripe, consent required, customer + session, return confirmation, members and paywall', async () => {
+  const email = 'buyer@x.test';
+  // the checkout page needs a session
+  const anon = await req(APPH, 'GET', '/_gw/checkout', { headers: { accept: 'text/html' } });
+  assert.equal(anon.status, 302); assert.match(anon.headers.location, /\/_gw\/login\?next=%2F_gw%2Fcheckout/);
+  const cookie = await signedIn(email);
+  for (const p of ['/_gw/checkout', '/_gw/checkout/success?session_id=cs_1']) { const x = await req(APPH, 'GET', p, { cookie, headers: { accept: 'text/html' } }); assert.equal(x.status, 200, p); assert.ok(!/\{\{/.test(x.text), p); assert.ok(!/ style="|<script>/.test(x.text), p + ' no inline style or script'); }
+  assert.equal((await req(APPH, 'GET', '/_gw/static/checkout.js')).status, 200);
+  // the price shown is the one Stripe will charge
+  const plan = (await req(APPH, 'GET', '/_gw/api/plan', { cookie })).json;
+  assert.deepEqual(plan.price, { amount: 2900, currency: 'EUR', interval: 'month', intervalCount: 1, taxBehavior: null });
+  assert.equal(plan.billing, true); assert.equal(plan.stripeTrialDays, 0, 'no Stripe trial when the trial needs no card');
+  const o = { cookie, headers: { origin: `http://${APPH()}` } };
+  // consent and a valid billing e-mail are required
+  assert.match((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: {} })).json.error, /Terms of Service/);
+  assert.match((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true, billingEmail: 'nope' } })).json.error, /billing e-mail/);
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: 'yes' } })).status, 400, 'consent must be an explicit true');
+  stripeCalls.length = 0;
+  const co = await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true, billingEmail: 'Invoices@Buyer.test', company: 'Buyer Ltd' } });
+  assert.equal(co.status, 200); assert.equal(co.json.url, 'https://checkout.stripe.test/pay');
+  const cust = stripeCalls.find((c) => c.method === 'POST' && c.url === '/v1/customers');
+  assert.ok(cust, 'a Stripe customer is created before payment');
+  assert.equal(new URLSearchParams(cust.body).get('email'), 'invoices@buyer.test'); assert.equal(new URLSearchParams(cust.body).get('name'), 'Buyer Ltd');
+  const sess = new URLSearchParams(stripeCalls.find((c) => c.url === '/v1/checkout/sessions').body);
+  const orgId = sess.get('client_reference_id');
+  assert.match(sess.get('customer'), /^cus_new_/); assert.equal(sess.get('customer_update[address]'), 'auto');
+  assert.match(sess.get('success_url'), /\/_gw\/checkout\/success\?session_id=\{CHECKOUT_SESSION_ID\}$/);
+  assert.match(sess.get('cancel_url'), /\/_gw\/checkout\?canceled=1$/);
+  assert.equal(sess.get('subscription_data[trial_period_days]'), null);
+  let me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json;
+  assert.equal(me.org.name, 'Buyer Ltd', 'the invoice name becomes the workspace name');
+  // return from Stripe: a session of another workspace or an unfinished one changes nothing
+  stripeSessions.cs_other = { id: 'cs_other', status: 'complete', payment_status: 'paid', client_reference_id: 'someone-else', customer: 'cus_x', subscription: 'sub_x' };
+  stripeSessions.cs_open = { id: 'cs_open', status: 'open', payment_status: 'unpaid', client_reference_id: orgId };
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: 'cs_other' } })).json.confirmed, false);
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: 'cs_open' } })).json.confirmed, false);
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: '../../v1/customers' } })).json.confirmed, false, 'only a session id is accepted');
+  assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.state, 'trial');
+  // the real one activates the workspace at once, before the webhook arrives
+  stripeSessions.cs_ok = { id: 'cs_ok', status: 'complete', payment_status: 'paid', client_reference_id: orgId, customer: 'cus_new_1', subscription: 'sub_ok' };
+  const ok = (await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: 'cs_ok' } })).json;
+  assert.equal(ok.confirmed, true); assert.equal(ok.access.state, 'active');
+  me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json; assert.equal(me.billing.subscribed, true);
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true } })).status, 409, 'no second subscription');
+  // the webhook for the same checkout afterwards is harmless
+  const ev = (id, type, object) => JSON.stringify({ id, type, data: { object } });
+  const done = ev('evt_co_1', 'checkout.session.completed', { client_reference_id: orgId, customer: 'cus_new_1', subscription: 'sub_ok', payment_status: 'paid', metadata: { org: orgId } });
+  assert.equal((await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: done, headers: sign(done) })).status, 200);
+  assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.state, 'active');
+});
+
+test('checkout: a delayed payment (bank transfer) gives access only when it clears', async () => {
+  const cookie = await signedIn('slowpay@x.test');
+  const o = { cookie, headers: { origin: `http://${APPH()}` } };
+  stripeCalls.length = 0;
+  await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: { acceptTerms: true } });
+  const orgId = new URLSearchParams(stripeCalls.find((c) => c.url === '/v1/checkout/sessions').body).get('client_reference_id');
+  const db = new DatabaseSync(path.join(data, 'gateway.db')); db.prepare("update orgs set trial_ends = ? where id = ?").run(Date.now() - 1000, orgId); db.close();
+  const ev = (id, type, object) => JSON.stringify({ id, type, data: { object } });
+  const pending = ev('evt_slow_1', 'checkout.session.completed', { client_reference_id: orgId, customer: 'cus_s', subscription: 'sub_s', payment_status: 'unpaid', metadata: { org: orgId } });
+  assert.equal((await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: pending, headers: sign(pending) })).json.pending, true);
+  stripeSessions.cs_slow = { id: 'cs_slow', status: 'complete', payment_status: 'unpaid', client_reference_id: orgId };
+  assert.equal((await req(APPH, 'POST', '/_gw/api/checkout/confirm', { ...o, body: { sessionId: 'cs_slow' } })).json.pending, true);
+  assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.ok, false, 'no access while the payment is pending');
+  const cleared = ev('evt_slow_2', 'checkout.session.async_payment_succeeded', { client_reference_id: orgId, customer: 'cus_s', subscription: 'sub_s', payment_status: 'paid', metadata: { org: orgId } });
+  await req(APPH, 'POST', '/_gw/stripe/webhook', { raw: cleared, headers: sign(cleared) });
+  assert.equal((await req(APPH, 'GET', '/_gw/api/me', { cookie })).json.access.state, 'active');
 });

@@ -17,7 +17,7 @@
     if (a.ok) box.append(el('a', 'Open the app', 'btn small')), box.lastChild.href = '/';
     if (me.billing.enabled && owner) {
       if (me.billing.subscribed) box.append(button('Manage billing', 'ghost small', async () => { location.href = (await call('/_gw/api/portal', {})).url; }));
-      if (a.state !== 'active') box.append(button(me.billing.subscribed ? 'Resubscribe' : 'Subscribe', 'small', async () => { location.href = (await call('/_gw/api/checkout', {})).url; }));
+      if (a.state !== 'active') { const sub = el('a', me.billing.subscribed ? 'Resubscribe' : 'Subscribe', 'btn small'); sub.href = '/_gw/checkout'; box.append(sub); }
     } else if (me.billing.enabled && !owner && !a.ok) box.append(el('span', 'Ask the owner of the workspace to subscribe.', 'hint'));
   }
 
