@@ -76,6 +76,11 @@ The folder `knowledge/` already holds the test process, performance testing and 
 
 When this works, run a real task through Test Flow: open **1. Planning**, paste a ticket key and switch the mode to **Auto** to run all phases one after another.
 
+## 5. More documentation
+
+- [docs/PENTEST.md](docs/PENTEST.md) — the Pentest agent and the pentest engine: engagements, approvals, evidence, report, CI, a local lab with OWASP Juice Shop.
+- [docs/AGENT-SKILLS.md](docs/AGENT-SKILLS.md) — the skills of every agent, the report validators, cost and memory settings.
+
 ## Problems
 
 | Symptom | Cause and fix |
