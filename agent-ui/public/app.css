@@ -2065,3 +2065,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--acc-line);box-shadow:
 .ob-acts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .ob-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .ob-text{white-space:pre-wrap;word-break:break-word;max-height:520px;overflow:auto;font:12.5px/1.55 var(--mono,ui-monospace,monospace);background:var(--surface2);border:1px solid var(--line2);border-radius:var(--r-sm);padding:12px 14px;margin:0}
+
+/* Silnik pentestowy: własny panel pod przebiegami agenta, na całą szerokość siatki zakładki Pentest. */
+#view-pentest>#peBox{grid-column:1/-1}

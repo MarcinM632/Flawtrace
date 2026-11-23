@@ -130,3 +130,10 @@ test('outbound fetch inside the hosted process is guarded (redirect to an intern
     await assert.rejects(() => fetch('http://127.0.0.1:1/x'), /private/);
   } finally { globalThis.fetch = origFetch; if (prev === undefined) delete process.env.QA_HOSTED; else process.env.QA_HOSTED = prev; }
 });
+
+test('pentest engine on a hosted deployment: scope only within the hosts connected in Sources', async () => {
+  const body = { name: 'x', scope: { domains: ['victim.example'] }, authorization: { authorizedBy: 'me', attestation: true }, plan: { startUrl: 'https://victim.example/' } };
+  const r = await call('/api/pentest/engagements', { method: 'POST', body: JSON.stringify(body) });
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Sources/);
+});

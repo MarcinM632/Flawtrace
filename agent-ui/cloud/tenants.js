@@ -79,7 +79,9 @@ async function ensure(orgId) {
   const port = await freePort();
   const token = crypto.randomBytes(24).toString('hex');
   const logFd = fs.openSync(path.join(dir, 'server.log'), 'a');
-  const proc = spawn(process.execPath, [path.join(cfg.APP_DIR, 'server.js')], { cwd: cfg.APP_DIR, env: tenantEnv(orgId, port, token), stdio: ['ignore', logFd, logFd], windowsHide: true });
+  // Własna grupa procesów (poza Windows): stop() zabija cały proces klienta razem z jego dziećmi (przeglądarka, MCP…),
+  // żeby nic nie zostało przy życiu i nie pisało do folderu klienta po zatrzymaniu albo usunięciu workspace.
+  const proc = spawn(process.execPath, [path.join(cfg.APP_DIR, 'server.js')], { cwd: cfg.APP_DIR, env: tenantEnv(orgId, port, token), stdio: ['ignore', logFd, logFd], windowsHide: true, detached: process.platform !== 'win32' });
   fs.closeSync(logFd);
   t = { proc, port, token, lastUsed: Date.now(), startedAt: Date.now(), exited: false };
   tenants.set(orgId, t);
@@ -92,11 +94,16 @@ async function ensure(orgId) {
 
 const touch = (orgId) => { const t = tenants.get(orgId); if (t) t.lastUsed = Date.now(); };
 
+/** Sygnał do całej grupy procesów klienta (detached), a gdy się nie da — do samego procesu. */
+function killGroup(proc, sig) {
+  try { process.kill(-proc.pid, sig); } catch (_) { try { proc.kill(sig); } catch (__) { /* gone */ } }
+}
+
 function stop(orgId) {
   const t = tenants.get(orgId);
   if (!t) return false;
   tenants.delete(orgId);
-  try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(t.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }) : t.proc.kill('SIGTERM'); } catch (_) { /* gone */ }
+  try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(t.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }) : killGroup(t.proc, 'SIGTERM'); } catch (_) { /* gone */ }
   return true;
 }
 
@@ -122,9 +129,23 @@ async function makeRoom() {
 function startSweeper() { if (!timer) { timer = setInterval(() => sweep().catch(() => {}), 60000); timer.unref(); } }
 function stopAll() { clearInterval(timer); timer = null; for (const id of [...tenants.keys()]) stop(id); }
 
+/** Resolves when the process has really exited; after graceMs it is killed (SIGKILL) and given one more second. */
+function waitExit(proc, graceMs = 4000) {
+  if (!proc || proc.exitCode !== null || proc.signalCode !== null) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => { clearTimeout(t1); clearTimeout(t2); resolve(); };
+    proc.once('exit', done);
+    const t1 = setTimeout(() => { if (process.platform === 'win32') { try { proc.kill('SIGKILL'); } catch (_) { /* gone */ } } else killGroup(proc, 'SIGKILL'); }, graceMs);
+    const t2 = setTimeout(done, graceMs + 1000);
+  });
+}
+
 async function remove(orgId) {
+  const t = tenants.get(orgId);
   stop(orgId);
-  await sleep(500); // let the process release its files
+  // Wait for the real exit, not a fixed pause: a process still shutting down under load could write a file after the
+  // folder was removed and bring the customer's data folder back.
+  await waitExit(t && t.proc);
   fs.rmSync(orgDir(orgId), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
 }
 

@@ -75,6 +75,8 @@ const JIRA_TOOLS = [
 
 /** Jeden tylko-odczytowy przebieg `claude -p` z narzędziami Jiry; zwraca tablicę JSON z odpowiedzi (raw: sam tekst). */
 function jiraAsk(prompt, timeoutMs, model = MODEL, raw = false) {
+  // Na hostingu nie ma Claude Code (zasada trybu hosted): Jira tylko przez REST z tokenem, bez cichego uruchamiania CLI.
+  if (require('./hosted').HOSTED) return Promise.reject(new Error('Jira przez Claude Code jest wyłączona na tym wdrożeniu — podłącz Jirę adresem i tokenem w Sources.'));
   return new Promise((resolve, reject) => {
     const dir = path.join(RUNS_DIR, 'work'); fs.mkdirSync(dir, { recursive: true });
     const args = ['-p', '--model', model, '--output-format', 'json', '--tools', 'ToolSearch', '--permission-mode', 'dontAsk',
