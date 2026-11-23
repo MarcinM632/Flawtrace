@@ -207,7 +207,7 @@ function access(org) {
   if (org.status === 'active') return { ok: true, state: 'active', label: 'Subscription active' };
   if (org.status === 'past_due') {
     const left = Math.ceil(((org.past_due_since || db.now()) + cfg.PAST_DUE_GRACE_DAYS * DAY - db.now()) / DAY);
-    return left > 0 ? { ok: true, state: 'past_due', label: `Payment failed. Update your card within ${left} day(s).`, daysLeft: left } : { ok: false, state: 'past_due', label: 'Payment failed and the grace period is over.' };
+    return left > 0 ? { ok: true, state: 'past_due', label: `Payment failed. Update your card within ${left} ${left === 1 ? 'day' : 'days'}.`, daysLeft: left } : { ok: false, state: 'past_due', label: 'Payment failed and the grace period is over.' };
   }
   if (org.status === 'trial' && !org.stripe_subscription && (cfg.TRIAL_REQUIRES_CARD || cfg.TRIAL_DAYS <= 0)) {
     // Klasyczny wariant „karta od razu”: bez subskrypcji (także z trialem w Stripe) nie ma dostępu.
@@ -215,7 +215,7 @@ function access(org) {
   }
   if (org.status === 'trial') {
     const left = Math.ceil(((org.trial_ends || 0) - db.now()) / DAY);
-    return left > 0 ? { ok: true, state: 'trial', label: `Free trial: ${left} day(s) left`, daysLeft: left } : { ok: false, state: 'trial_ended', label: 'Your free trial has ended.' };
+    return left > 0 ? { ok: true, state: 'trial', label: `Free trial: ${left} ${left === 1 ? 'day' : 'days'} left`, daysLeft: left } : { ok: false, state: 'trial_ended', label: 'Your free trial has ended.' };
   }
   return { ok: false, state: 'canceled', label: 'The subscription has ended.' };
 }

@@ -63,20 +63,35 @@ async function ensureCustomer(org, { email, name }) {
 
 /** Trial w Stripe tylko przy „karcie od razu” i tylko dla workspace, który nigdy nie miał subskrypcji. */
 function stripeTrialDays(org) {
-  if (!cfg.TRIAL_REQUIRES_CARD || cfg.TRIAL_DAYS <= 0 || org.stripe_subscription) return 0;
-  return cfg.TRIAL_DAYS;
+  if (!org || cfg.TRIAL_DAYS <= 0 || org.stripe_subscription) return 0;
+  if (cfg.TRIAL_REQUIRES_CARD) return cfg.TRIAL_DAYS;
+  // Trial bez karty: subskrypcja w trakcie triala nie zjada pozostałych dni; pierwsza płatność, gdy trial się skończy.
+  const end = trialEnd(org);
+  return end ? Math.ceil((end - Date.now()) / 86400000) : 0;
+}
+/** Trial bez karty: dokładny koniec triala do przekazania Stripe (Stripe wymaga co najmniej 48 h), inaczej 0 = płatność od razu. */
+function trialEnd(org) {
+  if (!org || cfg.TRIAL_REQUIRES_CARD || cfg.TRIAL_DAYS <= 0 || org.stripe_subscription || org.status !== 'trial' || !org.trial_ends) return 0;
+  return org.trial_ends - Date.now() >= 2 * 86400000 ? org.trial_ends : 0;
+}
+/** Kiedy Stripe pobierze pierwszą płatność, jeśli nie od razu (ms) — do pokazania na checkoucie. */
+function firstChargeAt(org) {
+  if (trialEnd(org)) return org.trial_ends;
+  const d = cfg.TRIAL_REQUIRES_CARD ? stripeTrialDays(org) : 0;
+  return d ? Date.now() + d * 86400000 : null;
 }
 
 async function checkoutUrl(org, user, { customer, plan = plans.defaultPlan() } = {}) {
   if (!enabled()) throw Object.assign(new Error('Billing is not switched on.'), { code: 400 });
   if (!plan || !plan.sellable) throw Object.assign(new Error('This plan is not available.'), { code: 400 });
-  const trial = stripeTrialDays(org);
+  const end = trialEnd(org);
+  const trial = end ? 0 : stripeTrialDays(org);
   const cust = customer || org.stripe_customer;
   const s = await stripe('POST', '/v1/checkout/sessions', {
     mode: 'subscription', 'line_items': [{ price: plan.stripePrice, quantity: 1 }],
     ...(cust ? { customer: cust, customer_update: { address: 'auto', name: 'auto' } } : { customer_email: user.email }),
     client_reference_id: org.id, metadata: { org: org.id, plan: plan.id },
-    subscription_data: { metadata: { org: org.id, plan: plan.id }, ...(trial ? { trial_period_days: trial } : {}) },
+    subscription_data: { metadata: { org: org.id, plan: plan.id }, ...(end ? { trial_end: Math.floor(end / 1000) } : trial ? { trial_period_days: trial } : {}) },
     allow_promotion_codes: 'true', billing_address_collection: 'required',
     ...(cfg.STRIPE_TAX ? { automatic_tax: { enabled: 'true' }, tax_id_collection: { enabled: 'true' } } : {}),
     success_url: `${cfg.appUrl}/_gw/checkout/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${cfg.appUrl}/_gw/checkout?canceled=1`,
@@ -97,7 +112,7 @@ async function confirmSession(org, sessionId) {
   if (!['paid', 'no_payment_required'].includes(s.payment_status)) return { confirmed: false, pending: true, reason: 'payment pending' };
   db.run("update orgs set status = 'active', plan = coalesce(?, plan), stripe_customer = coalesce(?, stripe_customer), stripe_subscription = coalesce(?, stripe_subscription), past_due_since = null where id = ?", planOf(s.metadata), s.customer || null, s.subscription || null, org.id);
   db.audit('subscribed', { org: org.id, detail: 'confirmed on return from checkout' });
-  return { confirmed: true };
+  return { confirmed: true, trial: s.payment_status === 'no_payment_required' };
 }
 
 async function portalUrl(org) {
@@ -160,4 +175,4 @@ function applyEvent(ev) {
   return { handled: true, org: org.id };
 }
 
-module.exports = { matchesCatalog, applyEvent, cancelSubscription, checkoutUrl, confirmSession, enabled, ensureCustomer, form, portalUrl, priceInfo, stripeTrialDays, verifySignature };
+module.exports = { matchesCatalog, applyEvent, cancelSubscription, checkoutUrl, confirmSession, enabled, ensureCustomer, form, portalUrl, priceInfo, stripeTrialDays, trialEnd, firstChargeAt, verifySignature };

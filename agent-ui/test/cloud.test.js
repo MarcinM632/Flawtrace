@@ -290,7 +290,7 @@ test('checkout flow: pages, plan from Stripe, consent required, customer + sessi
   assert.deepEqual(plan.plans.map((x) => [x.id, x.priceText, x.perMonthText, x.save, x.sellable, x.matchesStripe]), [['monthly', '€29', '€29', 0, true, true], ['semiannual', '€150', '€25', 14, true, true], ['annual', '€276', '€23', 21, true, true]]);
   assert.deepEqual(plan.plans[0].stripe, { amount: 2900, currency: 'EUR', interval: 'month', intervalCount: 1, taxBehavior: null });
   assert.equal(plan.enterprise.seats, 25);
-  assert.equal(plan.billing, true); assert.equal(plan.stripeTrialDays, 0, 'no Stripe trial when the trial needs no card');
+  assert.equal(plan.billing, true); assert.equal(plan.stripeTrialDays, 14, 'subscribing during a card-free trial keeps the remaining days'); assert.ok(Math.abs(plan.firstCharge - (Date.now() + 14 * 86400000)) < 120000, 'first charge when the trial ends');
   const o = { cookie, headers: { origin: `http://${APPH()}` } };
   // consent and a valid billing e-mail are required
   assert.match((await req(APPH, 'POST', '/_gw/api/checkout', { ...o, body: {} })).json.error, /Terms of Service/);
@@ -309,6 +309,7 @@ test('checkout flow: pages, plan from Stripe, consent required, customer + sessi
   assert.match(sess.get('success_url'), /\/_gw\/checkout\/success\?session_id=\{CHECKOUT_SESSION_ID\}$/);
   assert.match(sess.get('cancel_url'), /\/_gw\/checkout\?canceled=1$/);
   assert.equal(sess.get('subscription_data[trial_period_days]'), null);
+  assert.ok(Math.abs(Number(sess.get('subscription_data[trial_end]')) * 1000 - plan.firstCharge) < 1000, 'Stripe gets the exact end of the trial');
   let me = (await req(APPH, 'GET', '/_gw/api/me', { cookie })).json;
   assert.equal(me.org.name, 'Buyer Ltd', 'the invoice name becomes the workspace name');
   // return from Stripe: a session of another workspace or an unfinished one changes nothing

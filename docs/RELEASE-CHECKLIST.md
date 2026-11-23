@@ -73,12 +73,19 @@ Możesz to zrobić **po** starcie bety (krok 9). Bez kluczy Stripe cała chmura 
 6. "Settings" → "Billing" → "Customer portal": włącz anulowanie subskrypcji, zmianę karty, historię faktur i **zmianę planu** (dodaj trzy ceny z punktu 3, żeby klient mógł przejść np. z miesięcznego na roczny; nowy okres trafia do gatewaya webhookiem `customer.subscription.updated`). Bez tego przycisk "Manage billing" zwróci błąd.
 7. VAT: włącz Stripe Tax (Settings → Tax), potem ustaw `STRIPE_TAX=1`. Ustal z księgowym stawki i numer VAT UE klientów.
 8. Wybierz model triala w `.env`:
-   - `TRIAL_REQUIRES_CARD=0` (domyślnie): trial bez karty, checkout dostępny w trakcie i wymagany po końcu triala;
+   - `TRIAL_REQUIRES_CARD=0` (domyślnie): trial bez karty, checkout dostępny w trakcie i wymagany po końcu triala. Kto zasubskrybuje w trakcie triala, nie traci pozostałych dni: Stripe dostaje dokładną datę końca triala i pobiera pierwszą płatność dopiero wtedy (checkout pokazuje „Due today $0.00” i datę pierwszej płatności);
    - `TRIAL_REQUIRES_CARD=1`: klasyczny „karta od razu” — po rejestracji klient trafia na checkout, trial liczy Stripe, pierwsza opłata po trialu;
    - `TRIAL_DAYS=0`: płatność od razu, bez triala.
-9. Test całego flow (kartą testową `4242 4242 4242 4242`, dowolna data w przyszłości, dowolny CVC): rejestracja → potwierdzenie e-maila → `/_gw/checkout` (dane do faktury, zgoda) → płatność w Stripe → strona „You are all set” → aplikacja. Sprawdź, że workspace ma status "Active". Potem anuluj w portalu i sprawdź, że dostęp się kończy, a właściciel trafia z powrotem na checkout. Płatność odroczoną (np. polecenie zapłaty SEPA) sprawdzisz testowym numerem IBAN z dokumentacji Stripe: dostęp ma się włączyć dopiero po jej zaksięgowaniu.
-10. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i żywe identyfikatory trzech cen.
-11. Klient Enterprise (faktura, przelew): po podpisaniu umowy i opłaceniu faktury uruchom na serwerze `node cloud/admin.js enterprise <email-właściciela> <liczba-miejsc> <miesiące>`, np. `... enterprise anna@firma.pl 20 12`. Ustawia plan Enterprise, limit osób i opłacony okres (kolejne wywołanie przedłuża od obecnego końca). Po końcu okresu dostęp wygasa; `node cloud/admin.js show <email>` pokazuje plan, miejsca i datę końca.
+9. Co klient widzi po kolei (sprawdź wizualnie na komputerze i telefonie):
+   1. Cennik na stronie → przycisk przy wybranym okresie → rejestracja z ramką „Selected plan: …”.
+   2. Potwierdzenie e-maila → przy `TRIAL_REQUIRES_CARD=0` aplikacja (trial), przy `=1` od razu checkout.
+   3. Checkout: wybór okresu (zaznaczony ten z cennika), podsumowanie z kwotą „Due today” (przy trialu $0.00 i data pierwszej płatności), zgoda na regulamin z okresem odnowienia, przycisk do Stripe. Na telefonie kwota jest też tuż nad przyciskiem.
+   4. Strona Stripe → „You are all set” (przy trialu z datą pierwszej płatności) → po 5 s aplikacja.
+   5. Ponowne wejście na `/_gw/checkout` przy aktywnej subskrypcji: tylko „You are subscribed” z planem, bez podsumowania i kwoty.
+   6. Anulowanie na stronie Stripe: powrót z komunikatem „Payment was cancelled. Nothing was charged.”
+10. Test całego flow (kartą testową `4242 4242 4242 4242`, dowolna data w przyszłości, dowolny CVC): rejestracja → potwierdzenie e-maila → `/_gw/checkout` (dane do faktury, zgoda) → płatność w Stripe → strona „You are all set” → aplikacja. Sprawdź, że workspace ma status "Active". Potem anuluj w portalu i sprawdź, że dostęp się kończy, a właściciel trafia z powrotem na checkout. Płatność odroczoną (np. polecenie zapłaty SEPA) sprawdzisz testowym numerem IBAN z dokumentacji Stripe: dostęp ma się włączyć dopiero po jej zaksięgowaniu.
+11. Dopiero gdy test działa: przełącz Stripe na tryb żywy, wklej klucze żywe (`sk_live_...`, nowy webhook z nowym `whsec_...`) i żywe identyfikatory trzech cen.
+12. Klient Enterprise (faktura, przelew): po podpisaniu umowy i opłaceniu faktury uruchom na serwerze `node cloud/admin.js enterprise <email-właściciela> <liczba-miejsc> <miesiące>`, np. `... enterprise anna@firma.pl 20 12`. Ustawia plan Enterprise, limit osób i opłacony okres (kolejne wywołanie przedłuża od obecnego końca). Po końcu okresu dostęp wygasa; `node cloud/admin.js show <email>` pokazuje plan, miejsca i datę końca.
 
 ## Krok 6. Sprawy prawne (kilka dni, koszt zależy od prawnika)
 

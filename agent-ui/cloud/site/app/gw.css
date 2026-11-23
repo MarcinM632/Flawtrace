@@ -79,6 +79,19 @@ td.r { text-align: right; }
 .steps li.done span { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
 .co-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 @media (max-width: 820px) { .co-grid { grid-template-columns: 1fr; } .summary { order: -1; } }
+.shell.checkout.narrow .co-grid { grid-template-columns: 1fr; }
+.plan-note { margin: -6px 0 16px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 14px; }
+#signupSteps { flex-wrap: nowrap; gap: 6px; }
+#signupSteps li:not(.on) { font-size: 0; gap: 0; padding: 4px; }
+.pay-note { display: none; margin: 4px 0 10px; font-weight: 600; text-align: center; }
+@media (max-width: 820px) { .pay-note { display: block; } }
+@media (max-width: 560px) {
+  .topbar { flex-wrap: nowrap; }
+  .secure { font-size: 0; gap: 0; }
+  .secure svg { width: 18px; height: 18px; }
+  .steps { gap: 6px; flex-wrap: nowrap; }
+  .steps li:not(.on) { font-size: 0; gap: 0; padding: 4px; }
+}
 .summary h2 { margin-bottom: 14px; }
 .sum-plan { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 17px; }
 .sum-plan span { font-weight: 650; white-space: nowrap; }

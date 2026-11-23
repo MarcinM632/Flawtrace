@@ -11,6 +11,17 @@
       $('#signupSteps').hidden = false;
       if (c.trialDays <= 0) { $('#title').textContent = 'Create your account'; $('#sub').textContent = 'Next you choose how to pay. Cancel any time.'; }
     }
+    // Plan wybrany w cenniku: przypomnij go, żeby klient widział, co kupi po triala/rejestracji.
+    const want = (() => { try { return sessionStorage.getItem('ft.plan'); } catch (_) { return null; } })();
+    if (c.billing && want && !params.get('invite')) {
+      const pl = await call('/_gw/api/plan', null, 'GET').catch(() => null);
+      const x = pl && (pl.plans || []).find((y) => y.id === want && y.sellable);
+      if (x) {
+        const billed = x.months === 1 ? 'billed monthly' : `billed ${x.priceText} ${x.months === 12 ? 'once a year' : 'every ' + x.months + ' months'}`;
+        const when = c.trialDays > 0 ? (c.trialRequiresCard ? ' First charge after the trial.' : ' No card needed now; if you subscribe, the first charge comes when the trial ends.') : '';
+        const n = $('#planNote'); n.textContent = `Selected plan: ${x.name} — ${x.perMonthText} / month, ${billed}.${when} You can change it at checkout.`; n.hidden = false;
+      }
+    }
   } catch (_) { /* the form still works */ }
   const invite = params.get('invite');
   if (invite) {

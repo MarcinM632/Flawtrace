@@ -144,7 +144,7 @@ async function api(req, res, p) {
     }
     const def = plans.defaultPlan();
     return json(res, 200, { billing: billing.enabled(), name: cfg.PLAN_NAME, plans: list, defaultPlan: def && def.id, current: s ? s.org.plan : null, enterprise: plans.enterprise(),
-      seats: s ? auth.seatsOf(s.org) : cfg.MAX_SEATS, taxAtCheckout: cfg.STRIPE_TAX, trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, stripeTrialDays: trialDays,
+      seats: s ? auth.seatsOf(s.org) : cfg.MAX_SEATS, taxAtCheckout: cfg.STRIPE_TAX, trialDays: cfg.TRIAL_DAYS, trialRequiresCard: cfg.TRIAL_REQUIRES_CARD, stripeTrialDays: trialDays, firstCharge: s ? billing.firstChargeAt(s.org) : null,
       termsVersion: auth.TERMS_VERSION, siteUrl: cfg.siteUrl, contact: cfg.CONTACT_EMAIL });
   }
   if (req.method === 'GET' && p === '/_gw/api/invite-info') { const i = auth.inviteInfo(new URL(req.url, 'http://x').searchParams.get('token')); return i ? json(res, 200, i) : json(res, 404, { error: 'This invitation is no longer valid.' }); }
@@ -238,7 +238,9 @@ async function api(req, res, p) {
     const b = await readJson(req);
     const r = await billing.confirmSession(s.org, b.sessionId);
     const org = db.one('select * from orgs where id = ?', s.org.id);
-    return json(res, 200, { ...r, access: auth.access(org) });
+    // W trialu (Stripe nic jeszcze nie pobrał) strona sukcesu podaje datę pierwszej płatności.
+    const firstCharge = r.trial ? (!cfg.TRIAL_REQUIRES_CARD && org.trial_ends > Date.now() ? org.trial_ends : Date.now() + cfg.TRIAL_DAYS * 86400000) : null;
+    return json(res, 200, { ...r, firstCharge, access: auth.access(org) });
   }
   if (p === '/_gw/api/portal') { needOwner(); return json(res, 200, { url: await billing.portalUrl(s.org) }); }
   if (p === '/_gw/api/delete-workspace') {
