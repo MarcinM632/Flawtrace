@@ -169,3 +169,21 @@ test('unknown routes are 404 JSON', async () => {
   const r = await j('/api/does-not-exist');
   assert.equal(r.status, 404); assert.equal(r.body.error, 'Not found');
 });
+
+test('/api/pentest/engagements: wymaga autoryzacji i zakresu, tworzy, pokazuje i raportuje', async () => {
+  const post = (p, b) => get(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+  const bad = await post('/api/pentest/engagements', { scope: { domains: ['acme.example'] }, plan: { startUrl: 'https://acme.example/' } });
+  assert.equal(bad.status, 400);
+  assert.match((await bad.json()).error, /autoryzacji/);
+  const r = await post('/api/pentest/engagements', { name: 'api test', scope: { domains: ['acme.example'] }, authorization: { authorizedBy: 'QA', attestation: true }, intensity: 'passive', plan: { startUrl: 'https://acme.example/' } });
+  assert.equal(r.status, 201);
+  const c = await r.json();
+  assert.equal(c.state, 'created');
+  assert.ok((await (await get('/api/pentest/engagements')).json()).items.some((x) => x.id === c.id));
+  const v = await (await get('/api/pentest/engagements/' + c.id)).json();
+  assert.equal(v.audit.ok, true);
+  const md = await (await get('/api/pentest/engagements/' + c.id + '/report')).text();
+  assert.match(md, /Pentest — api test/);
+  assert.equal((await get('/api/pentest/engagements/pt-nope')).status, 404);
+  assert.equal((await post('/api/pentest/engagements/' + c.id + '/approvals/A9', { decision: 'approve', by: 'x' })).status, 404);
+});

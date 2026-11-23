@@ -48,6 +48,9 @@ const coverage = require('./lib/coverage');
 coverage.start(); // nowy komentarz na tasku z Workspace -> diff z GitLaba serwisu vs wykonane testy -> % pokrycia
 const defectLifecycle = require('./lib/defect-lifecycle');
 const integration = require('./lib/integration');
+// Silnik pentestowy (fazy 0–7): engagementy z zakresem i autoryzacją, Recon → Web-Vuln → Authz, kolejka zatwierdzeń.
+// Ruch wychodzący idzie przez globalny fetch, czyli w trybie hosted przez strażnika SSRF (net-guard).
+const pentestEngine = require('./lib/pentest-engine').createEngine({ dataDir: DATA_DIR });
 
 /** What the app has loaded from Jira so far, per page, for the Jira data check in Sources. */
 function jiraLoaded() {
@@ -301,6 +304,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/metrics/defect-lifecycle/sync') {
       metricsLib.defectLifecycleRefresh(true).catch(() => {});
       return json(res, 202, { busy: true });
+    }
+    // Pentest engine: tworzenie engagementu (zakres + autoryzacja są wymagane), start/wznowienie, zatrzymanie,
+    // kolejka zatwierdzeń akcji ponad pułap, odrzucenie findingu (przez granicę prompt injection), retest, raport, CI.
+    if (p === '/api/pentest/engagements' || p.startsWith('/api/pentest/engagements/')) {
+      try {
+        if (req.method === 'GET' && p === '/api/pentest/engagements') return json(res, 200, { items: pentestEngine.list() });
+        if (req.method === 'POST' && p === '/api/pentest/engagements') return json(res, 201, pentestEngine.create(await body(req, 256 * 1024)));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)$/)) && req.method === 'GET') return json(res, 200, pentestEngine.view(m[1]));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/(start|resume)$/)) && req.method === 'POST') return json(res, 202, pentestEngine.start(m[1]));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/stop$/)) && req.method === 'POST') return json(res, 200, pentestEngine.stop(m[1]));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/roles$/)) && req.method === 'POST') { const b = await body(req, 64 * 1024); return json(res, 200, pentestEngine.setRoles(m[1], b.roles)); }
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/approvals\/(A\d+)$/)) && req.method === 'POST') return json(res, 200, pentestEngine.decide(m[1], m[2], await body(req, 1e4)));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/findings$/)) && req.method === 'GET') return json(res, 200, { items: pentestEngine.findings(m[1]) });
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/findings\/(F\d+)\/reject$/)) && req.method === 'POST') return json(res, 200, pentestEngine.rejectFinding(m[1], m[2], await body(req, 1e4)));
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/matrix$/)) && req.method === 'GET') return json(res, 200, { items: pentestEngine.matrix(m[1]) });
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/retest$/)) && req.method === 'POST') return json(res, 200, { items: await pentestEngine.retest(m[1]) });
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/ci$/)) && req.method === 'POST') { const b = await body(req, 2 * 1024 * 1024).catch(() => ({})); return json(res, 200, pentestEngine.ci(m[1], (b && b.baseline) || [])); }
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/report$/)) && req.method === 'GET') { res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8' }); return res.end(pentestEngine.report(m[1])); }
+        if ((m = p.match(/^\/api\/pentest\/engagements\/([\w-]+)\/briefing$/)) && req.method === 'GET') return json(res, 200, pentestEngine.briefing(m[1]));
+      } catch (e) { return json(res, e.status || 500, { error: e.message }); }
     }
     // Onboarding: builds product knowledge (overview, glossary, rules, flows, known defects, briefing) from the connected sources.
     if (p === '/api/onboarding' || p.startsWith('/api/onboarding/')) {
@@ -762,13 +785,15 @@ process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e &
 // Restartuje się sam, zachowując argv/env (PORT, QA_DATA_DIR, …): nowy proces odpala się w tle,
 // próbując nasłuchiwać aż ten się zwolni (listenWithRetry), dopiero potem ten proces się kończy —
 // więc nawet gdy coś pójdzie nie po kolei, nowy proces i tak w końcu przejmie port.
-function listenWithRetry(srv, port, host, cb, triesLeft = 15) {
+function listenWithRetry(srv, port, host, cb, triesLeft = 15, optional = false) {
   // One handler per attempt, removed on the next one: a handler left behind would fire again on every later
   // EADDRINUSE and multiply the retries until the process ran out of memory.
   const onListening = () => { srv.removeListener('error', onError); cb(); };
   const onError = (err) => {
     srv.removeListener('listening', onListening);
-    if (err.code === 'EADDRINUSE' && triesLeft > 0) { setTimeout(() => listenWithRetry(srv, port, host, cb, triesLeft - 1), 400); return; }
+    if (err.code === 'EADDRINUSE' && triesLeft > 0) { setTimeout(() => listenWithRetry(srv, port, host, cb, triesLeft - 1, optional), 400); return; }
+    // Pomocniczy nasłuch (::1) jest opcjonalny: na maszynie bez IPv6 (np. kontener) nie może zabić głównego serwera.
+    if (optional) { console.log(`(Optional listener on ${host} skipped: ${err.code || err.message})`); return; }
     console.error('Could not start the server:', err.message);
     process.exit(1);
   };
@@ -803,7 +828,7 @@ listenWithRetry(server, PORT, HOST, () => {
 let ipv6Server = null;
 if (HOST === '127.0.0.1') {
   ipv6Server = http.createServer((req, res) => server.emit('request', req, res));
-  listenWithRetry(ipv6Server, PORT, '::1', () => {});
+  listenWithRetry(ipv6Server, PORT, '::1', () => {}, 15, true);
 }
 
 /** POST /api/admin/restart: re-exec the same process (same node, same argv, same env — PORT,
