@@ -33,10 +33,10 @@ function donut(parts,opts={}){
     return seg;
   }).join('');
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(opts.aria||'')}">
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${sw}"></circle>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border-subtle)" stroke-width="${sw}"></circle>
     ${arcs}
-    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="var(--display)" font-size="${Math.round(size*0.17)}" font-weight="800" fill="var(--ink)">${total}</text>
-    <text x="${cx}" y="${cy+17}" text-anchor="middle" font-size="11" fill="var(--ink3)">${esc(opts.centerSub||'issues')}</text>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="var(--display)" font-size="${Math.round(size*0.17)}" font-weight="800" fill="var(--text-primary)">${total}</text>
+    <text x="${cx}" y="${cy+17}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">${esc(opts.centerSub||'issues')}</text>
   </svg>`;
 }
 /** Donut + a legend sorted largest-first, each row showing swatch, label, count and share. */
@@ -71,21 +71,21 @@ function trendChart(points,opts={}){
   const gridN=3;
   const grid=Array.from({length:gridN+1},(_,i)=>{
     const v=Math.round(max*i/gridN),yy=y(v);
-    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`
-      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="var(--ink3)">${v}</text>`;
+    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--border-subtle)" stroke-width="1"/>`
+      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="var(--text-secondary)">${v}</text>`;
   }).join('');
   const maxLabels=7,step=Math.max(1,Math.ceil(n/maxLabels));
-  const labels=points.map((p,i)=>(i%step===0||i===n-1)?`<text x="${x(i).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--ink3)">${esc(p.label)}</text>`:'').join('');
-  const dots=points.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.5" fill="var(--acc)"></circle>`
+  const labels=points.map((p,i)=>(i%step===0||i===n-1)?`<text x="${x(i).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">${esc(p.label)}</text>`:'').join('');
+  const dots=points.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.5" fill="var(--accent)"></circle>`
     +`<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="11" fill="transparent" data-tip="${esc(`<b>${esc(p.label)}</b><div class="r"><span>count</span><span>${p.value}</span></div>`)}"></circle>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}">
     <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="var(--acc)" stop-opacity=".28"/>
-      <stop offset="100%" stop-color="var(--acc)" stop-opacity="0"/>
+      <stop offset="0%" stop-color="var(--accent)" stop-opacity=".28"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
     </linearGradient></defs>
     ${grid}
     <polygon points="${areaPts}" fill="url(#${gid})"></polygon>
-    <polyline points="${linePts}" fill="none" stroke="var(--acc)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"></polyline>
+    <polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"></polyline>
     ${dots}${labels}
   </svg>`;
 }
@@ -106,26 +106,26 @@ function multiTrendChart(series,opts={}){
   const gridN=3;
   const grid=Array.from({length:gridN+1},(_,i)=>{
     const v=Math.round(max*i/gridN),yy=y(v);
-    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`
-      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="var(--ink3)">${v}</text>`;
+    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--border-subtle)" stroke-width="1"/>`
+      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="var(--text-secondary)">${v}</text>`;
   }).join('');
   const maxLabels=6,step=Math.max(1,Math.ceil(n/maxLabels));
-  const labels=pts0.map((p,i)=>(i%step===0||i===n-1)?`<text x="${x(i).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="10" fill="var(--ink3)">${esc(p.label)}</text>`:'').join('');
+  const labels=pts0.map((p,i)=>(i%step===0||i===n-1)?`<text x="${x(i).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="10" fill="var(--text-secondary)">${esc(p.label)}</text>`:'').join('');
   let areaSvg='';
   if(opts.areaBetween&&series[opts.areaBetween[0]]&&series[opts.areaBetween[1]]){
     const a=series[opts.areaBetween[0]].points,b=series[opts.areaBetween[1]].points;
     const fwd=a.map((p,i)=>`${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
     const bwd=b.map((p,i)=>i).slice().reverse().map(i=>`${x(i).toFixed(1)},${y(b[i].value).toFixed(1)}`).join(' ');
-    areaSvg=`<polygon points="${fwd} ${bwd}" fill="var(--bad)" fill-opacity=".1"></polygon>`;
+    areaSvg=`<polygon points="${fwd} ${bwd}" fill="var(--danger)" fill-opacity=".1"></polygon>`;
   }
   const lines=series.map(s=>{
-    const c=s.color||'var(--acc)';
+    const c=s.color||'var(--accent)';
     const linePts=s.points.map((p,i)=>`${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
     const dots=s.points.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3" fill="${c}"></circle>`
       +`<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="10" fill="transparent" data-tip="${esc(`<b>${esc(s.label)}</b><div class="r"><span>${esc(p.label)}</span><span>${p.value}</span></div>`)}"></circle>`).join('');
     return `<polyline points="${linePts}" fill="none" stroke="${c}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"></polyline>${dots}`;
   }).join('');
-  const legend=`<div class="mtrend-legend">${series.map(s=>`<span><i style="background:${s.color||'var(--acc)'}"></i>${esc(s.label)}</span>`).join('')}</div>`;
+  const legend=`<div class="mtrend-legend">${series.map(s=>`<span><i style="background:${s.color||'var(--accent)'}"></i>${esc(s.label)}</span>`).join('')}</div>`;
   return `<div class="mtrend-wrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}">${grid}${areaSvg}${lines}${labels}</svg>${legend}</div>`;
 }
 function multiTrendCard(sel,series,opts){ $(sel).innerHTML=multiTrendChart(series,opts); tipBind($(sel)); }
@@ -146,26 +146,26 @@ function paretoChart(rows,opts={}){
   const gridN=4;
   const grid=Array.from({length:gridN+1},(_,i)=>{
     const v=Math.round(maxV*i/gridN),yy=yv(v);
-    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`
-      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10" fill="var(--ink3)">${v}</text>`;
+    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--border-subtle)" stroke-width="1"/>`
+      +`<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10" fill="var(--text-secondary)">${v}</text>`;
   }).join('');
   const bars=rows.map((r,i)=>{
     const h=(r.value/maxV)*plotH,bx=xC(i)-barW/2,by=padT+plotH-h;
     const tip=esc(`<b>${esc(r.label)}</b><div class="r"><span>count</span><span>${r.value}</span></div><div class="r"><span>cumulative</span><span>${r.cumPct}%</span></div>`);
-    return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="3" fill="var(--acc)" data-tip="${tip}"></rect>`;
+    return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="3" fill="var(--accent)" data-tip="${tip}"></rect>`;
   }).join('');
   const linePts=rows.map((r,i)=>`${xC(i).toFixed(1)},${yp(r.cumPct).toFixed(1)}`).join(' ');
-  const dots=rows.map((r,i)=>`<circle cx="${xC(i).toFixed(1)}" cy="${yp(r.cumPct).toFixed(1)}" r="3.5" fill="var(--bad)"></circle>`).join('');
-  const ref=`<line x1="${padL}" y1="${yp(80).toFixed(1)}" x2="${W-padR}" y2="${yp(80).toFixed(1)}" stroke="var(--bad)" stroke-width="1" stroke-dasharray="4 4" opacity=".55"></line>`
-    +`<text x="${W-padR}" y="${(yp(80)-5).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--bad)">80%</text>`;
+  const dots=rows.map((r,i)=>`<circle cx="${xC(i).toFixed(1)}" cy="${yp(r.cumPct).toFixed(1)}" r="3.5" fill="var(--danger)"></circle>`).join('');
+  const ref=`<line x1="${padL}" y1="${yp(80).toFixed(1)}" x2="${W-padR}" y2="${yp(80).toFixed(1)}" stroke="var(--danger)" stroke-width="1" stroke-dasharray="4 4" opacity=".55"></line>`
+    +`<text x="${W-padR}" y="${(yp(80)-5).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--danger)">80%</text>`;
   const labels=rows.map((r,i)=>{
     const nm=r.label.length>14?r.label.slice(0,13)+'…':r.label;
-    return `<text x="${xC(i).toFixed(1)}" y="${(H-padB+16).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--ink3)" transform="rotate(-35 ${xC(i).toFixed(1)} ${(H-padB+16).toFixed(1)})">${esc(nm)}</text>`;
+    return `<text x="${xC(i).toFixed(1)}" y="${(H-padB+16).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--text-secondary)" transform="rotate(-35 ${xC(i).toFixed(1)} ${(H-padB+16).toFixed(1)})">${esc(nm)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}">
-    ${grid}${bars}${ref}<polyline points="${linePts}" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>${dots}${labels}
-    <text x="4" y="${padT+2}" font-size="10" fill="var(--ink3)">count</text>
-    <text x="${W-4}" y="${padT+2}" text-anchor="end" font-size="10" fill="var(--bad)">cumulative %</text>
+    ${grid}${bars}${ref}<polyline points="${linePts}" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>${dots}${labels}
+    <text x="4" y="${padT+2}" font-size="10" fill="var(--text-secondary)">count</text>
+    <text x="${W-4}" y="${padT+2}" text-anchor="end" font-size="10" fill="var(--danger)">cumulative %</text>
   </svg>`;
 }
 function paretoCard(sel,rows,opts){ $(sel).innerHTML=paretoChart(rows,opts); tipBind($(sel)); }
@@ -185,16 +185,16 @@ function boxplotChart(rows,opts={}){
   let g='';
   rows.forEach((r,i)=>{
     const cy=padT+i*rh+rh/2,boxH=18;
-    if(i%2===0)g+=`<rect x="0" y="${padT+i*rh}" width="${W}" height="${rh}" fill="var(--surface2)"></rect>`;
+    if(i%2===0)g+=`<rect x="0" y="${padT+i*rh}" width="${W}" height="${rh}" fill="var(--bg-subtle)"></rect>`;
     const tip=esc(`<b>${esc(r.label)}</b><div class="r"><span>min</span><span>${r.min}</span></div><div class="r"><span>p25</span><span>${r.p25}</span></div><div class="r"><span>median</span><span>${r.median}</span></div><div class="r"><span>p75</span><span>${r.p75}</span></div><div class="r"><span>max</span><span>${r.max}</span></div><div class="r"><span>n</span><span>${r.n}</span></div>`);
-    g+=`<text x="8" y="${(cy+4).toFixed(1)}" font-size="12.5" font-weight="600" fill="var(--ink)">${esc(r.label)}</text>`;
-    g+=`<line x1="${x(r.min).toFixed(1)}" y1="${cy}" x2="${x(r.p25).toFixed(1)}" y2="${cy}" stroke="var(--muted)" stroke-width="1.5"></line>`;
-    g+=`<line x1="${x(r.p75).toFixed(1)}" y1="${cy}" x2="${x(r.max).toFixed(1)}" y2="${cy}" stroke="var(--muted)" stroke-width="1.5"></line>`;
-    g+=`<line x1="${x(r.min).toFixed(1)}" y1="${(cy-5).toFixed(1)}" x2="${x(r.min).toFixed(1)}" y2="${(cy+5).toFixed(1)}" stroke="var(--muted)" stroke-width="1.5"></line>`;
-    g+=`<line x1="${x(r.max).toFixed(1)}" y1="${(cy-5).toFixed(1)}" x2="${x(r.max).toFixed(1)}" y2="${(cy+5).toFixed(1)}" stroke="var(--muted)" stroke-width="1.5"></line>`;
-    g+=`<rect x="${x(r.p25).toFixed(1)}" y="${(cy-boxH/2).toFixed(1)}" width="${Math.max(2,x(r.p75)-x(r.p25)).toFixed(1)}" height="${boxH}" rx="3" fill="var(--acc)" fill-opacity=".32" stroke="var(--acc)" stroke-width="1.5" data-tip="${tip}"></rect>`;
-    g+=`<line x1="${x(r.median).toFixed(1)}" y1="${(cy-boxH/2).toFixed(1)}" x2="${x(r.median).toFixed(1)}" y2="${(cy+boxH/2).toFixed(1)}" stroke="var(--acc)" stroke-width="2.5"></line>`;
-    if(r.sub)g+=`<text x="${(x(r.max)+10).toFixed(1)}" y="${(cy+4).toFixed(1)}" font-size="11" fill="var(--ink3)">${esc(r.sub)}</text>`;
+    g+=`<text x="8" y="${(cy+4).toFixed(1)}" font-size="12.5" font-weight="600" fill="var(--text-primary)">${esc(r.label)}</text>`;
+    g+=`<line x1="${x(r.min).toFixed(1)}" y1="${cy}" x2="${x(r.p25).toFixed(1)}" y2="${cy}" stroke="var(--viz-muted)" stroke-width="1.5"></line>`;
+    g+=`<line x1="${x(r.p75).toFixed(1)}" y1="${cy}" x2="${x(r.max).toFixed(1)}" y2="${cy}" stroke="var(--viz-muted)" stroke-width="1.5"></line>`;
+    g+=`<line x1="${x(r.min).toFixed(1)}" y1="${(cy-5).toFixed(1)}" x2="${x(r.min).toFixed(1)}" y2="${(cy+5).toFixed(1)}" stroke="var(--viz-muted)" stroke-width="1.5"></line>`;
+    g+=`<line x1="${x(r.max).toFixed(1)}" y1="${(cy-5).toFixed(1)}" x2="${x(r.max).toFixed(1)}" y2="${(cy+5).toFixed(1)}" stroke="var(--viz-muted)" stroke-width="1.5"></line>`;
+    g+=`<rect x="${x(r.p25).toFixed(1)}" y="${(cy-boxH/2).toFixed(1)}" width="${Math.max(2,x(r.p75)-x(r.p25)).toFixed(1)}" height="${boxH}" rx="3" fill="var(--accent)" fill-opacity=".32" stroke="var(--accent)" stroke-width="1.5" data-tip="${tip}"></rect>`;
+    g+=`<line x1="${x(r.median).toFixed(1)}" y1="${(cy-boxH/2).toFixed(1)}" x2="${x(r.median).toFixed(1)}" y2="${(cy+boxH/2).toFixed(1)}" stroke="var(--accent)" stroke-width="2.5"></line>`;
+    if(r.sub)g+=`<text x="${(x(r.max)+10).toFixed(1)}" y="${(cy+4).toFixed(1)}" font-size="11" fill="var(--text-secondary)">${esc(r.sub)}</text>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'')}" font-family="Roboto,Arial,sans-serif">${g}</svg>`;
 }
@@ -210,14 +210,14 @@ function heatmapChart(matrix,labels,opts={}){
   const n=labels.length,W=L+n*cell+10,H=L+n*cell+10;
   let g='';
   labels.forEach((rl,i)=>{
-    g+=`<text x="${L-8}" y="${(L+i*cell+cell/2+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--ink2)">${esc(rl.length>22?rl.slice(0,21)+'…':rl)}</text>`;
-    g+=`<text x="${(L+i*cell+cell/2).toFixed(1)}" y="${L-10}" text-anchor="start" font-size="11" fill="var(--ink2)" transform="rotate(-38 ${(L+i*cell+cell/2).toFixed(1)} ${L-10})">${esc(rl.length>22?rl.slice(0,21)+'…':rl)}</text>`;
+    g+=`<text x="${L-8}" y="${(L+i*cell+cell/2+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--text-primary)">${esc(rl.length>22?rl.slice(0,21)+'…':rl)}</text>`;
+    g+=`<text x="${(L+i*cell+cell/2).toFixed(1)}" y="${L-10}" text-anchor="start" font-size="11" fill="var(--text-primary)" transform="rotate(-38 ${(L+i*cell+cell/2).toFixed(1)} ${L-10})">${esc(rl.length>22?rl.slice(0,21)+'…':rl)}</text>`;
     labels.forEach((cl,j)=>{
       const v=matrix[i][j],mag=Math.min(1,Math.abs(v));
-      const fill=v>=0?`color-mix(in srgb, var(--bad) ${Math.round(mag*78)}%, var(--surface2))`:`color-mix(in srgb, var(--info) ${Math.round(mag*78)}%, var(--surface2))`;
+      const fill=v>=0?`color-mix(in srgb, var(--danger) ${Math.round(mag*78)}%, var(--bg-subtle))`:`color-mix(in srgb, var(--info) ${Math.round(mag*78)}%, var(--bg-subtle))`;
       const tip=esc(`<b>${esc(rl)} × ${esc(cl)}</b><div class="r"><span>correlation</span><span>${v.toFixed(2)}</span></div>`);
       g+=`<rect x="${(L+j*cell).toFixed(1)}" y="${(L+i*cell).toFixed(1)}" width="${cell-3}" height="${cell-3}" rx="5" fill="${fill}" data-tip="${tip}"></rect>`;
-      g+=`<text x="${(L+j*cell+cell/2).toFixed(1)}" y="${(L+i*cell+cell/2+4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink)">${v.toFixed(2)}</text>`;
+      g+=`<text x="${(L+j*cell+cell/2).toFixed(1)}" y="${(L+i*cell+cell/2+4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-primary)">${v.toFixed(2)}</text>`;
     });
   });
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'Correlation matrix')}">${g}</svg>`;
@@ -235,12 +235,12 @@ function scatterChart(points,opts={}){
   const spanX=Math.max(1e-9,maxX-minX),spanY=Math.max(1e-9,maxY-minY);
   const x=v=>padL+((v-minX)/spanX)*(W-padL-padR);
   const y=v=>padT+(H-padT-padB)-((v-minY)/spanY)*(H-padT-padB);
-  const dots=points.map(p=>`<circle cx="${x(p.fitted).toFixed(1)}" cy="${y(p.residual).toFixed(1)}" r="4" fill="var(--acc)" fill-opacity=".72" data-tip="${esc(`<b>${esc(p.label)}</b><div class="r"><span>fitted</span><span>${p.fitted.toFixed(2)}</span></div><div class="r"><span>residual</span><span>${p.residual.toFixed(2)}</span></div>`)}"></circle>`).join('');
+  const dots=points.map(p=>`<circle cx="${x(p.fitted).toFixed(1)}" cy="${y(p.residual).toFixed(1)}" r="4" fill="var(--accent)" fill-opacity=".72" data-tip="${esc(`<b>${esc(p.label)}</b><div class="r"><span>fitted</span><span>${p.fitted.toFixed(2)}</span></div><div class="r"><span>residual</span><span>${p.residual.toFixed(2)}</span></div>`)}"></circle>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'Residuals vs fitted')}">
-    <line x1="${padL}" y1="${y(0).toFixed(1)}" x2="${W-padR}" y2="${y(0).toFixed(1)}" stroke="var(--line2)" stroke-width="1.5" stroke-dasharray="3 3"></line>
+    <line x1="${padL}" y1="${y(0).toFixed(1)}" x2="${W-padR}" y2="${y(0).toFixed(1)}" stroke="var(--border-default)" stroke-width="1.5" stroke-dasharray="3 3"></line>
     ${dots}
-    <text x="${padL}" y="${H-8}" font-size="10.5" fill="var(--ink3)">fitted →</text>
-    <text x="6" y="${padT+10}" font-size="10.5" fill="var(--ink3)">residual</text>
+    <text x="${padL}" y="${H-8}" font-size="10.5" fill="var(--text-secondary)">fitted →</text>
+    <text x="6" y="${padT+10}" font-size="10.5" fill="var(--text-secondary)">residual</text>
   </svg>`;
 }
 function scatterCard(sel,points,opts){ $(sel).innerHTML=scatterChart(points,opts); tipBind($(sel)); }

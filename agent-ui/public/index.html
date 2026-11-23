@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/app.css">
 <link rel="stylesheet" href="/polish.css">
 <link rel="stylesheet" href="/dark.css">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/states.css">
 <script>/* apply the saved theme before first paint, so there is no light flash */(function(){try{var t=localStorage.getItem("theme")||"auto";var d=t==="dark"||(t==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light"}catch(e){}})()</script>
 </head>
 <body>
@@ -897,12 +899,12 @@ Log in, open Settings, change the display name and save. The new name must appea
       </ul>
     </div>
     <div class="legend">
-      <span><i style="background:#c2701c"></i>who runs it</span>
-      <span><i style="background:linear-gradient(90deg,#131a22 50%,#f6f8fb 50%);border:1px solid var(--ink3)"></i>how much you see inside</span>
-      <span><i style="background:#3fc4e8"></i>what kind of check</span>
-      <span><i style="background:#1b838e"></i>test level</span>
-      <span><i style="background:#7a2230"></i>quality attribute</span>
-      <span><i style="background:#2f6b33"></i>performance type</span>
+      <span><i style="background:var(--cat-orange)"></i>who runs it</span>
+      <span><i style="background:linear-gradient(90deg,var(--cat-blackbox) 50%,var(--cat-whitebox) 50%);border:1px solid var(--text-secondary)"></i>how much you see inside</span>
+      <span><i style="background:var(--cat-cyan)"></i>what kind of check</span>
+      <span><i style="background:var(--cat-teal)"></i>test level</span>
+      <span><i style="background:var(--cat-crimson)"></i>quality attribute</span>
+      <span><i style="background:var(--cat-green)"></i>performance type</span>
     </div>
   </div>
 
@@ -1193,7 +1195,7 @@ Log in, open Settings, change the display name and save. The new name must appea
       </tbody>
     </table>
     <div class="keyline"><span class="k">◆</span><span><b>Two things worth memorising.</b> First, 100&nbsp;% coverage does not mean that something is fully tested. It only means that the model has no more tests to give. Second, black-box and experience-based techniques are strongest <b>together</b>, because the second one covers the systematic blind spots of the first.</span></div>
-    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>What drives the choice</b> according to ISTQB: the type of project, the schedule, the information available and the skills of the testers.</span></div>
+    <div class="keyline" style="background:var(--bg-subtle);border-color:var(--border-subtle)"><span class="k">◆</span><span><b>What drives the choice</b> according to ISTQB: the type of project, the schedule, the information available and the skills of the testers.</span></div>
   </div>
 
  </div>
@@ -1276,10 +1278,10 @@ Log in, open Settings, change the display name and save. The new name must appea
       </ul>
     </div>
     <div class="legend">
-      <span><i style="background:#2d6aa8"></i>testing a system that contains AI</span>
-      <span><i style="background:#1b838e"></i>AI-specific test level</span>
-      <span><i style="background:#6b4b9a"></i>generative AI</span>
-      <span><i style="background:#2f6b33"></i>deployment and operation</span>
+      <span><i style="background:var(--cat-blue)"></i>testing a system that contains AI</span>
+      <span><i style="background:var(--cat-teal)"></i>AI-specific test level</span>
+      <span><i style="background:var(--cat-purple)"></i>generative AI</span>
+      <span><i style="background:var(--cat-green)"></i>deployment and operation</span>
     </div>
   </div>
 
@@ -1369,7 +1371,7 @@ Log in, open Settings, change the display name and save. The new name must appea
       </div>
     </div>
     <div class="keyline"><span class="k">◆</span><span><b>Acceptance criteria for AI are statistical, probabilistic or threshold-based, not binary.</b> Write them that way before you start, or you will have no way to call a result passed.</span></div>
-    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>Safety makes all of this harder:</b> requirements start as vague goals encoded in training data, so traceability is poor. Non-determinism prevents guarantees. Self-learning moves away from what was tested. Decisions are hard to explain, and tools such as LIME help at a cost to performance. Functional safety standards have not caught up, while the EU AI Act already classifies AI used as a safety component as high risk.</span></div>
+    <div class="keyline" style="background:var(--bg-subtle);border-color:var(--border-subtle)"><span class="k">◆</span><span><b>Safety makes all of this harder:</b> requirements start as vague goals encoded in training data, so traceability is poor. Non-determinism prevents guarantees. Self-learning moves away from what was tested. Decisions are hard to explain, and tools such as LIME help at a cost to performance. Functional safety standards have not caught up, while the EU AI Act already classifies AI used as a safety component as high risk.</span></div>
   </div>
 
   <!-- 3 -->
@@ -1678,7 +1680,7 @@ Log in, open Settings, change the display name and save. The new name must appea
       </tbody>
     </table>
     <div class="keyline"><span class="k">◆</span><span><b>Three things worth memorising.</b> First, a single test result is not evidence about a probabilistic system, only a sample is. Second, most model defects are data defects, and data testing is much cheaper than retraining. Third, for an adaptive system testing does not end at release, and monitoring <em>is</em> the test.</span></div>
-    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>And the conventional techniques still apply.</b> Equivalence partitioning, boundary values, decision tables and exploratory testing are still used for the non-AI parts of the system, which make up most of it. See the Manual testing page.</span></div>
+    <div class="keyline" style="background:var(--bg-subtle);border-color:var(--border-subtle)"><span class="k">◆</span><span><b>And the conventional techniques still apply.</b> Equivalence partitioning, boundary values, decision tables and exploratory testing are still used for the non-AI parts of the system, which make up most of it. See the Manual testing page.</span></div>
   </div>
 
  </div>
@@ -2371,12 +2373,12 @@ Log in, open Settings, change the display name and save. The new name must appea
       </ul>
     </div>
     <div class="legend">
-      <span><i style="background:#2d6aa8"></i>strategy</span>
-      <span><i style="background:#1b838e"></i>architecture</span>
-      <span><i style="background:#6b4b9a"></i>a single test</span>
-      <span><i style="background:#2f6b33"></i>state and data</span>
-      <span><i style="background:#7a2230"></i>reliability</span>
-      <span><i style="background:#98a4b1"></i>execution</span>
+      <span><i style="background:var(--cat-blue)"></i>strategy</span>
+      <span><i style="background:var(--cat-teal)"></i>architecture</span>
+      <span><i style="background:var(--cat-purple)"></i>a single test</span>
+      <span><i style="background:var(--cat-green)"></i>state and data</span>
+      <span><i style="background:var(--cat-crimson)"></i>reliability</span>
+      <span><i style="background:var(--cat-greybox)"></i>execution</span>
     </div>
   </div>
 
@@ -2645,7 +2647,7 @@ Log in, open Settings, change the display name and save. The new name must appea
       </tbody>
     </table>
     <div class="keyline"><span class="k">◆</span><span><b>Three things worth memorising.</b> First, a suite is only as valuable as the trust people have in it, and one unstable test costs more than it finds. Second, structure matters more than volume, because layers and fixtures determine the maintenance cost of every future test. Third, never trust a test you have not seen fail.</span></div>
-    <div class="keyline" style="background:var(--surface2);border-color:var(--line)"><span class="k">◆</span><span><b>Test design comes first.</b> Automation executes test cases; it does not choose them. Equivalence partitioning, boundary values and decision tables from the Manual testing tab decide <em>which</em> cases are worth automating.</span></div>
+    <div class="keyline" style="background:var(--bg-subtle);border-color:var(--border-subtle)"><span class="k">◆</span><span><b>Test design comes first.</b> Automation executes test cases; it does not choose them. Equivalence partitioning, boundary values and decision tables from the Manual testing tab decide <em>which</em> cases are worth automating.</span></div>
   </div>
 
  </div>

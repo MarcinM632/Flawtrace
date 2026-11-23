@@ -11,7 +11,7 @@ function computeMetrics(){
   for(const b of bugs){
     const i=order.indexOf(b.agent); if(i<0)continue;
     let A=apps.get(b.agent);
-    if(!A)apps.set(b.agent,A={key:b.agent,label:b.label,ci:i,color:i<3?`var(--app-${i+1})`:'var(--muted)',
+    if(!A)apps.set(b.agent,A={key:b.agent,label:b.label,ci:i,color:i<3?`var(--app-${i+1})`:'var(--viz-muted)',
       n:0,score:0,k:0,w:0,d:0,tickets:new Set(),svc:new Map()});
     let S=A.svc.get(b.service);
     if(!S)A.svc.set(b.service,S={name:b.service,app:A.label,color:A.color,
@@ -84,20 +84,20 @@ function hbars(sel,rows,opt){
   const max=opt.max||Math.max(1,...rows.map(r=>r.value));
   const bw=Math.max(40,W-L-RG), cut=opt.cut||26, barColor=opt.barColor||'var(--risk)';
   let g='';
-  rows.forEach((r,i)=>{if(i%2===0)g+=`<rect x="0" y="${i*rh+1}" width="${W}" height="${rh-2}" rx="4" fill="var(--surface2)"/>`});
+  rows.forEach((r,i)=>{if(i%2===0)g+=`<rect x="0" y="${i*rh+1}" width="${W}" height="${rh-2}" rx="4" fill="var(--bg-subtle)"/>`});
   if(opt.ref!=null&&opt.ref>0){
     const x=L+opt.ref/max*bw;
-    g+=`<line x1="${x}" y1="2" x2="${x}" y2="${rows.length*rh}" stroke="var(--muted)" stroke-width="1.25" stroke-dasharray="4 4"/>`
-      +`<text x="${x+5}" y="${rows.length*rh+15}" font-size="10.5" font-weight="600" fill="var(--muted)">${esc(opt.refLabel||'median')}</text>`;
+    g+=`<line x1="${x}" y1="2" x2="${x}" y2="${rows.length*rh}" stroke="var(--viz-muted)" stroke-width="1.25" stroke-dasharray="4 4"/>`
+      +`<text x="${x+5}" y="${rows.length*rh+15}" font-size="10.5" font-weight="600" fill="var(--viz-muted)">${esc(opt.refLabel||'median')}</text>`;
   }
   rows.forEach((r,i)=>{
     const h=Math.min(16,rh-14), y=i*rh+(rh-h)/2, wpx=Math.max(2,r.value/max*bw), lx=r.dot?16:6;
     const nm=r.label.length>cut?r.label.slice(0,cut-1)+'…':r.label;
     if(r.dot)g+=`<circle cx="8" cy="${y+h/2}" r="3" fill="${r.dot}"/>`;
-    g+=`<text x="${lx}" y="${y+h-3.5}" font-size="${opt.fs||12.5}" font-weight="500" fill="var(--ink)">${esc(nm)}</text>`
+    g+=`<text x="${lx}" y="${y+h-3.5}" font-size="${opt.fs||12.5}" font-weight="500" fill="var(--text-primary)">${esc(nm)}</text>`
       +`<path d="${roundedBarPath(L,y,wpx,h,3)}" fill="${barColor}" data-tip="${esc(r.tip)}" style="cursor:pointer"/>`
-      +`<text x="${L+wpx+9}" y="${y+h-3.5}" font-size="${opt.fs||12}" font-weight="600" fill="var(--ink)">${esc(r.vlabel)}</text>`;
-    if(r.sub)g+=`<text x="${L+wpx+13+String(r.vlabel).length*7.6}" y="${y+h-3.5}" font-size="10.5" fill="var(--muted)">${esc(r.sub)}</text>`;
+      +`<text x="${L+wpx+9}" y="${y+h-3.5}" font-size="${opt.fs||12}" font-weight="600" fill="var(--text-primary)">${esc(r.vlabel)}</text>`;
+    if(r.sub)g+=`<text x="${L+wpx+13+String(r.vlabel).length*7.6}" y="${y+h-3.5}" font-size="10.5" fill="var(--viz-muted)">${esc(r.sub)}</text>`;
   });
   $(sel).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||'')}" font-family="Roboto,Arial,sans-serif">${g}</svg>`;
   tipBind($(sel));
@@ -142,7 +142,7 @@ $('#rMore').onclick=()=>{densityOpen=!densityOpen;drawDensity()};
    fixed palette (stable: the same service always lands on the same color while it stays in
    the top 5), named directly in the legend beside it. Capped at 5 named services per app;
    the rest fold into a muted "Other" slice (dataviz skill: a ring reads at most ~6 parts). */
-const DAMAGE_PALETTE=['var(--acc)','var(--ok)','var(--warn)','var(--info)','var(--app-2)'];
+const DAMAGE_PALETTE=['var(--accent)','var(--success)','var(--warning)','var(--info)','var(--app-2)'];
 function renderDamageStack(m){
   const apps=m.apps.filter(A=>A.score>0);
   if(!apps.length){$('#rStack').innerHTML='<div class="hint">No ticket data yet.</div>';return}
@@ -152,7 +152,7 @@ function renderDamageStack(m){
     const restScore=rest.reduce((s,x)=>s+x.score,0);
     const parts=top.map((s,i)=>({label:s.name,value:s.score,color:DAMAGE_PALETTE[i%DAMAGE_PALETTE.length],
       tip:tipRows(s)}));
-    if(restScore>0)parts.push({label:`Other (${rest.length})`,value:restScore,color:'var(--ink4)',
+    if(restScore>0)parts.push({label:`Other (${rest.length})`,value:restScore,color:'var(--text-tertiary)',
       tip:`<b>Other ${esc(A.label)} services</b><div class="r"><span>services</span><span>${rest.length}</span></div><div class="r"><span>weighted score</span><span>${restScore}</span></div>`});
     return `<div class="dmg-app">
       <div class="dmg-app-h"><span class="sw" style="background:${A.color}"></span><b>${esc(A.label)}</b><span class="tot">${A.score} total</span></div>
@@ -174,7 +174,7 @@ function renderTopRisk(m){
     <span class="sw" style="background:${top.color}"></span>
     <div class="mid">
       <div class="lbl">Highest risk right now</div>
-      <div class="name">${esc(top.name)}${top.app&&top.app!==top.name?` <span style="color:var(--ink3);font-weight:500;font-size:14px">· ${esc(top.app)}</span>`:''}</div>
+      <div class="name">${esc(top.name)}${top.app&&top.app!==top.name?` <span style="color:var(--text-secondary);font-weight:500;font-size:14px">· ${esc(top.app)}</span>`:''}</div>
     </div>
     <div class="stat"><div class="v">${num(top.per,1)}</div><div class="u">damage per ticket touched</div></div>
     <div class="note2">${top.k?`${top.k} critical finding${top.k===1?'':'s'} · `:''}${top.n} finding${top.n===1?'':'s'} across ${top.tick} ticket${top.tick===1?'':'s'}. Test this service first before its next change.</div>`;
@@ -200,7 +200,7 @@ function computeTimeStats(){
 function renderTimeChart(){
   const apps=computeTimeStats();
   if(!apps.length){$('#rTime').innerHTML='<div class="hint">No finished runs yet.</div>';$('#rTimeLeg').innerHTML='';return}
-  const appColor=k=>{const A=bugApps().find(a=>a.key===k);const i=bugApps().indexOf(A);return i<3?`var(--app-${i+1})`:'var(--muted)'};
+  const appColor=k=>{const A=bugApps().find(a=>a.key===k);const i=bugApps().indexOf(A);return i<3?`var(--app-${i+1})`:'var(--viz-muted)'};
   const rows=apps.map(a=>({
     label:a.label,value:a.med,vlabel:fmtSecs(a.med),dot:appColor(a.key),
     sub:a.n>=3?`± ${fmtSecs(a.p25)}–${fmtSecs(a.p75)}`:'low n',
@@ -228,7 +228,7 @@ function renderBugsAvgChart(m){
    risk" is relative to this registry's own history (ISTQB CTAL-TM: risk is not evenly spread
    across test items, so there is no universal cutoff). Services with too little history (≤2
    tickets) are never ranked "High": one unlucky ticket should not brand a service permanently. */
-const PRI_TIER={High:{color:'var(--bad)',note:'test first, most rigor'},Medium:{color:'var(--warn)',note:'normal pass'},Low:{color:'var(--ok)',note:'can wait, lighter pass'}};
+const PRI_TIER={High:{color:'var(--danger)',note:'test first, most rigor'},Medium:{color:'var(--warning)',note:'normal pass'},Low:{color:'var(--success)',note:'can wait, lighter pass'}};
 function renderPriorityList(m){
   const ranked=m.services.filter(s=>s.tick>0).sort((a,b)=>b.per-a.per);
   const pers=ranked.filter(s=>s.tick>2).map(s=>s.per).sort((a,b)=>a-b);
@@ -238,7 +238,7 @@ function renderPriorityList(m){
   const rows=ranked.slice(0,12).map(s=>{
     const t=tier(s);
     const badge=t?`<span class="pill" style="color:${PRI_TIER[t].color};background:color-mix(in srgb,${PRI_TIER[t].color} 14%,transparent);border-color:color-mix(in srgb,${PRI_TIER[t].color} 40%,transparent)"><span class="d" style="background:${PRI_TIER[t].color}"></span>${t}</span>`
-      :`<span class="pill" style="color:var(--ink4)"><span class="d" style="background:var(--ink4)"></span>low n</span>`;
+      :`<span class="pill" style="color:var(--text-tertiary)"><span class="d" style="background:var(--text-tertiary)"></span>low n</span>`;
     return `<tr><td class="mono">${esc(s.name)}</td><td>${esc(s.app)}</td><td>${num(s.n/s.tick,2)}</td><td>${num(s.per,1)}</td><td>${badge}</td><td class="t">${t?PRI_TIER[t].note:'too little history ('+s.tick+' ticket'+(s.tick===1?'':'s')+')'}</td></tr>`;
   }).join('');
   $('#rPriority').innerHTML=ranked.length?`<div style="overflow-x:auto"><table class="dtbl">
@@ -256,9 +256,9 @@ function renderRisk(){
   renderTiles(m.apps);
   const sev=m.apps.reduce((a,A)=>({k:a.k+A.k,w:a.w+A.w,d:a.d+A.d}),{k:0,w:0,d:0});
   donutCard('#rSev',[
-    {label:'Critical',value:sev.k,color:'var(--bad)'},
-    {label:'Major',value:sev.w,color:'var(--warn)'},
-    {label:'Minor',value:sev.d,color:'var(--ok)'},
+    {label:'Critical',value:sev.k,color:'var(--danger)'},
+    {label:'Major',value:sev.w,color:'var(--warning)'},
+    {label:'Minor',value:sev.d,color:'var(--success)'},
   ],{aria:'Findings split by severity',centerSub:'findings'});
   donutCard('#rApp',m.apps.map(A=>({label:A.label,value:A.score,color:A.color})),
     {aria:'Weighted damage split by application',centerSub:'score'});

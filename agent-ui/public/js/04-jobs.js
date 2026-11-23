@@ -158,7 +158,7 @@ function paint(m){
   const r=$('#result');
   if(m.status==='running'){r.innerHTML='';return}
   let h='';
-  if(m.error)h+=`<div class="sec-head"><h4 style="color:var(--bad)">Error</h4></div><pre class="errpre">${esc(m.error)}</pre>`;
+  if(m.error)h+=`<div class="sec-head"><h4 style="color:var(--danger)">Error</h4></div><pre class="errpre">${esc(m.error)}</pre>`;
   const out=m.report||(!m.error&&m.finalText)||'';
   if(out)h+=`<div class="sec-head"${m.error?' style="margin-top:20px"':''}><h4>${m.report?'Report':'Agent answer'}</h4>${m.reportStatus?`<span class="tag-s">${esc(m.reportStatus)}</span>`:''}<span class="grow"></span><button class="btn sm" id="copy">${ico('copy',13)} Copy</button></div>${m.report&&m.view?reportBlock(m,m.view):`<pre>${esc(out)}</pre>`}`;
   h+=chatQualitySection(m);

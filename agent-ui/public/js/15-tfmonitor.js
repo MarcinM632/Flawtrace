@@ -12,7 +12,7 @@ let TFM_PROJECTS=[],tfmSel=null,tfmTimer=null,tfmRelSel=null;
 const tfmStatusFamily=s=>/block|wstrzym|hold|impediment/i.test(s||'')?'blocked'
   :/^done$|gotow|zrobion|zakończon|closed|resolved|release/i.test(s||'')?'done'
   :/progress|toku|review|test/i.test(s||'')?'active':'todo';
-const TFM_FAM_HUE={done:'var(--ok)',blocked:'var(--bad)',active:'var(--acc)',todo:'var(--info)'};
+const TFM_FAM_HUE={done:'var(--success)',blocked:'var(--danger)',active:'var(--accent)',todo:'var(--info)'};
 function tfmStatusColors(statuses){
   const byFam={};
   [...new Set(statuses)].forEach(s=>{const f=tfmStatusFamily(s);(byFam[f]=byFam[f]||[]).push(s)});
@@ -23,14 +23,14 @@ function tfmStatusColors(statuses){
   });
   return map;
 }
-const tfmPill=(s,colors)=>{const c=colors[s]||{color:'var(--ink4)',fade:1};
+const tfmPill=(s,colors)=>{const c=colors[s]||{color:'var(--text-tertiary)',fade:1};
   return `<span class="pill" style="color:${c.color};background:color-mix(in srgb,${c.color} ${Math.round(c.fade*16)}%,transparent);border-color:color-mix(in srgb,${c.color} ${Math.round(c.fade*40)}%,transparent)"><span class="d" style="background:${c.color};opacity:${c.fade}"></span>${esc(s)}</span>`};
 
 /* Distinct, vivid hue per issue type — Story/Task/Sub-task used to share a washed-out gray
    (sub-task) or the same hue as Task (zadanie), which made the chart unreadable at a glance.
    Each named type now gets its own full-strength color; unknown types still rotate app-N. */
-const TFM_TYPE_HUE={story:'var(--acc)','user story':'var(--acc)',task:'var(--app-1)',zadanie:'var(--app-1)',
-  epic:'var(--info)',bug:'var(--bad)','błąd':'var(--bad)','sub-task':'var(--app-2)',subtask:'var(--app-2)',podzadanie:'var(--app-2)'};
+const TFM_TYPE_HUE={story:'var(--accent)','user story':'var(--accent)',task:'var(--app-1)',zadanie:'var(--app-1)',
+  epic:'var(--info)',bug:'var(--danger)','błąd':'var(--danger)','sub-task':'var(--app-2)',subtask:'var(--app-2)',podzadanie:'var(--app-2)'};
 function tfmTypeColors(types){
   const map={};
   [...new Set(types)].forEach((t,i)=>{map[t]=TFM_TYPE_HUE[String(t||'').toLowerCase()]||`var(--app-${(i%3)+1})`});
@@ -48,7 +48,7 @@ function tfmRender(){
   }
   body.innerHTML=`
     <div class="tfm-head">
-      <h3>${esc(p.label)} <span class="mono" style="font-weight:400;color:var(--ink3)">${esc(p.jiraKey)}</span></h3>
+      <h3>${esc(p.label)} <span class="mono" style="font-weight:400;color:var(--text-secondary)">${esc(p.jiraKey)}</span></h3>
       <span class="sec-meta">${p.releaseFetchedAt?('updated '+fmt(p.releaseFetchedAt)):'not fetched yet'} · checked once a day${p.releaseRefreshing?' · refreshing…':''}</span>
       <button class="btn sm" id="tfmRefreshRel">Refresh</button>
     </div>
@@ -80,7 +80,7 @@ function tfmReleaseBody(p,versions){
       ${versions.map(v=>`<button data-v="${esc(v.name)}" class="${v.name===sel.name?'on':''}">${esc(v.name)}${v.name===p.currentReleaseName?' ★':''}</button>`).join('')}
     </div>`:'<div id="tfmRelPicker" hidden></div>'}
     <div class="tfm-head" style="margin:0 0 14px">
-      <h3 style="margin:0">${esc(sel.name)}${sel.releaseDate?` <span class="mono" style="font-weight:400;color:var(--ink3)">due ${esc(sel.releaseDate)}</span>`:''}</h3>
+      <h3 style="margin:0">${esc(sel.name)}${sel.releaseDate?` <span class="mono" style="font-weight:400;color:var(--text-secondary)">due ${esc(sel.releaseDate)}</span>`:''}</h3>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">Issues in release</div><div class="v">${rm.total}</div></div>

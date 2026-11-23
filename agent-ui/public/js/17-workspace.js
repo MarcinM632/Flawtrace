@@ -9,17 +9,17 @@ let WS_TASKS=[],WS_META={},wsTimer=null,wsOpen=new Set(),wsCovTimer=null;
 const wsGuidanceCache={},wsActivityCache={},wsReportCache={};
 
 const WS_PRI_COLOR=p=>{const s=String(p||'').toLowerCase();
-  return /block|highest|critical/.test(s)?'var(--bad)':/high/.test(s)?'var(--app-2)':/low/.test(s)?'var(--ink3)':'var(--info)'};
+  return /block|highest|critical/.test(s)?'var(--danger)':/high/.test(s)?'var(--app-2)':/low/.test(s)?'var(--text-secondary)':'var(--info)'};
 const wsPriPill=p=>`<span class="pill" style="color:${WS_PRI_COLOR(p)};border-color:color-mix(in srgb,${WS_PRI_COLOR(p)} 40%,transparent);background:color-mix(in srgb,${WS_PRI_COLOR(p)} 14%,transparent)"><span class="d" style="background:${WS_PRI_COLOR(p)}"></span>${esc(p||'No priority')}</span>`;
 
 // Coverage: diff z repo serwisu (od daty ticketu) vs wykonane testy, policzony automatycznie na nowy
 // komentarz w Jirze (lib/coverage.js). "null" percent = brak commitów do oceny (nic jeszcze nie zmieniono).
-const WS_COV_COLOR=pct=>pct==null?'var(--ink3)':pct>=80?'var(--ok)':pct>=40?'var(--app-2)':'var(--bad)';
+const WS_COV_COLOR=pct=>pct==null?'var(--text-secondary)':pct>=80?'var(--success)':pct>=40?'var(--app-2)':'var(--danger)';
 function wsCovPill(c){
   if(!c||c.ok==null)return'';
-  if(c.checking)return`<span class="pill" style="color:var(--ink3)">Checking coverage…</span>`;
-  if(c.error)return`<span class="pill" style="color:var(--bad)">Coverage: ${esc(c.error)}</span>`;
-  if(c.percent==null)return`<span class="pill" style="color:var(--ink3)">Coverage: no diff yet</span>`;
+  if(c.checking)return`<span class="pill" style="color:var(--text-secondary)">Checking coverage…</span>`;
+  if(c.error)return`<span class="pill" style="color:var(--danger)">Coverage: ${esc(c.error)}</span>`;
+  if(c.percent==null)return`<span class="pill" style="color:var(--text-secondary)">Coverage: no diff yet</span>`;
   const col=WS_COV_COLOR(c.percent);
   return`<span class="pill" style="color:${col};border-color:color-mix(in srgb,${col} 40%,transparent);background:color-mix(in srgb,${col} 14%,transparent)"><span class="d" style="background:${col}"></span>${c.percent}% coverage</span>`;
 }
