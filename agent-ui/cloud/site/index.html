@@ -39,7 +39,7 @@
       <h1>QA agents that know your product, and <em>show their evidence</em>.</h1>
       <p class="lead">Flawtrace reads your Jira, Confluence and code, then reviews tasks, designs tests and runs them against your test environment. Every statement in a report points to the ticket, page, line of code or API call it came from.</p>
       <div class="cta">
-        <a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a>
+        <a class="btn primary big" href="{{APP_URL}}/_gw/signup?plan=team">Start your free trial</a>
         <a class="btn ghost big" href="#how">See how it works</a>
       </div>
       <p class="fine">{{TRIAL_DAYS}} days free. You bring your own AI key, so you pay your AI provider directly and nothing is marked up.</p>
@@ -156,28 +156,50 @@
 <section id="pricing" class="tint">
   <div class="wrap">
     <h2>Simple pricing</h2>
-    <p class="sub">One price per workspace. No usage meter, because you pay your AI provider directly.</p>
-    <div class="price">
-      <div class="plan">
-        <h3>Team workspace</h3>
-        <div class="amount">{{PRICE_LABEL}}</div>
-        <div class="per">per workspace, up to 5 people</div>
+    <p class="sub">One price per workspace of up to {{SEATS}} people. No usage meter, because you pay your AI provider directly. Pay monthly, or pay ahead and save.</p>
+    <div class="tiers">
+      <div class="tier">
+        <h3>Monthly</h3>
+        <div class="amount">{{P_MONTHLY_PRICE}}<small>/ month</small></div>
+        <div class="per">Billed every month. Cancel any time.</div>
+        <a class="btn ghost big" href="{{APP_URL}}/_gw/signup?plan=monthly">Start your free trial</a>
+      </div>
+      <div class="tier">
+        <h3>6 months <span class="save">Save {{P_SEMIANNUAL_SAVE}}%</span></h3>
+        <div class="amount">{{P_SEMIANNUAL_PER_MONTH}}<small>/ month</small></div>
+        <div class="per">{{P_SEMIANNUAL_PRICE}} billed every 6 months.</div>
+        <a class="btn ghost big" href="{{APP_URL}}/_gw/signup?plan=semiannual">Start your free trial</a>
+      </div>
+      <div class="tier featured">
+        <div class="badge">Best value</div>
+        <h3>Annual <span class="save">Save {{P_ANNUAL_SAVE}}%</span></h3>
+        <div class="amount">{{P_ANNUAL_PER_MONTH}}<small>/ month</small></div>
+        <div class="per">{{P_ANNUAL_PRICE}} billed once a year.</div>
+        <a class="btn primary big" href="{{APP_URL}}/_gw/signup?plan=annual">Start your free trial</a>
+      </div>
+      <div class="tier enterprise">
+        <h3>Enterprise</h3>
+        <div class="amount"><small>from</small> {{ENT_FROM}}<small>/ month</small></div>
+        <div class="per">Billed yearly by invoice. Quote by team size.</div>
         <ul class="checks">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>All agents and all stages</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Product onboarding and lessons from past runs</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Your own AI key from any supported provider</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Data export and workspace deletion at any time</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Up to {{ENT_SEATS}} people per workspace, more on request</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Invoice and bank transfer, purchase orders</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Your own data processing agreement and security review</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Priority support and a guided onboarding</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Option to run it on your own servers</span></li>
         </ul>
-        <a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a>
+        <a class="btn ghost big" href="mailto:{{CONTACT_EMAIL}}?subject=Flawtrace%20Enterprise">Contact sales</a>
       </div>
-      <div class="card">
-        <h3>{{TRIAL_DAYS}}-day free trial</h3>
-        <p>No card needed to start. Connect your sources, run onboarding and try a real task before you decide.</p>
-        <h3>Cancel any time</h3>
-        <p>The subscription is managed in a secure billing portal. Export your data first if you want to keep it.</p>
-        <h3>Need something else?</h3>
-        <p>A bigger team, an invoice or an agreement of your own: write to <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>.</p>
-      </div>
+    </div>
+    <div class="included">
+      <h3>Every plan includes</h3>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>All agents and all testing stages</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Product onboarding and lessons from past runs</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Your own AI key from any supported provider</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Data export and workspace deletion at any time</span></li>
+      </ul>
+      <p class="fine">{{TRIAL_DAYS}}-day free trial, {{TRIAL_NOTE}}. Prices in {{CURRENCY}}; taxes are added where they apply. Change the billing period or cancel at any time in the billing portal; a paid period runs until its end.</p>
     </div>
   </div>
 </section>
@@ -199,7 +221,7 @@
   <div class="wrap">
     <h2>Try it on a real task</h2>
     <p>Connect one project and one test environment. In an afternoon you will know whether it saves your team time.</p>
-    <div class="cta"><a class="btn primary big" href="{{APP_URL}}/_gw/signup">Start your free trial</a></div>
+    <div class="cta"><a class="btn primary big" href="{{APP_URL}}/_gw/signup?plan=team">Start your free trial</a></div>
   </div>
 </section>
 </main>

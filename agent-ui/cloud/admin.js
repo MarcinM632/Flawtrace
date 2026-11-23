@@ -6,6 +6,7 @@
 //   node cloud/admin.js suspend <email> | unsuspend <email>
 //   node cloud/admin.js extend-trial <email> <days>
 //   node cloud/admin.js grant <email>            mark the workspace as paid by hand (invoice customers)
+//   node cloud/admin.js enterprise <email> <seats> <months>   Enterprise agreement: seats, paid term (invoice)
 //   node cloud/admin.js verify <email>           confirm an e-mail by hand
 //   node cloud/admin.js disable <email> | enable <email>
 //   node cloud/admin.js audit <email> [n]
@@ -17,11 +18,11 @@ const auth = require('./auth');
 const tenants = require('./tenants');
 
 db.open(path.join(cfg.DATA, 'gateway.db'));
-const [cmd, a, b] = process.argv.slice(2);
+const [cmd, a, b, c] = process.argv.slice(2);
 const day = 86400000;
 const when = (t) => (t ? new Date(t).toISOString().slice(0, 16).replace('T', ' ') : '-');
 const user = (email) => { const u = db.one('select * from users where email = ?', String(email || '').toLowerCase()); if (!u) { console.error('No user with that e-mail.'); process.exit(1); } return u; };
-const show = (u) => { const o = db.one('select * from orgs where id = ?', u.org_id); const acc = auth.access(o); console.log(`${u.email}  ${u.role}  verified=${u.email_verified}  disabled=${u.disabled}  last login ${when(u.last_login)}\n  workspace ${o.id} "${o.name}"  status=${o.status}  ${acc.label}\n  trial ends ${when(o.trial_ends)}  stripe ${o.stripe_customer || '-'} / ${o.stripe_subscription || '-'}\n  data ${(tenants.dirSize(tenants.orgDir(o.id), 1e12) / 1048576).toFixed(1)} MB`); };
+const show = (u) => { const o = db.one('select * from orgs where id = ?', u.org_id); const acc = auth.access(o); console.log(`${u.email}  ${u.role}  verified=${u.email_verified}  disabled=${u.disabled}  last login ${when(u.last_login)}\n  workspace ${o.id} "${o.name}"  status=${o.status}  ${acc.label}\n  plan ${o.plan}${o.seats ? ', ' + o.seats + ' seats' : ''}${o.paid_until ? ', paid until ' + when(o.paid_until) : ''}\n  trial ends ${when(o.trial_ends)}  stripe ${o.stripe_customer || '-'} / ${o.stripe_subscription || '-'}\n  data ${(tenants.dirSize(tenants.orgDir(o.id), 1e12) / 1048576).toFixed(1)} MB`); };
 
 switch (cmd) {
   case 'stats': {
@@ -42,6 +43,16 @@ switch (cmd) {
   case 'unsuspend': { const u = user(a); db.run("update orgs set status = case when stripe_subscription is not null then 'active' else 'trial' end where id = ?", u.org_id); db.audit('admin_unsuspend', { org: u.org_id, detail: a }); show(user(a)); break; }
   case 'extend-trial': { const u = user(a); const d = Number(b); if (!d) { console.error('Give a number of days.'); process.exit(1); } const o = db.one('select * from orgs where id = ?', u.org_id); db.run("update orgs set trial_ends = ?, status = case when status in ('trial','canceled') then 'trial' else status end where id = ?", Math.max(o.trial_ends || 0, Date.now()) + d * day, u.org_id); db.audit('admin_extend_trial', { org: u.org_id, detail: `${a} +${d}d` }); show(user(a)); break; }
   case 'grant': { const u = user(a); db.run("update orgs set status = 'active' where id = ?", u.org_id); db.audit('admin_grant', { org: u.org_id, detail: a }); show(user(a)); break; }
+  case 'enterprise': {
+    const u = user(a); const seats = Number(b), months = Number(c);
+    if (!(seats >= 1) || !(months >= 1)) { console.error('Give seats and months, for example: enterprise owner@company.com 25 12'); process.exit(1); }
+    const o = db.one('select * from orgs where id = ?', u.org_id);
+    const from = Math.max(Date.now(), o.paid_until || 0); // przedłużenie liczy się od końca obecnego okresu
+    const until = new Date(from); until.setMonth(until.getMonth() + months);
+    db.run("update orgs set status = 'active', plan = 'enterprise', seats = ?, paid_until = ? where id = ?", seats, until.getTime(), u.org_id);
+    db.audit('admin_enterprise', { org: u.org_id, detail: `${seats} seats until ${until.toISOString().slice(0, 10)}` });
+    show(user(a)); break;
+  }
   case 'verify': { const u = user(a); db.run('update users set email_verified = 1 where id = ?', u.id); show(user(a)); break; }
   case 'disable': { const u = user(a); db.run('update users set disabled = 1 where id = ?', u.id); db.run('delete from sessions where user_id = ?', u.id); show(user(a)); break; }
   case 'enable': { const u = user(a); db.run('update users set disabled = 0 where id = ?', u.id); show(user(a)); break; }

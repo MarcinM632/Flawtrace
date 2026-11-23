@@ -84,7 +84,7 @@ async function signUp({ email, password, name, terms, betaCode, invite, ip }) {
   db.tx(() => {
     if (inv) {
       orgId = inv.org_id;
-      if (db.one('select count(*) n from users where org_id = ?', orgId).n >= cfg.MAX_SEATS) throw err('This workspace has no free seats.', 402);
+      if (db.one('select count(*) n from users where org_id = ?', orgId).n >= seatsOf(db.one('select * from orgs where id = ?', orgId))) throw err('This workspace has no free seats.', 402);
       db.run('update invites set used = 1 where token_hash = ?', inv.token_hash);
     } else {
       orgId = db.id();
@@ -180,7 +180,8 @@ function invite(orgId, byUserId, email) {
   email = normEmail(email);
   if (!validEmail(email)) throw err('Enter a valid e-mail address.');
   const seats = db.one('select count(*) n from users where org_id = ?', orgId).n + db.one('select count(*) n from invites where org_id = ? and used = 0 and expires > ?', orgId, db.now()).n;
-  if (seats >= cfg.MAX_SEATS) throw err(`A workspace has at most ${cfg.MAX_SEATS} seats.`, 402);
+  const max = seatsOf(db.one('select * from orgs where id = ?', orgId));
+  if (seats >= max) throw err(`This workspace has ${max} seats and all are taken or invited.${max < cfg.ENTERPRISE_SEATS ? ' For a bigger team, ask us about Enterprise.' : ''}`, 402);
   if (db.one('select 1 x from users where email = ?', email)) throw err('This person already has an account.', 409);
   const raw = crypto.randomBytes(32).toString('base64url');
   db.run('insert into invites(token_hash,org_id,email,created_by,created,expires) values(?,?,?,?,?,?)', db.sha(raw), orgId, email, byUserId, db.now(), db.now() + 7 * DAY);
@@ -191,14 +192,26 @@ const inviteInfo = (raw) => { const i = db.one('select * from invites where toke
 
 // ---------- may this workspace use the product? ----------
 /** { ok, state, label, daysLeft } for a workspace. Billing off (no Stripe key): free for everybody, except suspended. */
+/** Limit miejsc workspace: z umowy (Enterprise) albo domyślny MAX_SEATS. */
+const seatsOf = (org) => (org && org.seats > 0 ? org.seats : cfg.MAX_SEATS);
+
 function access(org) {
   const billing = !!cfg.STRIPE_SECRET_KEY;
   if (org.status === 'suspended') return { ok: false, state: 'suspended', label: 'This workspace is suspended. Contact support.' };
   if (!billing) return { ok: true, state: 'beta', label: 'Free during the beta' };
+  if (org.status === 'active' && org.plan === 'enterprise' && org.paid_until) {
+    const left = Math.ceil((org.paid_until - db.now()) / DAY);
+    if (left <= 0) return { ok: false, state: 'canceled', label: 'Your Enterprise term has ended. Contact us to renew it.' };
+    return { ok: true, state: 'active', label: `Enterprise agreement until ${new Date(org.paid_until).toISOString().slice(0, 10)}`, daysLeft: left };
+  }
   if (org.status === 'active') return { ok: true, state: 'active', label: 'Subscription active' };
   if (org.status === 'past_due') {
     const left = Math.ceil(((org.past_due_since || db.now()) + cfg.PAST_DUE_GRACE_DAYS * DAY - db.now()) / DAY);
     return left > 0 ? { ok: true, state: 'past_due', label: `Payment failed. Update your card within ${left} day(s).`, daysLeft: left } : { ok: false, state: 'past_due', label: 'Payment failed and the grace period is over.' };
+  }
+  if (org.status === 'trial' && !org.stripe_subscription && (cfg.TRIAL_REQUIRES_CARD || cfg.TRIAL_DAYS <= 0)) {
+    // Klasyczny wariant „karta od razu”: bez subskrypcji (także z trialem w Stripe) nie ma dostępu.
+    return { ok: false, state: 'payment_required', label: cfg.TRIAL_DAYS > 0 ? `Add a payment method to start your ${cfg.TRIAL_DAYS}-day free trial.` : 'Subscribe to start using Flawtrace.' };
   }
   if (org.status === 'trial') {
     const left = Math.ceil(((org.trial_ends || 0) - db.now()) / DAY);
@@ -209,4 +222,5 @@ function access(org) {
 
 const cleanup = () => { const t = db.now(); db.run('delete from sessions where expires < ?', t); db.run('delete from tokens where expires < ? or used = 1', t - DAY); db.run('delete from invites where expires < ?', t - 30 * DAY); db.run('delete from stripe_events where received < ?', t - 90 * DAY); };
 
-module.exports = { DAY, TERMS_VERSION, access, allow, changePassword, checkPassword, cleanup, confirmPassword, err, hashPassword, invite, inviteInfo, makeSession, makeToken, normEmail, requestReset, resendVerification, resetLimit, resetPassword, sessionFor, signIn, signOut, signUp, useToken, validEmail, verifyEmail };
+module.exports = {
+  seatsOf, DAY, TERMS_VERSION, access, allow, changePassword, checkPassword, cleanup, confirmPassword, err, hashPassword, invite, inviteInfo, makeSession, makeToken, normEmail, requestReset, resendVerification, resetLimit, resetPassword, sessionFor, signIn, signOut, signUp, useToken, validEmail, verifyEmail };

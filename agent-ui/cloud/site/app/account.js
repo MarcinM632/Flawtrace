@@ -11,13 +11,15 @@
     const pill = $('#planPill');
     pill.textContent = a.state === 'beta' ? 'Beta' : a.state === 'active' ? 'Active' : a.state === 'trial' ? 'Trial' : a.state === 'past_due' ? 'Payment due' : 'Inactive';
     pill.className = 'pill' + (a.ok ? (a.state === 'past_due' ? ' warn' : '') : ' bad');
-    $('#planText').textContent = a.label + (a.ok || !me.billing.enabled ? '' : ' Subscribe to keep using Flawtrace.');
+    const PL = { monthly: 'Monthly', semiannual: '6 months', annual: 'Annual', enterprise: 'Enterprise' };
+    const period = me.billing.subscribed || me.org.plan === 'enterprise' ? (PL[me.org.plan] ? ' · ' + PL[me.org.plan] + ' plan' : '') : '';
+    $('#planText').textContent = a.label + period + (a.ok || !me.billing.enabled ? '' : ' Subscribe to keep using Flawtrace.');
     const box = $('#planActions'); box.replaceChildren();
     if (me.needsVerification) { box.append(el('span', 'Confirm your e-mail first: we sent you a link.', 'hint')); box.append(button('Send it again', 'ghost small', async () => { await call('/_gw/api/resend-verification', {}); show($('#notice'), 'ok', 'Sent. Check your inbox.'); })); return; }
     if (a.ok) box.append(el('a', 'Open the app', 'btn small')), box.lastChild.href = '/';
     if (me.billing.enabled && owner) {
       if (me.billing.subscribed) box.append(button('Manage billing', 'ghost small', async () => { location.href = (await call('/_gw/api/portal', {})).url; }));
-      if (a.state !== 'active') box.append(button(me.billing.subscribed ? 'Resubscribe' : 'Subscribe', 'small', async () => { location.href = (await call('/_gw/api/checkout', {})).url; }));
+      if (a.state !== 'active') { const sub = el('a', me.billing.subscribed ? 'Resubscribe' : 'Subscribe', 'btn small'); sub.href = '/_gw/checkout'; box.append(sub); }
     } else if (me.billing.enabled && !owner && !a.ok) box.append(el('span', 'Ask the owner of the workspace to subscribe.', 'hint'));
   }
 

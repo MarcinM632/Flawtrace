@@ -50,7 +50,15 @@ function open(file) {
   db = new DatabaseSync(file);
   db.exec('pragma journal_mode = wal; pragma foreign_keys = on; pragma busy_timeout = 5000;');
   db.exec(SCHEMA);
+  migrate();
   return db;
+}
+// Kolumny dodane po pierwszym wydaniu (ALTER TABLE tylko, gdy ich brak): limit miejsc i koniec opłaconego okresu
+// dla workspace na umowie (Enterprise); bez nich obowiązuje MAX_SEATS i subskrypcja ze Stripe.
+function migrate() {
+  const cols = db.prepare('pragma table_info(orgs)').all().map((c) => c.name);
+  if (!cols.includes('seats')) db.exec('alter table orgs add column seats integer');
+  if (!cols.includes('paid_until')) db.exec('alter table orgs add column paid_until integer');
 }
 const q = () => { if (!db) throw new Error('database not open'); return db; };
 const one = (sql, ...a) => { const r = q().prepare(sql).get(...a); return r ? { ...r } : null; };
