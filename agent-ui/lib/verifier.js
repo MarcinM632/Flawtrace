@@ -94,7 +94,7 @@ async function verifyViaLoop({ report, kind, task, workDir, isCancelled }, cur, 
   fs.mkdirSync(dir, { recursive: true });
   const repos = sources.repoList().filter((r) => r.ready).map((r) => r.path);
   const res = await runLoop({
-    provider: { id: cur.id, key: cur.key, model: cur.model, baseUrl: cur.baseUrl },
+    provider: { id: cur.id, key: cur.key, model: cur.model, baseUrl: cur.baseUrl }, fallbacks: cur.fallbacks || [],
     system: systemText(kind),
     prompt: `REPORT TYPE: ${kind}
 

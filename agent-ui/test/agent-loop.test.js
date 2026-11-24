@@ -127,7 +127,7 @@ test('OpenAI format: tool_calls round trip', async () => {
   const r = await runLoop({ provider: { id: 'openai-compatible', key: '', model: 'm', baseUrl: base }, system: 'SYS', prompt: 'go', mcpServers: { fake: FAKE }, cwd: tmp, allow: ['mcp__fake'], timeoutMs: 20000 });
   assert.equal(r.lastText, 'final');
   assert.equal(seen[1].body.messages.at(-1).role, 'tool');
-  assert.equal(seen[1].body.messages.at(-1).content, 'echo:yo');
+  assert.match(seen[1].body.messages.at(-1).content, /^<<UNTRUSTED nonce=[0-9a-f]{16} source=mcp__fake__echo>>\necho:yo\n<<END nonce=[0-9a-f]{16}>>$/);
   assert.equal(seen[1].body.messages.at(-2).tool_calls[0].function.arguments, '{"text":"yo"}');
   assert.equal(seen[0].headers.authorization, undefined);
 });
@@ -144,7 +144,7 @@ test('Gemini format: functionCall parts are replayed exactly and the schema is s
   assert.equal(seen[0].headers['x-goog-api-key'], 'gk');
   const modelTurn = seen[1].body.contents.find((c) => c.role === 'model');
   assert.equal(modelTurn.parts[0].thoughtSignature, 'SIG');
-  assert.equal(seen[1].body.contents.at(-1).parts[0].functionResponse.response.result, 'echo:g');
+  assert.match(seen[1].body.contents.at(-1).parts[0].functionResponse.response.result, /^<<UNTRUSTED nonce=[0-9a-f]{16} source=mcp__fake__echo>>\necho:g\n<<END nonce=[0-9a-f]{16}>>$/);
 });
 
 test('geminiSchema flattens unions and drops unsupported keywords', () => {

@@ -109,3 +109,24 @@ test('Autotests (they run code) are refused on a hosted deployment', async () =>
   assert.equal(run.meta.status, 'failed');
   assert.match(run.meta.error, /not part of Flawtrace Cloud/);
 });
+
+test('settings: a backup provider and token budgets are saved, shown without keys, and validated', async () => {
+  const set = await post('/api/llm', { provider: 'anthropic', model: 'fake-model', baseUrl: fakeBase, key: '', fallbacks: [{ provider: 'openai', model: 'gpt-backup', key: 'sk-backup-999' }], budget: { runTokens: 500000, dayTokens: 3000000 } });
+  assert.equal(set.status, 200, await set.clone().text());
+  const v = await set.json();
+  assert.deepEqual(v.budget, { runTokens: 500000, dayTokens: 3000000 });
+  assert.equal(v.fallbacks[0].provider, 'openai'); assert.equal(v.fallbacks[0].active, true); assert.equal(v.fallbacks[0].keySet, true);
+  assert.ok(!JSON.stringify(v).includes('sk-backup-999'), 'the backup key is never returned');
+  assert.equal((await post('/api/llm', { provider: 'anthropic', model: 'fake-model', fallbacks: [{ provider: 'openai', model: '' }] })).status, 400);
+  assert.equal((await post('/api/llm', { provider: 'anthropic', model: 'fake-model', budget: { runTokens: -5 } })).status, 400);
+});
+
+test('daily token budget: once used up, a new run does not start and says why', async () => {
+  // the earlier run used about 250 tokens; a daily limit below that blocks the next one
+  assert.equal((await post('/api/llm', { provider: 'anthropic', model: 'fake-model', fallbacks: [], budget: { dayTokens: 100 } })).status, 200);
+  const start = await post('/api/runs', { agent: 'qamcp', ticket: 'Check the status of the test environment' });
+  const run = await finished((await start.json()).id);
+  assert.equal(run.meta.status, 'failed');
+  assert.match(run.meta.error, /daily token budget of this workspace is used up/);
+  assert.equal((await post('/api/llm', { provider: 'anthropic', model: 'fake-model', budget: { dayTokens: 0 } })).status, 200);
+});

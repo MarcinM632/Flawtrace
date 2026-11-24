@@ -66,10 +66,45 @@ function stAi(){
   </div>
   ${p.note?`<p class="st-hint">${esc(p.note)}</p>`:''}
   ${v.agentsNote?`<div class="chk warn">${esc(v.agentsNote)}</div>`:''}
+  ${p.loop?llmBackupForm(v):''}
+  ${llmBudgetForm(v,p)}
   <div class="st-actions"><button type="button" class="btn sm" id="llmSave">Save</button><button type="button" class="btn sm" id="llmTest">Test</button>${v.keySet?'<button type="button" class="btn sm danger" id="llmClear">Remove saved key</button>':''}<span class="st-res" id="llmRes">${m?(m.ok?`<span class="ok-t">${esc(m.text)}</span>`:`<span class="bad-t">${esc(m.text)}</span>`):''}</span></div>`;
 }
+// Zapasowy dostawca: run przechodzi na niego, gdy główny padnie (przeciążenie, limit, brak środków, zły klucz).
+function llmBackupForm(v){
+  const f=(v.fallbacks||[])[0]||{};
+  const loop=v.providers.filter(x=>x.loop);
+  const bp=loop.find(x=>x.id===f.provider);
+  return `<h3 class="st-h">Backup provider</h3>
+  <p class="st-hint">When the main provider fails during a run (overloaded, rate limit, no credit left, key rejected), the run continues on this one with the same conversation instead of stopping. It can also be a cheaper model of the same provider.</p>
+  <div class="st-form">
+    <label>Backup<select id="llmFbProv"><option value="">None</option>${loop.map(x=>`<option value="${x.id}" ${x.id===f.provider?'selected':''}>${esc(x.label)}</option>`).join('')}</select></label>
+    <label>Model<input id="llmFbModel" value="${esc(f.model||'')}" placeholder="${esc(bp?bp.modelHint:'model name')}" autocomplete="off"></label>
+    ${bp&&bp.baseUrlRequired&&bp.id!==v.selected?`<label>Address <span class="tag acc">required</span><input id="llmFbUrl" value="${esc(f.baseUrl||'')}" placeholder="http://localhost:11434/v1" autocomplete="off"></label>`:''}
+    ${bp&&(bp.needsKey||bp.id==='openai-compatible')&&bp.id!==v.selected?`<label>API key ${f.keySet?`<span class="st-hint">saved: ${esc(f.keyHint)}</span>`:''}<input id="llmFbKey" type="password" placeholder="${f.keySet?'leave empty to keep the saved key':'paste the key of this provider'}" autocomplete="off"></label>`:''}
+  </div>
+  ${f.provider&&!f.active?'<div class="chk warn">This backup is not used yet: it needs a model name and, for another provider, its API key.</div>':''}`;
+}
+// Budżet tokenów: na run (agent kończy i pisze raport z tym, co ma) i na dzień w tym workspace.
+function llmBudgetForm(v,p){
+  const b=v.budget||{};
+  const fmt=n=>n?Number(n).toLocaleString('en'):'no limit';
+  return `<h3 class="st-h">Token budget</h3>
+  <p class="st-hint">Counted like the providers bill: input and output tokens, cache reads at one tenth. ${p.loop?'Near the run limit the agent is asked to stop exploring and write its report with what it found.':'The run limit applies to agents on an API key; the daily limit to every run.'} 0 means no limit.</p>
+  <div class="st-form">
+    <label>Per run<input id="llmRunTokens" type="number" min="0" step="100000" value="${esc(String(b.runTokens??v.defaultRunTokens??''))}" autocomplete="off"></label>
+    <label>Per day, whole workspace<input id="llmDayTokens" type="number" min="0" step="1000000" value="${esc(String(b.dayTokens??0))}" autocomplete="off"></label>
+  </div>
+  <p class="st-hint">Now: ${fmt(b.runTokens)} per run, ${fmt(b.dayTokens)} per day.</p>`;
+}
 async function llmLoad(){try{ST.llm=await api('/api/llm')}catch(e){ST.llm=null;ST.llmMsg={ok:false,text:e.message}}}
-const llmBody=(extra)=>({provider:$('#llmProv').value,model:$('#llmModel')?$('#llmModel').value:'',baseUrl:$('#llmUrl')?$('#llmUrl').value:'',key:$('#llmKey')?$('#llmKey').value:'',acpPreset:$('#llmAcpPreset')?$('#llmAcpPreset').value:undefined,acpCommand:$('#llmAcpCmd')?$('#llmAcpCmd').value:undefined,...extra});
+const llmExtras=()=>{
+  const o={};
+  if($('#llmFbProv'))o.fallbacks=$('#llmFbProv').value?[{provider:$('#llmFbProv').value,model:$('#llmFbModel').value,baseUrl:$('#llmFbUrl')?$('#llmFbUrl').value:'',key:$('#llmFbKey')?$('#llmFbKey').value:''}]:[];
+  if($('#llmRunTokens'))o.budget={runTokens:$('#llmRunTokens').value,dayTokens:$('#llmDayTokens').value};
+  return o;
+};
+const llmBody=(extra)=>({...llmExtras(),provider:$('#llmProv').value,model:$('#llmModel')?$('#llmModel').value:'',baseUrl:$('#llmUrl')?$('#llmUrl').value:'',key:$('#llmKey')?$('#llmKey').value:'',acpPreset:$('#llmAcpPreset')?$('#llmAcpPreset').value:undefined,acpCommand:$('#llmAcpCmd')?$('#llmAcpCmd').value:undefined,...extra});
 async function llmSave(extra){
   try{ST.llm=await post('/api/llm',llmBody(extra));ST.llmMsg={ok:true,text:'Saved.'}}
   catch(e){ST.llmMsg={ok:false,text:e.message}}
@@ -111,6 +146,7 @@ async function copyText(t,btn){
 }
 $('#stBody').addEventListener('change',async e=>{
   if(e.target.id==='llmAcpPreset'){await llmSave();stRender();return}
+  if(e.target.id==='llmFbProv'){const fb=ST.llm.fallbacks||[];ST.llm.fallbacks=e.target.value?[{...(fb[0]||{}),provider:e.target.value,model:fb[0]&&fb[0].provider===e.target.value?fb[0].model:'',keySet:false,keyHint:''}]:[];stRender();return}
   if(e.target.id!=='llmProv')return;
   const id=e.target.value;ST.llmMsg=null;
   const keep=ST.llm.providers.find(x=>x.id===id);

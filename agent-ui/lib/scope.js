@@ -82,6 +82,13 @@ function addUsage(meta, res) {
   u.turns += res.turns || 0;
 }
 
+/** Tokeny "rozliczeniowe" runu: wejście bez cache + zapis do cache + wyjście + 1/10 odczytów z cache (tak liczą je
+ *  ceny dostawców). Podstawa budżetu tokenów na run i na dzień. */
+function billableTokens(u) {
+  if (!u) return 0;
+  return (u.input || 0) + (u.cacheCreate || 0) + (u.output || 0) + Math.round((u.cacheRead || 0) / 10);
+}
+
 // Twardy limit czasu jednego przejścia agenta. Zawieszony run kosztuje, dopóki ktoś go nie anuluje (w historii jest run,
 // który wisiał ponad 16 godzin).
 // Wbudowane narzędzia Claude Code, które agent faktycznie dostaje (--tools). Domyślny zestaw to kilkadziesiąt narzędzi,
@@ -116,5 +123,4 @@ module.exports = {
   runLimitMs,
   scopeFor,
   resetToolGroups,
-  toolGroups,
-};
+  toolGroups, billableTokens };

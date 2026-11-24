@@ -34,7 +34,33 @@ function current() {
     model: c.model && c.provider === id ? c.model : (process.env.QA_LLM_MODEL || def.defaultModel || ''),
     baseUrl: (c.baseUrls && c.baseUrls[id]) || def.baseUrl || '',
     key: keys[id] || process.env[ENV_KEYS[id]] || '',
+    fallbacks: fallbacksOf(c), budget: budgetOf(c),
   };
+}
+
+// Zapasowy dostawca: gdy główny padnie (przeciążenie, limit, brak środków, zły klucz), run jedzie dalej na nim.
+// Klucz i adres są per dostawca (te same pola co dla głównego), więc może to być też inny model u tego samego.
+const MAX_FALLBACKS = 2;
+function fallbacksOf(c) {
+  const keys = c.keys || {};
+  return (Array.isArray(c.fallbacks) ? c.fallbacks : []).slice(0, MAX_FALLBACKS).map((f) => {
+    const def = PROVIDERS[f && f.provider];
+    if (!def || !def.loop || !allowedIds().includes(f.provider) || !f.model) return null;
+    const key = keys[f.provider] || process.env[ENV_KEYS[f.provider]] || '';
+    if (def.needsKey && !key) return null;
+    const baseUrl = (c.baseUrls && c.baseUrls[f.provider]) || def.baseUrl || '';
+    if (def.baseUrlRequired && !baseUrl) return null;
+    return { id: f.provider, model: f.model, key, baseUrl };
+  }).filter(Boolean);
+}
+
+// Budżet tokenów (wejście + wyjście; odczyty z cache się nie liczą): na jeden run (agent kończy i pisze raport, gdy
+// zbliża się do limitu) i na dzień w tym workspace (nowy run nie startuje po przekroczeniu). 0 = bez limitu.
+const DEFAULT_RUN_TOKENS = Number(process.env.QA_AGENT_TOKEN_LIMIT) || 2000000;
+function budgetOf(c) {
+  const b = c.budget || {};
+  const n = (v, d) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.floor(Number(v)) : d);
+  return { runTokens: n(b.runTokens, DEFAULT_RUN_TOKENS), dayTokens: n(b.dayTokens, Number(process.env.QA_DAY_TOKEN_LIMIT) || 0) };
 }
 
 /** The agent command for ACP: a preset, or the user's own command line (split on spaces). */
@@ -55,7 +81,7 @@ function runnerFor(mode) {
     if (API_MODES.has(mode)) {
       if (c.def.needsKey && !c.key) return { kind: 'unsupported', note: `No API key for ${c.def.label}. Add it in Settings > AI provider.` };
       if (!c.model) return { kind: 'unsupported', note: 'Choose a model name in Settings > AI provider.' };
-      return { kind: 'api', label: c.def.label, provider: { id: c.id, key: c.key, model: c.model, baseUrl: c.baseUrl } };
+      return { kind: 'api', label: c.def.label, provider: { id: c.id, key: c.key, model: c.model, baseUrl: c.baseUrl }, fallbacks: c.fallbacks, budget: c.budget };
     }
     if (hosted()) return { kind: 'unsupported', note: 'Autotests run code and write into a repository, so they are not part of Flawtrace Cloud yet. The other agents are available.' };
     return { kind: 'claude-cli', note: 'This agent is not available on an API key yet, so it runs on Claude Code.' };
@@ -75,6 +101,8 @@ const mask = (k) => (k ? (k.length > 10 ? k.slice(0, 3) + '…' + k.slice(-4) : 
 function view() {
   const c = current();
   return {
+    fallbacks: (load().fallbacks || []).slice(0, MAX_FALLBACKS).map((f) => ({ provider: f.provider, model: f.model, baseUrl: ((load().baseUrls || {})[f.provider]) || '', keySet: !!((load().keys || {})[f.provider] || process.env[ENV_KEYS[f.provider]]), keyHint: mask((load().keys || {})[f.provider] || process.env[ENV_KEYS[f.provider]]), active: c.fallbacks.some((x) => x.id === f.provider && x.model === f.model) })),
+    budget: c.budget, defaultRunTokens: DEFAULT_RUN_TOKENS,
     selected: c.id, chosen: !!load().provider, model: c.model, baseUrl: c.baseUrl, keySet: !!c.key, keyHint: mask(c.key),
     hosted: hosted(), apiModes: [...API_MODES],
     providers: Object.entries(PROVIDERS).filter(([id]) => allowedIds().includes(id)).map(([id, p]) => ({ id, label: p.label, needsKey: p.needsKey, needsModel: p.needsModel, baseUrlEditable: p.baseUrl !== false, baseUrlRequired: !!p.baseUrlRequired, agents: p.agents, loop: !!p.loop, note: p.note || '', modelHint: p.modelHint || '', defaultBaseUrl: p.baseUrl || '' })),
@@ -105,6 +133,30 @@ function update(b) {
   cfg.keys = cfg.keys || {};
   if (typeof b.key === 'string' && b.key.trim()) cfg.keys[id] = b.key.trim().slice(0, 500);
   if (b.clearKey) delete cfg.keys[id];
+  if (Array.isArray(b.fallbacks)) {
+    cfg.fallbacks = [];
+    for (const f of b.fallbacks.slice(0, MAX_FALLBACKS)) {
+      const fid = String((f && f.provider) || '');
+      if (!fid) continue;
+      if (!PROVIDERS[fid] || !PROVIDERS[fid].loop || !allowedIds().includes(fid)) throw Object.assign(new Error('A backup provider must be one that runs on an API key.'), { code: 400 });
+      const model = String(f.model || '').trim().slice(0, 200);
+      if (!model) throw Object.assign(new Error('Choose a model name for the backup provider.'), { code: 400 });
+      if (fid === id && model === cfg.model) continue; // to samo co główny
+      cfg.fallbacks.push({ provider: fid, model });
+      if (fid !== id && typeof f.baseUrl === 'string' && f.baseUrl.trim()) {
+        let u; try { u = new URL(f.baseUrl.trim()); } catch (_) { throw Object.assign(new Error('The backup address is not valid.'), { code: 400 }); }
+        if (!/^https?:$/.test(u.protocol) || u.username || u.password) throw Object.assign(new Error('Use an http(s) address without a user name or password.'), { code: 400 });
+        cfg.baseUrls[fid] = u.href.replace(/\/+$/, '');
+      }
+      if (typeof f.key === 'string' && f.key.trim()) cfg.keys[fid] = f.key.trim().slice(0, 500);
+    }
+  }
+  if (b.budget && typeof b.budget === 'object') {
+    const n = (v) => { const x = Number(v); if (!Number.isFinite(x) || x < 0 || x > 1e10) throw Object.assign(new Error('A token budget is a whole number, 0 for no limit.'), { code: 400 }); return Math.floor(x); };
+    cfg.budget = { ...(cfg.budget || {}) };
+    if (b.budget.runTokens !== undefined && b.budget.runTokens !== '') cfg.budget.runTokens = n(b.budget.runTokens);
+    if (b.budget.dayTokens !== undefined && b.budget.dayTokens !== '') cfg.budget.dayTokens = n(b.budget.dayTokens);
+  }
   save(cfg);
   return view();
 }
