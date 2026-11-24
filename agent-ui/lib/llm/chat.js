@@ -53,6 +53,14 @@ const anthropic = {
       }
       return { role: 'user', content: m.results.map((r) => ({ type: 'tool_result', tool_use_id: r.id, content: r.text || '(empty)', ...(r.isError ? { is_error: true } : {}) })) };
     });
+    // Punkt cache na najnowszej wiadomości: w pętli agenta każda tura wysyła całą dotychczasową rozmowę, więc
+    // następna tura czyta ją z cache (~10% ceny wejścia) zamiast płacić za nią od nowa. System i narzędzia mają
+    // własne punkty (razem 3 z 4 dozwolonych).
+    const lastMsg = msgs[msgs.length - 1];
+    if (lastMsg) {
+      if (typeof lastMsg.content === 'string') lastMsg.content = [{ type: 'text', text: lastMsg.content || '(empty)', cache_control: { type: 'ephemeral' } }];
+      else if (lastMsg.content.length) lastMsg.content[lastMsg.content.length - 1] = { ...lastMsg.content[lastMsg.content.length - 1], cache_control: { type: 'ephemeral' } };
+    }
     const defs = tools.map((t, i) => ({ name: t.name, description: t.description || '', input_schema: t.schema && t.schema.type ? t.schema : { type: 'object', properties: {} }, ...(i === tools.length - 1 ? { cache_control: { type: 'ephemeral' } } : {}) }));
     const j = await post(trim(baseUrl) + '/v1/messages', { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
       { model, max_tokens: maxTokens || 16000, system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }], messages: msgs, ...(defs.length ? { tools: defs } : {}) }, { signal });

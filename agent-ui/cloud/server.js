@@ -13,6 +13,7 @@ const db = require('./db');
 const auth = require('./auth');
 const mailer = require('./mailer');
 const billing = require('./billing');
+const slots = require('./slots');
 const plans = require('./plans');
 const tenants = require('./tenants');
 const tar = require('./tar');
@@ -82,12 +83,26 @@ function pricePlaceholders() {
   return out;
 }
 const partial = (n) => { try { return fs.readFileSync(path.join(SITE_DIR, 'partials', n + '.html'), 'utf8'); } catch (_) { return ''; } };
-function serveFile(res, abs, { template = false, immutable = false } = {}) {
+// Strony i pliki są czytane i składane (nagłówek, stopka, ceny) raz; potem z pamięci, z ETag, więc powtórna wizyta
+// to 304 bez treści. Zmiana pliku na dysku (data modyfikacji) unieważnia wpis.
+const fileCache = new Map(); // abs|template -> { mtime, body, etag }
+function serveFile(res, abs, { template = false, immutable = false, req = null } = {}) {
   const ext = path.extname(abs).toLowerCase();
-  let body = fs.readFileSync(abs);
-  if (template && ext === '.html') { let t = body.toString('utf8'); t = t.split('{{HEADER}}').join(partial('header')).split('{{FOOTER}}').join(partial('footer')); for (const [k, v] of Object.entries(placeholders())) t = t.split(`{{${k}}}`).join(v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))); body = Buffer.from(t); }
-  res.writeHead(200, baseHeaders({ 'content-type': TYPES[ext] || 'application/octet-stream', 'content-security-policy': CSP, 'cache-control': ext === '.html' ? 'no-cache' : (immutable ? 'public, max-age=3600' : 'no-cache') }));
-  res.end(body);
+  const k = abs + (template ? '|t' : '');
+  const mt = (f) => { try { return fs.statSync(f).mtimeMs; } catch (_) { return 0; } };
+  // Strona składana: ważna, dopóki nie zmieni się plik, nagłówek/stopka ani rok (stopka ma rok).
+  const mtime = template ? [mt(abs), mt(path.join(SITE_DIR, 'partials', 'header.html')), mt(path.join(SITE_DIR, 'partials', 'footer.html')), new Date().getFullYear()].join('/') : mt(abs);
+  let c = fileCache.get(k);
+  if (!c || c.mtime !== mtime) {
+    let body = fs.readFileSync(abs);
+    if (template && ext === '.html') { let t = body.toString('utf8'); t = t.split('{{HEADER}}').join(partial('header')).split('{{FOOTER}}').join(partial('footer')); for (const [k2, v] of Object.entries(placeholders())) t = t.split(`{{${k2}}}`).join(v.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]))); body = Buffer.from(t); }
+    c = { mtime, body, etag: '"' + require('crypto').createHash('sha1').update(body).digest('base64url').slice(0, 20) + '"' };
+    fileCache.set(k, c);
+  }
+  const headers = baseHeaders({ 'content-type': TYPES[ext] || 'application/octet-stream', 'content-security-policy': CSP, 'cache-control': ext === '.html' ? 'no-cache' : (immutable ? 'public, max-age=3600' : 'no-cache'), etag: c.etag });
+  if (req && req.headers['if-none-match'] === c.etag) { res.writeHead(304, headers); return res.end(); }
+  res.writeHead(200, headers);
+  res.end(req && req.method === 'HEAD' ? undefined : c.body);
 }
 
 // ---------- the public site ----------
@@ -103,8 +118,8 @@ Policy: ${cfg.siteUrl}/security
   if (p === '/robots.txt') return send(res, 200, `User-agent: *\nAllow: /\nSitemap: ${cfg.siteUrl}/sitemap.xml\n`);
   if (p === '/sitemap.xml') return send(res, 200, `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${Object.keys(SITE_PAGES).map((u) => `<url><loc>${cfg.siteUrl}${u === '/' ? '' : u}</loc></url>`).join('')}</urlset>`, 'application/xml');
   const page = SITE_PAGES[p.replace(/(.)\/$/, '$1')];
-  if (page) { const f = fileFor(page); if (f) return serveFile(res, f, { template: true }); }
-  if (p.startsWith('/assets/')) { const f = fileFor(p.slice(1)); if (f) return serveFile(res, f, { immutable: true }); }
+  if (page) { const f = fileFor(page); if (f) return serveFile(res, f, { template: true, req }); }
+  if (p.startsWith('/assets/')) { const f = fileFor(p.slice(1)); if (f) return serveFile(res, f, { immutable: true, req }); }
   const nf = fileFor('404.html');
   if (nf) { res.writeHead(404, baseHeaders({ 'content-type': TYPES['.html'], 'content-security-policy': CSP })); return res.end(fs.readFileSync(nf)); }
   send(res, 404, 'Not found');
@@ -261,18 +276,24 @@ async function api(req, res, p) {
 const HOP = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'host', 'content-length']);
 const STRIP_IN = new Set(['cookie', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'forwarded', 'x-real-ip', 'x-flawtrace-gateway', 'origin', 'referer', 'accept-encoding']);
 const MAX_UPLOAD = 40 * 1024 * 1024;
+// Połączenia do procesów klientów są utrzymywane (keep-alive) zamiast nowego TCP przy każdym pliku i zapytaniu API.
+const upstream = new http.Agent({ keepAlive: true, maxSockets: 64, maxFreeSockets: 8, timeout: 60000 });
+const GW_TAG = '-gw1'; // dopisek do ETag strony z wstrzykniętym shell.js (inna treść niż u procesu klienta)
 
 function forward(req, res, t, { inject = false, retry = true, orgId }) {
   const headers = {};
   for (const [k, v] of Object.entries(req.headers)) if (!HOP.has(k) && !STRIP_IN.has(k)) headers[k] = v;
   headers['x-flawtrace-gateway'] = t.token; headers.host = `127.0.0.1:${t.port}`; headers['accept-encoding'] = 'identity';
   if (req.headers['content-length']) headers['content-length'] = req.headers['content-length'];
+  // Strona główna z shell.js: przeglądarka trzyma nasz ETag; proces klienta zna swój, więc odpowiada 304 bez treści.
+  if (inject && typeof headers['if-none-match'] === 'string') headers['if-none-match'] = headers['if-none-match'].split(GW_TAG).join('');
   let sent = 0;
-  const up = http.request({ host: '127.0.0.1', port: t.port, method: req.method, path: req.url, headers }, (pr) => {
+  const up = http.request({ host: '127.0.0.1', port: t.port, method: req.method, path: req.url, headers, agent: upstream }, (pr) => {
     const out = {};
     for (const [k, v] of Object.entries(pr.headers)) if (!HOP.has(k) || k === 'content-length') out[k] = v;
     delete out['set-cookie']; // the product never sets cookies; the session belongs to the gateway
     Object.assign(out, baseHeaders());
+    if (inject && pr.statusCode === 304 && out.etag) out.etag = String(out.etag).replace(/"$/, GW_TAG + '"');
     const isHtml = inject && /text\/html/i.test(String(pr.headers['content-type'] || '')) && pr.statusCode === 200;
     if (isHtml) {
       const chunks = []; pr.on('data', (c) => chunks.push(c));
@@ -280,7 +301,8 @@ function forward(req, res, t, { inject = false, retry = true, orgId }) {
         let html = Buffer.concat(chunks).toString('utf8');
         const tag = '<script src="/_gw/static/shell.js" defer></script>';
         html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, tag + '</body>') : html + tag;
-        delete out['content-length']; delete out.etag; out['cache-control'] = 'no-store';
+        delete out['content-length']; out['cache-control'] = 'private, no-cache';
+        if (out.etag) out.etag = String(out.etag).replace(/"$/, GW_TAG + '"'); else out['cache-control'] = 'no-store';
         res.writeHead(200, out); res.end(html);
       });
       return;
@@ -319,7 +341,7 @@ async function product(req, res, p) {
 
 // ---------- the app host ----------
 function serveApp(req, res, p) {
-  if (p.startsWith('/_gw/static/')) { const f = fileFor('app/' + p.slice('/_gw/static/'.length)); return f ? serveFile(res, f, { immutable: true }) : send(res, 404, 'Not found'); }
+  if (p.startsWith('/_gw/static/')) { const f = fileFor('app/' + p.slice('/_gw/static/'.length)); return f ? serveFile(res, f, { immutable: true, req }) : send(res, 404, 'Not found'); }
   const PAGES = { '/_gw/login': 'login', '/_gw/signup': 'signup', '/_gw/forgot': 'forgot', '/_gw/reset': 'reset', '/_gw/account': 'account', '/_gw/verify-needed': 'verify-needed', '/_gw/checkout': 'checkout', '/_gw/checkout/success': 'checkout-success' };
   if (req.method === 'GET' && PAGES[p]) {
     const s = sessionOf(req);
@@ -327,7 +349,7 @@ function serveApp(req, res, p) {
     if ((p === '/_gw/account' || p === '/_gw/verify-needed') && !s) return redirect(res, '/_gw/login');
     if (p.startsWith('/_gw/checkout') && !s) return redirect(res, '/_gw/login?next=' + encodeURIComponent(req.url));
     const page = fileFor(`app/${PAGES[p]}.html`);
-    return page ? serveFile(res, page, { template: true }) : send(res, 404, 'Not found');
+    return page ? serveFile(res, page, { template: true, req }) : send(res, 404, 'Not found');
   }
   if (req.method === 'GET' && p === '/_gw/verify') {
     try { auth.verifyEmail(new URL(req.url, 'http://x').searchParams.get('token')); return redirect(res, '/_gw/login?verified=1'); }
@@ -339,7 +361,7 @@ function serveApp(req, res, p) {
 const server = http.createServer(async (req, res) => {
   const p = new URL(req.url, 'http://x').pathname;
   try {
-    if (p === '/healthz') return json(res, 200, { ok: true, tenants: tenants.running() });
+    if (p === '/healthz') return json(res, 200, { ok: true, tenants: tenants.running(), runs: slots.stats() });
     if (hostOf(req) !== cfg.APP_HOST) return serveSite(req, res, p);
     if (p.startsWith('/_gw/api/') || p === '/_gw/stripe/webhook') return await api(req, res, p);
     if (p.startsWith('/_gw/')) { if (serveApp(req, res, p) !== null) return; return send(res, 404, 'Not found'); }
@@ -367,12 +389,28 @@ function start() {
   if (!cfg.STRIPE_SECRET_KEY) console.warn('STRIPE_SECRET_KEY is not set: billing is off, every workspace is free (closed beta).');
   tenants.startSweeper();
   setInterval(() => { try { auth.cleanup(); } catch (_) { /* next time */ } }, 3600000).unref();
-  return new Promise((resolve) => server.listen(cfg.PORT, cfg.HOST, () => {
+  return new Promise((ready) => internal.listen(0, '127.0.0.1', () => { tenants.setSlotUrl(`http://127.0.0.1:${internal.address().port}`); ready(); }))
+    .then(() => new Promise((resolve) => server.listen(cfg.PORT, cfg.HOST, () => {
     console.log(`Flawtrace Cloud gateway: site ${cfg.siteUrl}  app ${cfg.appUrl}  (listening on ${cfg.HOST}:${cfg.PORT})`);
     resolve(server);
-  }));
+  })));
 }
-function stop() { tenants.stopAll(); server.close(); db.close(); }
+// ---------- internal: workspace processes ask for run slots (loopback only, never on the public port) ----------
+const internal = http.createServer(async (req, res) => {
+  try {
+    const orgId = tenants.orgByToken(req.headers['x-flawtrace-gateway']);
+    if (!orgId) return json(res, 403, { error: 'unknown workspace' });
+    if (req.method !== 'POST' || new URL(req.url, 'http://x').pathname !== '/slot') return json(res, 404, { error: 'Not found' });
+    const b = await readJson(req);
+    const id = String(b.run || '').slice(0, 80);
+    if (b.op === 'renew') return json(res, 200, { lost: slots.renew(orgId, (b.runs || []).map(String).slice(0, 50)) });
+    if (!id) return json(res, 400, { error: 'run' });
+    if (b.op === 'release') { slots.release(orgId, id); return json(res, 200, { ok: true }); }
+    return json(res, 200, slots.acquire(orgId, id));
+  } catch (e) { json(res, 500, { error: String(e && e.message || e) }); }
+});
+
+function stop() { tenants.stopAll(); server.close(); internal.close(); db.close(); }
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { stop(); process.exit(0); });
 
 if (require.main === module) start();

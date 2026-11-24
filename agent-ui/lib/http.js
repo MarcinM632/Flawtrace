@@ -51,9 +51,13 @@ function serveStatic(req, res, urlPath) {
   const etag = '"' + st.size.toString(36) + '-' + Math.round(st.mtimeMs).toString(36) + '"';
   if (req.headers['if-none-match'] === etag) { res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' }); res.end(); return true; }
   res.writeHead(200, { 'Content-Type': type, ETag: etag, 'Cache-Control': 'no-cache' });
-  res.end(fs.readFileSync(file));
+  // Treść z pamięci, dopóki ETag (rozmiar + data) się nie zmieni: bez odczytu z dysku przy każdym wejściu.
+  let c = staticCache.get(file);
+  if (!c || c.etag !== etag) { c = { etag, body: fs.readFileSync(file) }; staticCache.set(file, c); }
+  res.end(c.body);
   return true;
 }
+const staticCache = new Map();
 
 module.exports = {
   body,

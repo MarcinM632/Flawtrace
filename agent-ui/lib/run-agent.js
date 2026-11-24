@@ -11,6 +11,7 @@ const { runLoop } = require('./agent-loop');
 const llmLib = require('./llm');
 const { AGENTS_ROOT, AUTOTEST_REPO, DATA_DIR, MAX_TURNS, MCP_SERVER, MODEL, QA_GIT, ROOT, RUNS_DIR, TICKET_KEY } = require('./config');
 const envLock = require('./env-lock');
+const runSlots = require('./run-slots');
 const environment = require('./environment');
 const { isProject, projectFiles, stackOf, stackPrompt } = require('./stacks');
 const { collectCheck, diffSnap, hashTree, runGuard, snapTests, stageRepo, verifyAutotests } = require('./autotest-repo');
@@ -216,7 +217,18 @@ function startRun(agentKey, ticket, notes, extra = {}) {
     ? [...new Set((ticket + '\n' + (notes || '')).match(/\b(?!UTF-|ISO-|SHA-|TLS-)[A-Z][A-Z0-9]{1,9}-\d+\b/g) || [])].slice(0, 10) : [];
   // QA MCP handluje na tych samych kontach i regule AUTOTEST co weryfikacja autotestów i Test suite: dwa przebiegi naraz
   // nadpisywały sobie regułę (runy 130b i c049 na PRJ-508 dostały HTTP 500 na PUT). Czeka więc na wolne środowisko.
+  // Slot na run (limit równoległych agentów na serwerze i w workspace): nadmiarowe runy czekają w kolejce.
+  // Bez limitu (lokalnie, domyślnie) start jest synchroniczny jak wcześniej.
   const begin = (jiraText, jiraErr) => {
+    if (runSlots.unlimited()) return beginEnv(jiraText, jiraErr);
+    runSlots.acquire(id, { onWait: (w) => emit(r, { type: 'status', text: runSlots.waitText(w) }), isCancelled: () => meta.status === 'cancelled' })
+      .then((release) => {
+        r.slotRelease = release;
+        if (r.meta.finishedAt) { if (release) release(); r.slotRelease = null; return; }
+        try { beginEnv(jiraText, jiraErr); } catch (e) { if (!meta.finishedAt) { meta.status = 'failed'; meta.error = 'Błąd startu: ' + ((e && e.message) || e); finish(r); } }
+      });
+  };
+  const beginEnv = (jiraText, jiraErr) => {
     if (!isQamcpLike(agent.mode) || process.env.QA_HEDGE_GUARD === '0') return beginNow(jiraText, jiraErr);
     envLock.acquire(`QA MCP run ${id}`, (h) => emit(r, { type: 'status', text: `Waiting for the environment: ${h.label} is using it…` }))
       .then((release) => { r.envRelease = release; beginNow(jiraText, jiraErr); })
@@ -859,6 +871,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
 function finish(r) {
   if (r.secretsFile) { try { fs.rmSync(r.secretsFile, { force: true }); } catch (_) { /* best effort */ } r.secretsFile = null; }
   if (r.envRelease) { const release = r.envRelease; r.envRelease = null; release(); }
+  if (r.slotRelease) { const release = r.slotRelease; r.slotRelease = null; release(); }
   r.meta.finishedAt = Date.now();
   emit(r, { type: 'end', status: r.meta.status });
   persist(r);

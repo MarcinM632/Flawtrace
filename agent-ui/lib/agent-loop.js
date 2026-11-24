@@ -133,11 +133,14 @@ const sizeOf = (m) => (m.text ? m.text.length : 0) + (m.results ? m.results.redu
 function trimContext(messages) {
   let total = messages.reduce((s, m) => s + sizeOf(m), 0);
   if (total <= CONTEXT_CHARS) return 0;
+  // Po przekroczeniu limitu tniemy od razu do ~60%, a nie tuż pod limit: każda zmiana starej wiadomości unieważnia
+  // cache promptu od tego miejsca, więc cięcie "po trochu" w każdej turze płaciło za całą rozmowę od nowa co turę.
+  const target = Math.floor(CONTEXT_CHARS * 0.6);
   const toolMsgs = messages.filter((m) => m.role === 'tool');
   let dropped = 0;
   for (const m of toolMsgs.slice(0, Math.max(0, toolMsgs.length - KEEP_RESULTS))) {
     for (const r of m.results) {
-      if (total <= CONTEXT_CHARS) return dropped;
+      if (total <= target) return dropped;
       if (r.text.length > 200) { total -= r.text.length - 60; r.text = '[older tool answer removed to save context]'; dropped++; }
     }
   }

@@ -9,6 +9,9 @@ const fs = require('fs');
 const net = require('net');
 const path = require('path');
 const cfg = require('./config');
+const slots = require('./slots');
+let slotUrl = ''; // internal address where workspace processes ask for run slots (server.js sets it)
+const setSlotUrl = (u) => { slotUrl = u; };
 
 const tenants = new Map(); // orgId -> { proc, port, token, lastUsed, starting, startedAt }
 let secret = cfg.MASTER_SECRET;
@@ -43,6 +46,30 @@ function dirSize(dir, limitBytes) {
   walk(dir);
   return total;
 }
+// Ta sama suma, ale bez blokowania serwera: synchroniczny przegląd folderu do 2 GB przy starcie workspace zatrzymywał
+// obsługę wszystkich innych klientów. Wynik jest pamiętany kilka minut (start, zatrzymanie, start nie liczy od nowa).
+const sizeCache = new Map(); // orgId -> { at, bytes }
+async function dirSizeAsync(dir, limitBytes) {
+  let total = 0;
+  const walk = async (d) => {
+    let ents; try { ents = await fs.promises.readdir(d, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of ents) {
+      if (total > limitBytes) return;
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) await walk(f); else { try { total += (await fs.promises.stat(f)).size; } catch (_) { /* gone */ } }
+    }
+  };
+  await walk(dir);
+  return total;
+}
+async function usedBytes(orgId, limitBytes) {
+  const c = sizeCache.get(orgId);
+  if (c && Date.now() - c.at < 5 * 60000) return c.bytes;
+  const bytes = await dirSizeAsync(orgDir(orgId), limitBytes);
+  sizeCache.set(orgId, { at: Date.now(), bytes });
+  if (sizeCache.size > 10000) sizeCache.clear();
+  return bytes;
+}
 
 // Only what the product needs. Notably absent: CLOUD_MASTER_SECRET, STRIPE_*, RESEND_API_KEY, ADMIN_EMAILS.
 const PASS = ['PATH', 'Path', 'SystemRoot', 'SYSTEMROOT', 'TEMP', 'TMP', 'TMPDIR', 'LANG', 'PLAYWRIGHT_BROWSERS_PATH', 'QA_PLAYWRIGHT_MCP_BIN', 'QA_PLAYWRIGHT_NO_SANDBOX', 'npm_config_cache', 'NODE_EXTRA_CA_CERTS', 'HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY', 'QA_GUARD_ALLOW_LOOPBACK', 'QA_APP_ENV'];
@@ -52,8 +79,9 @@ function tenantEnv(orgId, port, token) {
   const dir = orgDir(orgId);
   return {
     ...base, HOME: path.join(dir, 'home'), USERPROFILE: path.join(dir, 'home'),
+    TMPDIR: path.join(dir, 'tmp'), TEMP: path.join(dir, 'tmp'), TMP: path.join(dir, 'tmp'),
     PORT: String(port), QA_HOST: '127.0.0.1', QA_DATA_DIR: dir, QA_HOSTED: '1', QA_GATEWAY_TOKEN: token, QA_MASTER_KEY: keyFor(orgId),
-    QA_API_KEY: crypto.randomBytes(24).toString('hex'), JIRA_SYNC_MINUTES: '999999', QA_HEDGE_GUARD: '0',
+    QA_API_KEY: crypto.randomBytes(24).toString('hex'), JIRA_SYNC_MINUTES: '999999', QA_HEDGE_GUARD: '0', ...(slotUrl ? { QA_SLOT_URL: slotUrl } : {}),
     NODE_OPTIONS: `--max-old-space-size=${cfg.TENANT_MEMORY_MB}`,
   };
 }
@@ -69,13 +97,24 @@ async function waitReady(t, ms = 45000) {
 }
 
 /** Makes sure the workspace's process runs; resolves { port, token }. Concurrent callers share one start. */
+const launching = new Map(); // orgId -> promise of a start that has not yet registered its process
 async function ensure(orgId) {
-  let t = tenants.get(orgId);
+  const t = tenants.get(orgId);
   if (t) { t.lastUsed = Date.now(); if (t.starting) await t.starting; return { port: t.port, token: t.token }; }
-  if (tenants.size >= cfg.MAX_RUNNING_TENANTS) { await makeRoom(); if (tenants.size >= cfg.MAX_RUNNING_TENANTS) throw Object.assign(new Error('The service is busy right now. Try again in a minute.'), { code: 503 }); }
+  if (launching.has(orgId)) return launching.get(orgId);
+  const p = launch(orgId).finally(() => launching.delete(orgId));
+  launching.set(orgId, p);
+  return p;
+}
+async function launch(orgId) {
+  let t;
+  if (tenants.size + launching.size > cfg.MAX_RUNNING_TENANTS) { await makeRoom(); if (tenants.size + launching.size > cfg.MAX_RUNNING_TENANTS) throw Object.assign(new Error('The service is busy right now. Try again in a minute.'), { code: 503 }); }
   const dir = orgDir(orgId);
   fs.mkdirSync(path.join(dir, 'home'), { recursive: true });
-  if (dirSize(dir, cfg.TENANT_DISK_MB * 1048576) > cfg.TENANT_DISK_MB * 1048576) throw Object.assign(new Error(`This workspace uses more than ${cfg.TENANT_DISK_MB} MB of storage. Delete old runs or contact support.`), { code: 507 });
+  // Pliki tymczasowe (profile przeglądarek, pobrania) na dysku workspace, nie we wspólnym /tmp (w kontenerze to
+  // tmpfs liczony do RAM i dzielony przez wszystkich klientów); czyszczone przy każdym starcie.
+  fs.rmSync(path.join(dir, 'tmp'), { recursive: true, force: true }); fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
+  if (await usedBytes(orgId, cfg.TENANT_DISK_MB * 1048576) > cfg.TENANT_DISK_MB * 1048576) { sizeCache.delete(orgId); throw Object.assign(new Error(`This workspace uses more than ${cfg.TENANT_DISK_MB} MB of storage. Delete old runs or contact support.`), { code: 507 }); }
   const port = await freePort();
   const token = crypto.randomBytes(24).toString('hex');
   const logFd = fs.openSync(path.join(dir, 'server.log'), 'a');
@@ -85,7 +124,7 @@ async function ensure(orgId) {
   fs.closeSync(logFd);
   t = { proc, port, token, lastUsed: Date.now(), startedAt: Date.now(), exited: false };
   tenants.set(orgId, t);
-  proc.on('exit', () => { t.exited = true; if (tenants.get(orgId) === t) tenants.delete(orgId); });
+  proc.on('exit', () => { t.exited = true; if (tenants.get(orgId) === t) { tenants.delete(orgId); slots.releaseOrg(orgId); } });
   proc.on('error', () => { t.exited = true; if (tenants.get(orgId) === t) tenants.delete(orgId); });
   t.starting = waitReady(t).finally(() => { t.starting = null; });
   try { await t.starting; } catch (e) { stop(orgId); throw Object.assign(e, { code: 503 }); }
@@ -103,6 +142,7 @@ function stop(orgId) {
   const t = tenants.get(orgId);
   if (!t) return false;
   tenants.delete(orgId);
+  slots.releaseOrg(orgId);
   try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(t.proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }) : killGroup(t.proc, 'SIGTERM'); } catch (_) { /* gone */ }
   return true;
 }
@@ -149,4 +189,7 @@ async function remove(orgId) {
   fs.rmSync(orgDir(orgId), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
 }
 
-module.exports = { dirSize, ensure, init, keyFor, orgDir, remove, running: () => tenants.size, startSweeper, stop, stopAll, sweep, tenants, touch };
+/** The workspace that owns a gateway token (internal calls from workspace processes). */
+const orgByToken = (token) => { if (!token) return null; for (const [id, t] of tenants) if (t.token === token) return id; return null; };
+
+module.exports = { orgByToken, setSlotUrl, dirSize, ensure, init, keyFor, orgDir, remove, running: () => tenants.size, startSweeper, stop, stopAll, sweep, tenants, touch };

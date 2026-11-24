@@ -67,6 +67,10 @@ git pull && docker compose up -d --build              # update (customers' proce
 
 A workspace process starts on the first request and stops after `TENANT_IDLE_MINUTES` without requests, never while it is working (`/api/gateway/busy`). `MAX_RUNNING_TENANTS` caps how many run at once; when it is reached, the least recently used idle one is stopped.
 
+An idle workspace process takes about 55-65 MB. The memory goes to agent runs (agent plus browser), so they have their own ceiling: `MAX_ACTIVE_RUNS` for the whole server (default from RAM: (RAM - 1.5 GB) / `RUN_MEMORY_MB`) and `MAX_RUNS_PER_ORG` per workspace. A run over the ceiling waits in a fair queue (oldest first, a workspace at its own ceiling is skipped so it cannot block others) and its log shows its place. Workspaces ask for slots on an internal loopback address (`QA_SLOT_URL`, never on the public port), lease them for 90 s and renew while running, so a crashed process frees its slots. `/healthz` shows `runs: { active, waiting, max }`. Locally, `QA_MAX_PARALLEL_RUNS` does the same per app (default: no limit).
+
+Temporary files of a workspace (browser profiles, downloads) go to its own `tmp` folder on the data volume, cleaned at each start, not the shared `/tmp` (a RAM-backed tmpfs in the container).
+
 ## Plans
 
 `auth.access(org)` decides: `beta` (no Stripe key: free), `trial` (`TRIAL_DAYS`, no card), `active`, `past_due` (`PAST_DUE_GRACE_DAYS` of grace), then blocked. A blocked workspace sees the account page and cannot start the product; its data stays. Invoice customers: `admin.js grant <email>` marks a workspace as paid by hand.
@@ -78,6 +82,7 @@ A workspace process starts on the first request and stops after `TENANT_IDLE_MIN
 | Sign-up mail does not arrive | `RESEND_API_KEY`, domain verified in Resend (SPF/DKIM), spam folder, gateway log (`mail failed`) |
 | "Your workspace is restarting" | `docker compose logs gateway`, then the workspace's `server.log`; memory (`TENANT_MEMORY_MB`) |
 | "The service is busy right now" | `MAX_RUNNING_TENANTS` reached by working processes; raise it if the server has memory |
+| Runs say "Queued: the server is at its limit" | `MAX_ACTIVE_RUNS` reached; `/healthz` shows active and waiting runs. Raise it only if `free -m` shows spare memory during runs |
 | Stripe says paid, workspace not active | Webhook delivery log in Stripe (signing secret mismatch is the usual cause), `audit` via `admin.js audit <email>` |
 | A run fails with "No API key" | The customer has not saved a key under Settings > AI provider |
 | UI test cannot start the browser | Workspace `server.log`; the image sets `QA_PLAYWRIGHT_MCP_BIN` and `PLAYWRIGHT_BROWSERS_PATH` |

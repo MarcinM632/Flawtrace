@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const env = process.env;
+const os = require('os');
 const int = (v, d) => (Number.isFinite(Number(v)) && v !== undefined && v !== '' ? Number(v) : d);
 
 const PORT = int(env.CLOUD_PORT, 8080);
@@ -31,6 +32,10 @@ module.exports = {
   IDLE_MINUTES: int(env.TENANT_IDLE_MINUTES, 20),
   TENANT_DISK_MB: int(env.TENANT_DISK_MB, 2048),
   TENANT_MEMORY_MB: int(env.TENANT_MEMORY_MB, 768),
+  // Agent runs working at once on this server (all workspaces together) and per workspace; the rest wait in a queue.
+  // Default: what the memory allows, ~RUN_MEMORY_MB per run (agent + browser) after 1.5 GB for the system and gateway.
+  MAX_ACTIVE_RUNS: int(env.MAX_ACTIVE_RUNS, Math.max(2, Math.floor((os.totalmem() / 1048576 - 1536) / int(env.RUN_MEMORY_MB, 900)))),
+  MAX_RUNS_PER_ORG: int(env.MAX_RUNS_PER_ORG, 3),
   // Closed beta: when set, sign-up needs this code.
   BETA_CODE: env.BETA_CODE || '',
   REQUIRE_VERIFIED_EMAIL: env.REQUIRE_VERIFIED_EMAIL !== '0',

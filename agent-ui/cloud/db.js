@@ -61,9 +61,13 @@ function migrate() {
   if (!cols.includes('paid_until')) db.exec('alter table orgs add column paid_until integer');
 }
 const q = () => { if (!db) throw new Error('database not open'); return db; };
-const one = (sql, ...a) => { const r = q().prepare(sql).get(...a); return r ? { ...r } : null; };
-const all = (sql, ...a) => q().prepare(sql).all(...a).map((r) => ({ ...r }));
-const run = (sql, ...a) => q().prepare(sql).run(...a);
+// Przygotowane zapytania są kompilowane raz i trzymane per połączenie: sesja jest sprawdzana przy każdym żądaniu do
+// produktu (pliki, API), a prepare() za każdym razem to parsowanie i planowanie SQL od nowa.
+let stmts = new Map(); let stmtsFor = null;
+const st = (sql) => { const d = q(); if (stmtsFor !== d) { stmts = new Map(); stmtsFor = d; } let s = stmts.get(sql); if (!s) { s = d.prepare(sql); stmts.set(sql, s); } return s; };
+const one = (sql, ...a) => { const r = st(sql).get(...a); return r ? { ...r } : null; };
+const all = (sql, ...a) => st(sql).all(...a).map((r) => ({ ...r }));
+const run = (sql, ...a) => st(sql).run(...a);
 const tx = (fn) => { q().exec('begin immediate'); try { const r = fn(); q().exec('commit'); return r; } catch (e) { try { q().exec('rollback'); } catch (_) { /* already */ } throw e; } };
 
 const audit = (type, { user, org, detail, ip } = {}) => { try { run('insert into audit(ts,user_id,org_id,type,detail,ip) values(?,?,?,?,?,?)', now(), user || null, org || null, type, detail ? String(detail).slice(0, 500) : null, ip || null); } catch (_) { /* never block on the log */ } };

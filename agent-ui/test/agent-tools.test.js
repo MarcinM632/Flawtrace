@@ -105,7 +105,8 @@ test('Agent tool: a sub-agent runs on its own context, its answer comes back, it
   assert.deepEqual(mainTools, ['Agent', 'Read', 'Write']);
   assert.deepEqual(subTools, ['Read', 'Write'], 'the sub-agent has no Agent tool');
   assert.match(seen[1].system[0].text, /sub-agent/);
-  assert.equal(seen[1].messages[0].content, 'check the thing');
+  const first = seen[1].messages[0].content; assert.equal(Array.isArray(first) ? first[0].text : first, 'check the thing');
+  assert.deepEqual(seen[1].messages.at(-1).content.at(-1).cache_control, { type: 'ephemeral' }, 'the newest message is a cache point');
   assert.equal(seen[2].messages[2].content[0].content, 'sub result: thing is fine');
   assert.ok(r.usage.input >= 30, 'the sub-agent usage is counted');
 });

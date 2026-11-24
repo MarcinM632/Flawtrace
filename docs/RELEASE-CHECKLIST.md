@@ -32,7 +32,7 @@ Strony prawne (`/privacy`, `/terms`, `/dpa`, `/security`) to **szkice** napisane
 
 ## Krok 3. Serwer (1-2 godziny, kilkanaście euro miesięcznie)
 
-Zalecane: VPS w UE (np. Hetzner Cloud, OVH, Scaleway), Ubuntu 24.04, **min. 8 GB RAM i 4 vCPU**. Każdy aktywny klient to osobny proces (do ok. 770 MB), a test UI dodaje przeglądarkę. Zacznij od `MAX_RUNNING_TENANTS=8` i zwiększaj, gdy zobaczysz zużycie.
+Zalecane: VPS w UE (np. Hetzner Cloud, OVH, Scaleway), Ubuntu 24.04, **min. 8 GB RAM i 4 vCPU**. Każdy aktywny klient to osobny proces (do ok. 770 MB), a test UI dodaje przeglądarkę. Zacznij od `MAX_RUNNING_TENANTS=8` i zwiększaj, gdy zobaczysz zużycie. Bezczynny proces klienta to ok. 60 MB; pamięć zużywają runy agentów, a ich liczbę naraz pilnuje `MAX_ACTIVE_RUNS` (domyślnie z RAM, przy 8 GB: 7) i `MAX_RUNS_PER_ORG` (3), nadmiarowe runy czekają w kolejce.
 
 1. Utwórz serwer i dodaj swój klucz SSH (nie używaj hasła).
 2. Zaloguj się: `ssh root@ADRES_IP`. Utwórz zwykłego użytkownika z sudo i wyłącz logowanie root przez SSH.
