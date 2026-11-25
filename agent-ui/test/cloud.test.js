@@ -90,6 +90,7 @@ test('public site: pages render with the company data filled in and the security
   assert.equal((await req(SITE, 'GET', '/assets/site.css')).status, 200);
   assert.equal((await req(SITE, 'GET', '/assets/../../server.js')).status, 404);
   assert.equal((await req(SITE, 'GET', '/healthz')).json.ok, true);
+  const cb = await req(SITE, 'GET', '/_gw/oob/0123456789abcdef01234567'); assert.equal(cb.status, 200); assert.equal(cb.text, 'ok', 'callback address answers the same for any token');
 });
 
 test('the app host asks for a sign-in and every app page and script exists', async () => {

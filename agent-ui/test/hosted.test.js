@@ -17,6 +17,18 @@ test('private, loopback, link-local and reserved addresses are refused, public o
   for (const ip of ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.32.0.1', '2606:4700:4700::1111']) assert.equal(isPrivateIp(ip), false, ip);
 });
 
+test('assertPublicUrl: only the gateway\'s own internal address on loopback passes (run slots, pentest callbacks)', async () => {
+  const prev = process.env.QA_SLOT_URL;
+  process.env.QA_SLOT_URL = 'http://127.0.0.1:45123';
+  try {
+    await assertPublicUrl('http://127.0.0.1:45123/slot');
+    await assert.rejects(assertPublicUrl('http://127.0.0.1:45124/slot'), /private or internal/);
+    await assert.rejects(assertPublicUrl('http://127.0.0.1/'), /private or internal/);
+    process.env.QA_SLOT_URL = 'http://10.0.0.5:45123';
+    await assert.rejects(assertPublicUrl('http://10.0.0.5:45123/slot'), /private or internal/, 'only a loopback gateway address is trusted');
+  } finally { if (prev === undefined) delete process.env.QA_SLOT_URL; else process.env.QA_SLOT_URL = prev; }
+});
+
 test('assertPublicUrl: schemes, credentials, internal names, literal IPs', async () => {
   await assert.rejects(assertPublicUrl('file:///etc/passwd'), /Only/);
   await assert.rejects(assertPublicUrl('ftp://example.com'), /Only/);

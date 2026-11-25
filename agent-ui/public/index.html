@@ -292,6 +292,7 @@
           <div class="field"><label for="peRes">Resources owned by a role (optional, JSON)</label><textarea id="peRes" rows="3" spellcheck="false" placeholder='[{"url":"https://staging.example.com/orders/1001","owner":"alice","marker":"ORD-1001","kind":"object"}]'></textarea><div class="hint">marker = text only the owner should see on that page. kind: object (IDOR) or function (admin-only).</div></div>
           <label class="chk"><input type="checkbox" id="peLockout" checked> Test login protection on the first role's account (about 10 failed logins, then the correct one). Use a dedicated test account: if the app locks accounts, this one may be locked for a while.</label>
           <label class="chk"><input type="checkbox" id="peApi" checked> Test the API against its OpenAPI specification from Sources (auth on every operation, sensitive fields, old versions; writes and XML only within the ceiling)</label>
+          <label class="chk"><input type="checkbox" id="peUpload" checked> Test file upload forms (uploads small test files with a unique marker; they stay in the app and the finding says where)</label>
           <label class="chk"><input type="checkbox" id="peAttest"> I confirm I am authorized to test this scope, in this window.</label>
           <div style="margin-top:10px"><button class="btn" id="peGo">Create and start</button></div>
           <div class="err" id="peErr"></div>

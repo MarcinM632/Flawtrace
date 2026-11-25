@@ -14,6 +14,7 @@ const auth = require('./auth');
 const mailer = require('./mailer');
 const billing = require('./billing');
 const slots = require('./slots');
+const oob = require('./oob');
 const plans = require('./plans');
 const tenants = require('./tenants');
 const tar = require('./tar');
@@ -362,6 +363,12 @@ const server = http.createServer(async (req, res) => {
   const p = new URL(req.url, 'http://x').pathname;
   try {
     if (p === '/healthz') return json(res, 200, { ok: true, tenants: tenants.running(), runs: slots.stats() });
+    // Serwer zwrotny pentestu: cel testu odwiedza ten adres (SSRF, ślepe wstrzyknięcia). Zawsze ta sama odpowiedź.
+    if (p.startsWith('/_gw/oob/')) {
+      oob.hit(p.slice('/_gw/oob/'.length).split('/')[0], { ip: clientIp(req), method: req.method, path: req.url, ua: req.headers['user-agent'] });
+      req.resume();
+      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' }); return res.end('ok');
+    }
     if (hostOf(req) !== cfg.APP_HOST) return serveSite(req, res, p);
     if (p.startsWith('/_gw/api/') || p === '/_gw/stripe/webhook') return await api(req, res, p);
     if (p.startsWith('/_gw/')) { if (serveApp(req, res, p) !== null) return; return send(res, 404, 'Not found'); }
@@ -404,6 +411,8 @@ const internal = http.createServer(async (req, res) => {
     const b = await readJson(req);
     const id = String(b.run || '').slice(0, 80);
     if (b.op === 'renew') return json(res, 200, { lost: slots.renew(orgId, (b.runs || []).map(String).slice(0, 50)) });
+    if (b.op === 'oob-issue') { try { return json(res, 200, { base: `${cfg.appUrl}/_gw/oob/`, tokens: oob.issue(orgId, b.count) }); } catch (e) { return json(res, e.status || 400, { error: e.message }); } }
+    if (b.op === 'oob-hits') return json(res, 200, { hits: oob.hits(orgId, b.tokens) });
     if (!id) return json(res, 400, { error: 'run' });
     if (b.op === 'release') { slots.release(orgId, id); return json(res, 200, { ok: true }); }
     return json(res, 200, slots.acquire(orgId, id));

@@ -31,8 +31,10 @@ function isPrivateIp(ip) {
   return blocked.check(ip, v === 6 ? 'ipv6' : 'ipv4');
 }
 
-/** The app's own loopback calls (lib/integration.js) are the one allowed exception. */
+/** The app's own loopback calls (lib/integration.js) are allowed, and so is the gateway's internal address that the
+ *  gateway itself sets for run slots and the pentest callback server (QA_SLOT_URL, loopback only, token-protected). */
 const isSelf = (u) => (u.hostname === '127.0.0.1' || u.hostname === 'localhost') && String(u.port) === String(process.env.PORT || 4317);
+const isGateway = (u) => { const s = process.env.QA_SLOT_URL; if (!s) return false; try { const g = new URL(s); return g.hostname === '127.0.0.1' && u.origin === g.origin; } catch (_) { return false; } };
 
 /** Throws when the URL is not a public http(s) address. Resolves with the parsed URL. */
 async function assertPublicUrl(raw, { schemes = ['http:', 'https:'] } = {}) {
@@ -42,7 +44,7 @@ async function assertPublicUrl(raw, { schemes = ['http:', 'https:'] } = {}) {
   if (process.env.QA_GUARD_ALLOW_LOOPBACK === '1' && ['127.0.0.1', 'localhost'].includes(u.hostname)) return u;
   if (!schemes.includes(u.protocol)) throw new Error(`Only ${schemes.map((s) => s.replace(':', '')).join(' or ')} addresses are allowed here.`);
   if (u.username || u.password) throw new Error('Use an address without a user name or password.');
-  if (isSelf(u)) return u;
+  if (isSelf(u) || isGateway(u)) return u;
   const host = stripBrackets(u.hostname);
   if (!host) throw new Error('The address has no host name.');
   if (net.isIP(host)) { if (isPrivateIp(host)) throw new Error('This address is private or internal. Flawtrace Cloud can only reach public addresses.'); return u; }
