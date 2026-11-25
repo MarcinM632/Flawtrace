@@ -54,6 +54,14 @@ const pentestEngine = require('./lib/pentest-engine').setShared(require('./lib/p
   dataDir: DATA_DIR,
   // Hosting: tylko hosty środowiska z Sources (jak agent Pentest). Lokalnie bez ograniczeń (laboratorium, własne cele).
   allowedHosts: () => (require('./lib/hosted').HOSTED ? [(sources.read().api || {}).baseUrl].filter(Boolean).map((u) => { try { return new URL(u).hostname.toLowerCase(); } catch (_) { return null; } }).filter(Boolean) : null),
+  // Testy API: specyfikacje OpenAPI wgrane albo pobrane w Sources (surowe dokumenty) i poświadczenia API środowiska.
+  apiSpecs: () => {
+    const dir = path.join(DATA_DIR, 'specs');
+    let files = []; try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'sources.json'); } catch (_) { return []; }
+    return files.map((f) => { try { return { source: f.replace(/\.json$/, ''), doc: JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) }; } catch (_) { return null; } }).filter((x) => x && x.doc && x.doc.paths);
+  },
+  apiBase: () => (sources.read().api || {}).baseUrl || null,
+  apiAuth: () => { const a = sources.read().api || {}; return a.authValue ? { header: a.authHeader || 'Authorization', value: a.authValue } : null; },
 }));
 
 /** What the app has loaded from Jira so far, per page, for the Jira data check in Sources. */
