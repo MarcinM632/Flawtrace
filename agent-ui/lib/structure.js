@@ -8,6 +8,15 @@ const path = require('path');
 const KNOWN_EXT = /\.(md|txt|json)$/i;
 // Które grupy skili należą do którego trybu agenta (agenci jednego rodzaju dzielą bibliotekę skili).
 const SKILL_GROUP = { qamcp: 'qamcp-skills', execution: 'qamcp-skills', pentest: 'pentest-skills', uitest: 'uitest-skills' };
+// Dwa poziomy. GENERYCZNE: jak agent działa, dowodzi i raportuje — to samo niezależnie od aplikacji (biblioteka ISTQB,
+// bramka sensu biznesowego domain-rules wspólna dla wszystkich, oraz mechaniki danego typu agenta). LOGIKA BIZNESOWA:
+// co robi dana aplikacja i jej reguły — osobno dla każdego serwisu (baza wiedzy per serwis). Te poziomy NIE są na równi.
+const SHARED_GROUPS = new Set(['istqb-library', 'domain-rules']); // czytane/doklejane przez każdego właściwego agenta
+const skillScope = (group) => (SHARED_GROUPS.has(group) ? 'shared' : 'agent-type');
+const LEVELS = [
+  { id: 'shared', title: 'Wspólne dla każdego agenta', desc: 'Jak agent pracuje, dowodzi i raportuje — to samo niezależnie od aplikacji (mechaniki agenta, metodyka ISTQB, bramka sensu biznesowego).' },
+  { id: 'per-app', title: 'Logika biznesowa per aplikacja', desc: 'Co robi dana aplikacja i jej reguły — osobno dla każdego podłączonego serwisu, z bazy wiedzy per serwis. Osobny poziom, nie na równi z mechaniką agenta.' },
+];
 // Krótki, ludzki opis roli każdego agenta (do intuicyjnego drzewa).
 const AGENT_KIND = {
   core: 'analiza', svc: 'analiza', mcp: 'analiza', static: 'analiza statyczna', design: 'projektowanie testów',
@@ -30,7 +39,18 @@ function skills(agentsRoot) {
     for (const n of names) {
       const file = path.join(base, g, n, 'SKILL.md');
       let md = ''; try { md = fs.readFileSync(file, 'utf8'); } catch (_) { continue; }
-      out.push({ group: g, name: n, title: firstHeading(md) || n, description: frontDesc(md), path: relFromRoot(agentsRoot, file) });
+      out.push({ group: g, name: n, title: firstHeading(md) || n, description: frontDesc(md), path: relFromRoot(agentsRoot, file), scope: skillScope(g) });
+    }
+  }
+  // Poziom WSPÓLNY (nie kończy się na -skills): metodyka ISTQB i bramka sensu biznesowego — czytane/doklejane przez
+  // każdego właściwego agenta, niezależnie od aplikacji. Pokazujemy je obok skili, z oznaczeniem scope 'shared'.
+  for (const [dir, files] of [['istqb-library', null], ['domain-rules', ['brief.md']]]) {
+    let list = files;
+    if (!list) { try { list = fs.readdirSync(path.join(base, dir)).filter((f) => /\.md$/i.test(f)); } catch (_) { list = []; } }
+    for (const f of list) {
+      const file = path.join(base, dir, f);
+      let md = ''; try { md = fs.readFileSync(file, 'utf8'); } catch (_) { continue; }
+      out.push({ group: dir, name: f.replace(/\.md$/i, ''), title: firstHeading(md) || f, description: frontDesc(md) || (dir === 'domain-rules' ? 'Bramka sensu biznesowego doklejana do każdego trybu agenta.' : ''), path: relFromRoot(agentsRoot, file), scope: 'shared' });
     }
   }
   return out;
@@ -50,7 +70,10 @@ function agents(agentsLib, agentsRoot) {
       key, label: a.label, mode: a.mode || 'qa', kind: AGENT_KIND[key] || 'agent',
       available: agentAvailable(a), reason: agentReason(a),
       dir: dir ? dir.split(path.sep).join('/') : '', hasInstructions: hasInstr,
-      skillGroup: group, skills: mine.map((s) => ({ name: s.name, title: s.title, description: s.description })),
+      skillGroup: group, skills: mine.map((s) => ({ name: s.name, title: s.title, description: s.description, scope: s.scope })),
+      // Jawny podział poziomów dla tego agenta: generyczne mechaniki/metodyka (wspólne) vs logika biznesowa per apka.
+      generic: [...(group ? [`skille ${group}`] : ['role z CLAUDE.md']), 'bramka sensu biznesowego (domain-rules)', 'wspólne pliki wiedzy (reguły zespołu)'],
+      businessLogic: 'baza wiedzy per serwis (osobno dla każdej aplikacji)',
       services: (() => { try { return servicesFor(key); } catch (_) { return []; } })(),
     };
   });
@@ -65,7 +88,7 @@ function knowledgeTree(knowledgeDir) {
       if (e.name.startsWith('.')) continue;
       const r = rel ? rel + '/' + e.name : e.name;
       if (e.isDirectory()) walk(path.join(dir, e.name), r);
-      else if (KNOWN_EXT.test(e.name)) { let size = 0; try { size = fs.statSync(path.join(dir, e.name)).size; } catch (_) { /* brak */ } out.push({ path: r, size, group: groupOf(r), generated: isGenerated(r), editable: KNOWN_EXT.test(e.name) }); }
+      else if (KNOWN_EXT.test(e.name)) { let size = 0; try { size = fs.statSync(path.join(dir, e.name)).size; } catch (_) { /* brak */ } out.push({ path: r, size, group: groupOf(r), scope: r.startsWith('services/') ? 'per-app' : 'shared', generated: isGenerated(r), editable: KNOWN_EXT.test(e.name) }); }
     }
   };
   walk(knowledgeDir, '');
@@ -91,6 +114,7 @@ function safePath(knowledgeDir, rel) {
 
 function build({ agentsLib, agentsRoot, knowledgeDir, kbStatus }) {
   return {
+    levels: LEVELS,
     agents: agents(agentsLib, agentsRoot),
     skills: skills(agentsRoot),
     knowledge: knowledgeTree(knowledgeDir),
@@ -98,4 +122,4 @@ function build({ agentsLib, agentsRoot, knowledgeDir, kbStatus }) {
   };
 }
 
-module.exports = { build, agents, skills, knowledgeTree, safePath, SKILL_GROUP, AGENT_KIND };
+module.exports = { build, agents, skills, knowledgeTree, safePath, skillScope, SKILL_GROUP, SHARED_GROUPS, LEVELS, AGENT_KIND };

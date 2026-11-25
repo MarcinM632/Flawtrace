@@ -5,6 +5,7 @@ let STRUCT = null;
 const jput = (p, b) => api(p, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
 const jdel = (p, b) => api(p, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
 const stBadge = (s) => s === 'ready' ? 'ok' : (s === 'running' || s === 'queued') ? 'warn' : s === 'error' ? 'bad' : 'muted';
+const scopeChip = (scope) => scope === 'per-app' ? '<span class="st-scope app">per app</span>' : scope === 'shared' ? '<span class="st-scope all">every agent</span>' : scope === 'agent-type' ? '<span class="st-scope type">agent type</span>' : '';
 
 async function loadStructure() {
   const tree = document.getElementById('stTree');
@@ -43,11 +44,28 @@ function renderTree() {
       `<button class="st-item" data-t="file" data-k="${esc(f.path)}">${esc(f.path.split('/').pop())}${f.generated ? '<span class="st-meta">generated</span>' : ''}</button>`).join('')
   ).join('');
 
+  // Dwa poziomy skili: wspólne dla każdego agenta vs mechaniki danego typu agenta.
+  const sharedSkills = g.skills.filter(s => s.scope === 'shared');
+  const typeSkills = g.skills.filter(s => s.scope !== 'shared');
+  const skillList = (list) => Object.entries(list.reduce((o, s) => { (o[s.group] = o[s.group] || []).push(s); return o; }, {}))
+    .map(([grp, items]) => `<div class="st-sub">${esc(grp)}</div>` + items.map(s => `<button class="st-item" data-t="skill" data-k="${esc(s.group + '/' + s.name)}">${esc(s.name)}</button>`).join('')).join('');
+  // Pliki: rozdziel wspólne (każdy agent) od per-app (logika biznesowa).
+  const fileGroups2 = {};
+  g.knowledge.forEach(f => { (fileGroups2[f.group] = fileGroups2[f.group] || []).push(f); });
+  const fileList = (pred) => Object.entries(fileGroups2).map(([grp, list]) => { const sub = list.filter(pred); return sub.length ? `<div class="st-sub">${esc(grp)}</div>` + sub.map(f => `<button class="st-item" data-t="file" data-k="${esc(f.path)}">${esc(f.path.split('/').pop())}${f.generated ? '<span class="st-meta">generated</span>' : ''}</button>`).join('') : ''; }).join('');
+
+  const lv = g.levels || [];
   tree.innerHTML =
+    (lv.length ? `<div class="st-levels">${lv.map(l => `<div class="st-level ${l.id}"><b>${esc(l.title)}</b><span>${esc(l.desc)}</span></div>`).join('')}</div>` : '') +
     `<div class="st-group">Agents</div>${agentSec}` +
-    `<div class="st-group">Skills (agent capabilities)</div>${skillSec}` +
-    `<div class="st-group">Knowledge base — per service</div>${kbSec}` +
-    `<div class="st-group">Knowledge files</div>${fileSec}`;
+    `<div class="st-group st-l-shared">Shared — every agent</div>` +
+    `<div class="st-note">Generic mechanics, methodology and the business-sense gate — the same whatever the app.</div>` +
+    `${skillList(sharedSkills)}` +
+    `<div class="st-sub">agent-type skills</div>${skillList(typeSkills)}` +
+    `${fileList(f => f.scope !== 'per-app')}` +
+    `<div class="st-group st-l-app">Per app — business logic</div>` +
+    `<div class="st-note">What each connected app does and its rules — a separate level, one base per service.</div>` +
+    `${kbSec}${fileList(f => f.scope === 'per-app')}`;
 
   tree.querySelectorAll('.st-item').forEach(b => b.onclick = () => {
     tree.querySelectorAll('.st-item').forEach(x => x.classList.remove('on')); b.classList.add('on');
@@ -70,10 +88,13 @@ function showAgent(key) {
     `<h2 class="st-h2">${esc(a.label)} <span class="tag ${a.available ? 'acc' : ''}">${a.available ? 'ready' : 'not ready'}</span></h2>` +
     `<p class="st-p">Kind: <b>${esc(a.kind)}</b> · mode: <code>${esc(a.mode)}</code></p>` +
     (a.available ? '' : `<div class="chk warn">${esc(a.reason)}</div>`) +
-    `<h3 class="st-h3">Skills (capabilities it loads)</h3>${skills}` +
-    (a.services.length ? `<h3 class="st-h3">Services</h3><p class="st-p">${a.services.map(esc).join(', ')}</p>` : '') +
-    (a.hasInstructions ? `<h3 class="st-h3">Instructions</h3><p class="st-p"><code>${esc(a.dir)}/CLAUDE.md</code></p>` : '') +
-    `<h3 class="st-h3">Knowledge it reads</h3><p class="st-p">The shared knowledge files and the per-service knowledge base below — the same for every agent, so the structure is uniform.</p>`
+    `<h3 class="st-h3">Level 1 — generic (same for every agent)</h3>` +
+    `<ul class="st-list">${(a.generic || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` +
+    `<h4 class="st-h4">Skills it loads ${scopeChip('agent-type')}</h4>${skills}` +
+    (a.services.length ? `<p class="st-p">Services: ${a.services.map(esc).join(', ')}</p>` : '') +
+    (a.hasInstructions ? `<p class="st-p">Instructions: <code>${esc(a.dir)}/CLAUDE.md</code></p>` : '') +
+    `<h3 class="st-h3">Level 2 — business logic ${scopeChip('per-app')}</h3>` +
+    `<p class="st-p">${esc(a.businessLogic || '')} — separate from the generic level above, so business rules stay per app.</p>`
   );
 }
 
@@ -81,7 +102,7 @@ function showSkill(key) {
   const s = STRUCT.skills.find(x => x.group + '/' + x.name === key); if (!s) return;
   detail(
     `<h2 class="st-h2">${esc(s.title || s.name)}</h2>` +
-    `<p class="st-p">Skill <code>${esc(s.name)}</code> in group <b>${esc(s.group)}</b>.</p>` +
+    `<p class="st-p">Skill <code>${esc(s.name)}</code> in group <b>${esc(s.group)}</b>. ${scopeChip(s.scope)}</p>` +
     (s.description ? `<p class="st-p">${esc(s.description)}</p>` : '') +
     `<p class="st-p"><code>${esc(s.path)}</code></p>` +
     `<div class="muted-note">Skills ship with the app and define what an agent can do. Edit the knowledge files to change how the agents behave on your product.</div>`

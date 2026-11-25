@@ -42,6 +42,28 @@ test('asembler: agenci z grupą skili i ich skille, biblioteka skili, drzewo pli
   assert.ok(groups.has('Reguły zespołu (edytowalne)') && groups.has('Baza wiedzy per serwis (generowane)'));
   assert.equal(b.knowledge.find((f) => f.path === 'services/api.md').generated, true);
   assert.equal(b.knowledge.find((f) => f.path === 'how-we-test.md').generated, false);
+  // Poziomy rozdzielone: generyczne (wspólne) vs logika biznesowa per apka.
+  assert.deepEqual(b.levels.map((l) => l.id), ['shared', 'per-app']);
+  assert.equal(qamcp.skills[0].scope, 'agent-type', 'skille typu agenta nie są poziomem wspólnym');
+  assert.equal(b.knowledge.find((f) => f.path === 'services/api.md').scope, 'per-app', 'baza per serwis to logika biznesowa');
+  assert.equal(b.knowledge.find((f) => f.path === 'how-we-test.md').scope, 'shared', 'reguły zespołu są wspólne');
+  assert.match(qamcp.businessLogic, /per serwis/, 'logika biznesowa agenta to baza per serwis');
+});
+
+test('skille wspólne (ISTQB, bramka domain-rules) mają scope shared i są osobnym poziomem od mechaniki typu agenta', () => {
+  const agentsRoot = path.join(tmp(), 'agents');
+  fs.mkdirSync(path.join(agentsRoot, '_shared', 'istqb-library'), { recursive: true });
+  fs.writeFileSync(path.join(agentsRoot, '_shared', 'istqb-library', 'test-manager.md'), '# Test manager');
+  fs.mkdirSync(path.join(agentsRoot, '_shared', 'domain-rules'), { recursive: true });
+  fs.writeFileSync(path.join(agentsRoot, '_shared', 'domain-rules', 'brief.md'), '# Domain rules');
+  fs.mkdirSync(path.join(agentsRoot, '_shared', 'qamcp-skills', 'result-triage'), { recursive: true });
+  fs.writeFileSync(path.join(agentsRoot, '_shared', 'qamcp-skills', 'result-triage', 'SKILL.md'), '# Result triage');
+  const lib = require('../lib/structure').skills(agentsRoot);
+  assert.equal(lib.find((s) => s.name === 'test-manager').scope, 'shared');
+  assert.equal(lib.find((s) => s.name === 'brief' && s.group === 'domain-rules').scope, 'shared');
+  assert.equal(lib.find((s) => s.name === 'result-triage').scope, 'agent-type');
+  assert.equal(require('../lib/structure').skillScope('qamcp-skills'), 'agent-type');
+  assert.equal(require('../lib/structure').skillScope('domain-rules'), 'shared');
 });
 
 test('budowa bazy wiedzy jest ściśle sekwencyjna — dwa wyzwalacze naraz nie nakładają się', async () => {

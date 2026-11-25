@@ -2007,3 +2007,19 @@ input:focus,textarea:focus,select:focus{border-color:var(--border-accent);box-sh
 .st-filebtns{display:flex;align-items:center;gap:10px;margin-top:10px}
 .st-msg{color:var(--muted,#6b7280);font-size:12px}
 @media (max-width:820px){.struct-wrap{grid-template-columns:1fr}.struct-tree{position:static;max-height:none}}
+
+/* Structure: levels and scope chips */
+.st-levels{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.st-level{border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;border:1px solid var(--line,#e5e7eb)}
+.st-level b{display:block;font-size:12.5px;margin-bottom:2px}
+.st-level span{color:var(--muted,#6b7280)}
+.st-level.shared{background:#eff6ff;border-color:#bfdbfe}
+.st-level.per-app{background:#f0fdf4;border-color:#bbf7d0}
+.st-group.st-l-shared{color:#2563eb}
+.st-group.st-l-app{color:#16a34a}
+.st-note{font-size:11px;color:var(--muted,#9ca3af);margin:2px 2px 4px;line-height:1.4}
+.st-scope{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:999px;vertical-align:middle}
+.st-scope.all{background:#dbeafe;color:#1d4ed8}
+.st-scope.app{background:#dcfce7;color:#15803d}
+.st-scope.type{background:#f3f4f6;color:#6b7280}
+.st-h4{font-size:12px;color:var(--muted,#6b7280);margin:10px 0 4px}
