@@ -782,6 +782,16 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
           first.issues.push(...ts.transportIssues(meta.transport, meta.report));
         } catch (e) { meta.transport = { available: false, reason: String(e && e.message || e) }; }
       }
+      // SCA przez bazę OSV: dokładne wersje z plików blokad → znane podatności (CVE/GHSA). Sieciowe, więc tu (nie w
+      // sync runAudit). Na hostingu przez strażnika; osv.dev jest publiczne. QA_OSV=0 wyłącza. Bez sieci zostaje offline.
+      if (process.env.QA_OSV !== '0' && meta.repoScan && meta.repoScan.available && (meta.repoScan.manifests || []).length) {
+        try {
+          const osv = await require('./osv-scan').scan({ files: meta.repoScan.manifests });
+          const before = meta.repoScan.findings.length;
+          require('./repo-scan').mergeOsv(meta.repoScan, osv);
+          if (meta.repoScan.findings.length > before) first.issues.push(...require('./repo-scan').repoScanIssues({ available: true, findings: meta.repoScan.findings.slice(before) }, meta.report));
+        } catch (e) { meta.repoScan.osv = { available: false, reason: String(e && e.message || e) }; }
+      }
       // Gdy kontrola aplikacji już wymaga korekty (a sesja da się wznowić), drogi weryfikator czeka na poprawiony raport:
       // jedna sesja weryfikatora zamiast dwóch. QA_VERIFIER_EARLY=1 przywraca dawne zachowanie (weryfikator przed korektą).
       const deferVerifier = process.env.QA_VERIFIER_EARLY !== '1' && first.issues.length > 0 && !!res.sessionId && verifierLib.enabled();

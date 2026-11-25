@@ -13,6 +13,7 @@
 // klasy błędów. Pole `limited` mówi, kiedy skan dotknął limitu (duże repo) i nie jest wyczerpujący.
 const fs = require('fs');
 const path = require('path');
+const osvScan = require('./osv-scan');
 
 // Katalogi, których nie skanujemy (zależności, artefakty budowania, repo .git, cache).
 const SKIP_DIRS = new Set([
@@ -306,6 +307,7 @@ const LOCKFILES = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'npm-shri
 function scanRepo(root, name) {
   const { files, hitLimit } = walk(root);
   const findings = [];
+  const manifests = []; // pliki blokad / przypięte manifesty dla SCA przez OSV (rel + treść), z limitem
   const more = {};
   const seen = new Set();
   const add = {
@@ -329,7 +331,9 @@ function scanRepo(root, name) {
     try { text = fs.readFileSync(path.join(root, rel), 'utf8'); } catch (_) { continue; }
     if (text.indexOf('\u0000') !== -1) continue; // plik binarny mimo rozszerzenia
     const fx = ext(rel);
-    // SCA: manifesty zależności.
+    // SCA przez OSV: zbierz pliki, z których da się wyciągnąć dokładne wersje (blokady, Pipfile.lock, go.mod…).
+    if (manifests.length < 60 && osvScan.PARSERS.some(([re]) => re.test(rel))) manifests.push({ rel: `${name}/${rel}`, text });
+    // SCA (wbudowana, offline): manifesty zależności.
     if (MANIFESTS.has(base)) {
       if (base === 'package.json') scaFromPackageJson(text, { sca: (o) => add.sca({ ...o }) }, rel);
       else if (base.startsWith('requirements')) scaFromRequirements(text, { sca: (o) => add.sca({ ...o }) }, rel);
@@ -346,7 +350,7 @@ function scanRepo(root, name) {
     findings.push({ repo: name, scanner: 'sca', rule: 'no-lockfile', severity: 'low', cwe: 'CWE-1104',
       title: 'No lockfile (package-lock.json / yarn.lock) next to package.json: installs are non-reproducible (supply-chain risk)', file: 'package.json', line: null, snippet: null });
   findings.sort((a, b) => (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]) || (a.scanner < b.scanner ? -1 : a.scanner > b.scanner ? 1 : 0) || (String(a.file) < String(b.file) ? -1 : 1));
-  return { files: files.length, hitLimit, findings, more };
+  return { files: files.length, hitLimit, findings, more, manifests };
 }
 
 /** Skan wszystkich gotowych repo. `repos` = sources.repoList() (albo własna lista {name, path, ready}). */
@@ -355,9 +359,11 @@ function scan(repos) {
   if (!ready.length) return { available: false, reason: 'no repositories connected', repos: [], findings: [], counts: emptyCounts(), limited: false, scannedFiles: 0 };
   let findings = [], scannedFiles = 0, limited = false;
   const repoStats = [];
+  const manifests = [];
   for (const r of ready) {
     const res = scanRepo(r.path, r.name);
     findings = findings.concat(res.findings);
+    for (const m of res.manifests) if (manifests.length < 120) manifests.push(m);
     scannedFiles += res.files;
     if (res.hitLimit) limited = true;
     repoStats.push({ name: r.name, files: res.files, findings: res.findings.length, limited: res.hitLimit });
@@ -365,7 +371,7 @@ function scan(repos) {
   findings.sort((a, b) => (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]) || (a.scanner < b.scanner ? -1 : a.scanner > b.scanner ? 1 : 0));
   let capped = false;
   if (findings.length > TOTAL_CAP) { findings = findings.slice(0, TOTAL_CAP); capped = true; }
-  return { available: true, repos: repoStats, findings, counts: countBy(findings), limited: limited || capped, scannedFiles };
+  return { available: true, repos: repoStats, findings, counts: countBy(findings), limited: limited || capped, scannedFiles, manifests };
 }
 function emptyCounts() { return { total: 0, critical: 0, high: 0, medium: 0, low: 0, secret: 0, sast: 0, sca: 0 }; }
 function countBy(findings) {
@@ -395,7 +401,20 @@ function summary(result) {
   if (!result || !result.available) return '';
   const c = result.counts;
   if (!c.total) return `Static repo scan (app): ${result.scannedFiles} files, no secret/SAST/SCA findings.`;
-  return `Static repo scan (app): ${c.total} finding(s) across ${result.scannedFiles} files — ${c.critical} critical, ${c.high} high, ${c.medium} medium, ${c.low} low (secrets ${c.secret}, SAST ${c.sast}, SCA ${c.sca}).`;
+  const osv = result.osv && result.osv.found != null ? ` OSV: ${result.osv.found} known vuln(s) in ${result.osv.queried} pinned dependencies.` : (result.osv && result.osv.available === false ? ' (OSV lookup unavailable: ' + (result.osv.reason || 'offline') + '.)' : '');
+  return `Static repo scan (app): ${c.total} finding(s) across ${result.scannedFiles} files — ${c.critical} critical, ${c.high} high, ${c.medium} medium, ${c.low} low (secrets ${c.secret}, SAST ${c.sast}, SCA ${c.sca}).${osv}`;
 }
 
-module.exports = { scan, repoScanIssues, summary, SAST_RULES, SECRET_RULES, ADVISORIES, _lt: lt, _walk: walk };
+/** Dołącza findingi OSV (sca-osv) do wyniku scan(), z deduplikacją względem wbudowanej listy (ta sama paczka+wersja). */
+function mergeOsv(result, osv) {
+  if (!result || !result.available || !osv || !osv.available || !osv.findings.length) { if (result) result.osv = osv || null; return result; }
+  const have = new Set(result.findings.filter((f) => f.scanner === 'sca').map((f) => `${f.pkg}|${f.version}`));
+  const add = osv.findings.filter((f) => !have.has(`${f.pkg}|${f.version}`) || f.id);
+  result.findings = result.findings.concat(add.map((f) => ({ repo: null, scanner: 'sca', rule: 'osv', severity: f.severity, cwe: f.cwe, title: f.title, file: f.file, line: null, pkg: f.pkg, version: f.version, fixed: f.fixed, id: f.id, url: f.url, snippet: null })));
+  result.findings.sort((a, b) => (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]) || (a.scanner < b.scanner ? -1 : a.scanner > b.scanner ? 1 : 0));
+  result.counts = countBy(result.findings);
+  result.osv = { queried: osv.queried, found: osv.findings.length, ecosystems: osv.ecosystems };
+  return result;
+}
+
+module.exports = { scan, mergeOsv, repoScanIssues, summary, SAST_RULES, SECRET_RULES, ADVISORIES, _lt: lt, _walk: walk };
