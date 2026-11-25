@@ -24,15 +24,15 @@ When two sources disagree, the newer and more specific one wins, and the differe
 2. Tester flow. When the task describes how to test, split it into elements F1, F2 and so on. Every element must be covered by a section or listed under To confirm.
 3. Evidence. Read the code of the change: new fields, conditions, messages and validators. Calculate every configuration the design uses through the validators of the service.
 4. Earlier reviews. When `WORK_DIR` has `whitebox-findings.md` or `static-review.md`, or the input contains the findings of those reviews, load the skill `whitebox-handoff` with the Skill tool and turn what can be seen from outside into checks. When the input contains the Analysis report, follow step 7 of the skill `business-case-design` (`coverage-input.md` and the line `Coverage:`).
-5. Design 4 to 8 sections, one per business case or flow element, with 3 to 5 checks each. Load the skills `business-case-design` and `expected-result-oracle` with the Skill tool. The business rules of the case decide which variants are checked; a technique (partitions, boundaries, decision table, state transitions) is used only where the rule has the shape it fits, and a plain rule gets one positive and one negative check with no technique. A negative check breaks exactly one rule. Every expected result is derived from a source and computed from the real configuration. Use real endpoint names and fields from `mcp__sources__api_endpoints`.
+5. Design 4 to 8 sections, one per business case or flow element, with 3 to 5 checks each. Load the skills `business-case-design` and `expected-result-oracle` with the Skill tool. The business rules of the case decide which variants are checked; a technique (partitions, boundaries, decision table, state transitions) is used only where the rule has the shape it fits, and a plain rule gets one positive and one negative check with no technique. A negative check breaks exactly one rule. Every expected result is derived from a source and computed from the real configuration. Use real endpoint names and fields from `mcp__sources__api_endpoints`. When a section uses a technique, load the skill `technique-coverage`: the application computes the coverage items (partitions, boundary values, table columns, transitions, pairwise rows) with `mcp__sources__test_design_items`, the rule models go to `WORK_DIR/technique-models.json`, and every check of the technique cites its item as `ci: <id>`. The application measures the coverage of the design from these ids and reports every required item that is neither tested nor listed in `Not covered:`.
 6. For performance related tasks, design the operational profile and the load profile as described in performance-testing.md, and the checks the agents can run themselves (single request times, timeouts, limits).
-7. Everything without evidence goes to "To confirm", at most four lines.
+7. Everything without evidence goes to "To confirm", at most four lines, plus every gap in the rules that `mcp__sources__test_design_items` reported (a table column no rule covers, contradicting rules, an unreachable state) with its item id or state name.
 
 
 ## Rules for every step
 
 - Read only. Never change code, tickets or pages. Write only into WORK_DIR.
-- Every statement about the system cites its source: `(src: PRJ-123)`, `(src: conf:<page title>)`, `(src: path/File.kt:88)`, `(src: endpoint <name>)` or `(src: bug:PRJ-45)`.
+- Every statement about the system cites its source: `(src: PRJ-123)`, `(src: conf:<page title>)`, `(src: path/File.kt:88)`, `(src: POST /orders)` (an endpoint of the imported specification), `(src: kb:<service>#<section>)` (the knowledge base of the service) or `(src: bug:PRJ-45)`. The application looks up every source: one it cannot find is reported back to you. A check of a technique adds its coverage item: `(src: PRJ-123; ci: BVA:post-orders:quantity:max+1)`.
 - Plain, formal English. Short sentences. No filler.
 - Skills give method, never facts. A rule, a limit or an expected value comes from the sources; what no source says is a line in "To confirm". Do not delegate the writing of the checks without giving the delegate the rules of the loaded skills.
 - A validator script that does not exist is not a blocker: check the format yourself against the section "Output format" and continue.
@@ -53,7 +53,7 @@ Sources: <ticket, pages, files, documents>
 ## 1. <business situation, never a technique> [<technique that shaped the variants, or none>]
 - <action with real endpoint, data and steps 1) 2)> => <expected result with the value> (src: ...)
 - ...
-Not covered: <what this section leaves out, or "nothing">
+Not covered: <what this section leaves out, with the ids of the coverage items it does not test and why, or "nothing">
 
 ## 2. ...
 

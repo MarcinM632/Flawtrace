@@ -9,7 +9,7 @@ Każdy agent ma skille: krótkie, sprawdzalne metody pracy oparte na ISTQB, OWAS
 | Static | `requirement-testability`, `cross-source-consistency`, `scenario-dry-run` | narzędzie Skill |
 | Planning | `risk-assessment`, `entry-exit-criteria`, `verdict-gate` | narzędzie Skill |
 | Analysis | `technique-selection`, `coverage-matrix`, `impact-radius` | narzędzie Skill |
-| Test Design | `business-case-design`, `expected-result-oracle`, `spec-checks`, `whitebox-handoff` | narzędzie Skill |
+| Test Design | `business-case-design`, `expected-result-oracle`, `technique-coverage`, `spec-checks`, `whitebox-handoff` | narzędzie Skill |
 | Implementation | `procedure-merge`, `step-executability`, `priority-and-gates` | narzędzie Skill |
 | Completion | `results-consolidation`, `defect-triage`, `lessons-check` | narzędzie Skill |
 | Whitebox (CORE / SVC / mcp) | `edge-cases`, `mapping-check`, `missing-handling`, `impact-in-reality` | narzędzie Skill (wspólne źródło: `agents/_shared/whitebox-skills`) |
@@ -43,3 +43,24 @@ Agent uruchamia walidator przed oddaniem raportu i poprawia wskazane problemy. A
 | `QA_MAX_OUTPUT_CHARS` | 8 000 000 | limit bufora wyjścia procesów (pytest, lista testów); zostaje koniec wyjścia |
 
 Raport kosztów: `GET /api/costs?days=N` pokazuje koszt, tokeny, tury, minuty i udział cache dla każdego agenta i każdego ticketu. Zaglądaj tam przed optymalizacjami: niski udział cache oznacza, że prompt nie trafia w cache.
+
+
+## Techniki ISTQB liczone przez aplikację i wyrocznia Test design
+
+Test design nie zgaduje wartości do testu ani oczekiwanych wyników. Liczy je aplikacja, a agent tylko decyduje, gdzie technika pasuje do reguły biznesowej.
+
+- **Silnik technik** (`agent-ui/lib/test-techniques.js`, narzędzie `mcp__sources__test_design_items`):
+  - klasy równoważności i wartości brzegowe (2- i 3-punktowe) z ograniczeń specyfikacji OpenAPI: `minimum`, `maximum`, `exclusive*`, `multipleOf`, długości, `enum`, `required`, `format`, typ;
+  - kolumny tablicy decyzyjnej z modelu reguł. Warunek progowy dostaje wartość dokładnie na progu i tuż obok, więc tablica łapie też pomyłkę `>` / `>=`;
+  - przejścia stanów: poprawne są wymagane, niepoprawne zalecane, z najkrótszą ścieżką dojścia do stanu;
+  - pairwise: deterministyczny generator, który pokrywa każdą parę wartości.
+
+  Każdy element ma stały identyfikator (`BVA:post-orders:quantity:max+1`), oczekiwany wynik i wyrocznię. Luki w regułach to defekty wymagania i trafiają do „To confirm”: kolumna bez reguły, sprzeczne reguły, stan nieosiągalny.
+- **Modele reguł** agent zapisuje do `WORK_DIR/technique-models.json`, każdy ze `src`. Walidator sprawdza ich format.
+- **Audyt wyroczni** (`agent-ui/lib/design-oracle.js`) po każdym projekcie, bez modelu:
+  - Każde `(src: ...)` jest rozwiązywane w źródłach: klucz ticketu, endpoint ze specyfikacji, bug z rejestru, wpis `kb:<serwis>#<sekcja>` w bazie wiedzy, `plik:linia` w pobranym kodzie.
+  - Pokrycie techniki jest mierzone z `ci: <id>` w checkach. Brakujący wymagany element musi być przetestowany albo wpisany do `Not covered:` z powodem.
+  - Oczekiwany wynik nie może przeczyć wyroczni elementu, np. sukces dla wartości poza zakresem albo zły rabat.
+
+  Problemy wracają do agenta w jednej turze korekty. Wynik trafia do UI jako pokrycie per technika i macierz śledzalności: przypadek biznesowy → punkt → check → źródła ze statusem → elementy pokrycia. Macierz da się pobrać jako CSV.
+- **Benchmark** (`agent-ui/bench/functional-bench.js`, opis w `agent-ui/bench/README.md`) mierzy wykrywalność znanych błędów funkcjonalnych i fałszywe alarmy, razem z uczciwym opisem, czego wynik nie dowodzi.

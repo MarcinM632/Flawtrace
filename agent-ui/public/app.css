@@ -2023,3 +2023,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--border-accent);box-sh
 .st-scope.app{background:#dcfce7;color:#15803d}
 .st-scope.type{background:#f3f4f6;color:#6b7280}
 .st-h4{font-size:12px;color:var(--muted,#6b7280);margin:10px 0 4px}
+
+/* Test design: traceability matrix and technique coverage (computed by the app) */
+.tr-box{display:block}
+.tr-box>summary{cursor:pointer;list-style:none;display:flex;gap:9px;align-items:flex-start}
+.tr-box>summary::-webkit-details-marker{display:none}
+.tr-wrap{overflow-x:auto;margin:10px 0}
+table.tr{width:100%;border-collapse:collapse;font-size:12px}
+table.tr th,table.tr td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--border)}
+table.tr th{font-weight:600;color:var(--text-secondary);white-space:nowrap}
+table.tr tr.bad td{background:color-mix(in srgb,var(--danger, #d33) 6%,transparent)}
+.tr-src{display:inline-block;padding:1px 6px;margin:1px 2px 1px 0;border-radius:var(--r-xs);font-family:var(--mono);font-size:11px;border:1px solid var(--border)}
+.tr-src.resolved,.tr-src.code{border-color:color-mix(in srgb,var(--success) 45%,transparent)}
+.tr-src.unresolved{border-color:color-mix(in srgb,var(--danger, #d33) 60%,transparent);text-decoration:line-through}
+.tr-src.unchecked{opacity:.75;border-style:dashed}

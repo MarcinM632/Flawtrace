@@ -154,7 +154,39 @@ function rvTransport(m){
     +(top.length?'<ul>'+top.map(f=>`<li><b>${esc(f.severity)}</b> · ${esc(f.rule)}${f.cwe?' ('+esc(f.cwe)+')':''} — ${esc(f.title||'')}</li>`).join('')+'</ul>':'')
     +'</span></div>';
 }
+/* Test design only: technique coverage the APP computed (lib/test-techniques.js) from the specification and the rule
+   models, and the traceability matrix business case → point → check → sources → coverage items, every source looked up. */
+const TECH_LABEL={EP:'Equivalence partitioning',BVA:'Boundary values',DT:'Decision table',ST:'State transition',PW:'Pairwise'};
+function rvTechniques(m){
+  const t=m.techniques;if(m.agent!=='design'||!t||!t.targets)return '';
+  const kinds=Object.entries(t.byTechnique||{});
+  if(!kinds.length&&!(t.problems||[]).length)return '';
+  const full=t.targets.every(x=>!x.missing.length);
+  return `<div class="rv-audit ${full?'ok':'bad'}">${ico(full?'check':'shield',13)} <span><b>Technique coverage (computed by the app from the specification and the rule models):</b> `
+    +(kinds.length?kinds.map(([k,b])=>`${esc(TECH_LABEL[k]||k)} ${b.covered}/${b.required}${b.excused?` (+${b.excused} excused)`:''}`).join(' · '):'no technique items cited')
+    +(t.targets.length?'<ul>'+t.targets.map(x=>`<li><code>${esc(x.target)}</code> ${x.covered}/${x.required}${x.optional?`, optional ${x.optionalCovered}/${x.optional}`:''}${x.missing.length?' — missing '+x.missing.slice(0,8).map(esc).join(', ')+(x.missing.length>8?', …':''):''}</li>`).join('')+'</ul>':'')
+    +((t.problems||[]).length?'<div class="rv-line"><b>Gaps in the rules:</b><ul>'+t.problems.slice(0,10).map(p=>`<li>${esc(p)}</li>`).join('')+'</ul></div>':'')
+    +'</span></div>';
+}
+const TRACE_ST={traced:'ok',unresolved:'bad','no-source':'bad'};
+function rvTrace(m){
+  const t=m.traceability;if(m.agent!=='design'||!t||!t.rows||!t.rows.length)return '';
+  const s=t.summary,ok=!s.unresolved&&!s.noSource;
+  const src=r=>r.sources.map(x=>`<span class="tr-src ${x.status}" title="${esc(x.kind+': '+x.status+(x.why?' — '+x.why:''))}">${esc(x.ref)}</span>`).join(' ');
+  return `<details class="rv-audit ${ok?'ok':'bad'} tr-box"><summary>${ico(ok?'check':'shield',13)} <b>Traceability (checked by the app): ${s.traced}/${s.checks} checks have a source the app found</b>${s.unresolved?` · ${s.unresolved} with a source that does not exist`:''}${s.noSource?` · ${s.noSource} without a source`:''} · ${s.withItems} tied to a technique item</summary>
+    <div class="tr-wrap"><table class="tr"><tr><th>Business case</th><th>Check</th><th>Expected</th><th>Sources</th><th>Coverage items</th></tr>`
+    +t.rows.map(r=>`<tr class="${TRACE_ST[r.status]||''}"><td>${esc(r.bc.join(' ')||'—')}</td><td><b>${esc(r.check)}</b> ${esc(r.action)}</td><td>${esc(r.expected)}</td><td>${src(r)||'—'}</td><td class="mono">${r.items.map(esc).join('<br>')||'—'}</td></tr>`).join('')
+    +`</table></div><button class="btn sm" onclick="traceCsv(this)" data-run="${esc(m.id||'')}">Download as CSV</button></details>`;
+}
+function traceCsv(btn){
+  const m=(window.__traceRuns||{})[btn.dataset.run];if(!m)return;
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['Business case','Point','Title','Technique','Check','Action','Expected','Sources','Coverage items','Status'],
+    ...m.rows.map(r=>[r.bc.join(' '),r.section,r.title,r.technique,r.check,r.action,r.expected,r.sources.map(s=>s.ref+' ['+s.status+']').join('; '),r.items.join(' '),r.status])];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}));a.download='traceability-'+(btn.dataset.run||'design')+'.csv';a.click();
+}
 function reportBlock(m,v){
   const body=v.kind==='qamcp'?rvQamcp(v):v.kind==='analysis'?rvAnalysis(v):rvDesign(v);
-  return rvAudit(m)+rvCoverage(m)+rvRepoScan(m)+rvTransport(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
+  if(m.traceability&&m.traceability.rows){window.__traceRuns=window.__traceRuns||{};window.__traceRuns[m.id||'']=m.traceability;}
+  return rvAudit(m)+rvCoverage(m)+rvTechniques(m)+rvTrace(m)+rvRepoScan(m)+rvTransport(m)+'<div class="rv">'+body+'</div><details class="rv-raw"><summary>Raw report text</summary><pre>'+esc(m.report||'')+'</pre></details>';
 }

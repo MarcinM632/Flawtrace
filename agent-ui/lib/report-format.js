@@ -625,8 +625,22 @@ function correctionPrompt(mode, issues) {
       + 'Dodaj linię "Business cases: BC1 <sytuacja>→§n | … | BCn→To confirm", przypisz każdy punkt do przypadku, a tytuły opisz jako sytuację użycia i jej skutek '
       + '(pozycje, ekspozycja, stan, pieniądze), z techniką w nawiasie. Punkt, którego nie da się przypisać do żadnego przypadku, wytnij. '
     : '';
+  const oracle = issues.some((i) => /^oracle-/.test(i.code))
+    ? 'WYROCZNIA: oczekiwany wynik checka jest tyle wart, co jego źródło. Każde (src: ...) musi wskazywać coś, co aplikacja znajdzie: klucz testowanego ticketu '
+      + 'albo jego podzadania, conf:<tytuł strony>, plik:linia z pobranego kodu, METHOD /ścieżka z zaimportowanej specyfikacji, bug:<klucz> z rejestru, kb:<serwis>#<sekcja> z bazy wiedzy. '
+      + 'Odwołanie, którego nie ma, popraw na prawdziwe; gdy wyniku nie da się oprzeć na żadnym źródle, przenieś check do "To confirm" jako pytanie. '
+      + 'Gdy oczekiwany wynik przeczy wyroczni elementu pokrycia (np. sukces dla wartości poza zakresem ze specyfikacji), wynik idzie za źródłem; '
+      + 'gdy uważasz, że to źródło się myli, zostaw check zgodny ze źródłem i dopisz rozbieżność do "To confirm" z oboma źródłami. Kolumna tablicy decyzyjnej bez reguły nie dostaje wymyślonego wyniku — idzie do "To confirm". '
+    : '';
+  const techniques = issues.some((i) => /^technique-|^requirement-gap$/.test(i.code))
+    ? 'TECHNIKI LICZY APLIKACJA (skill technique-coverage): elementy pokrycia pobierz narzędziem mcp__sources__test_design_items (endpointy i modele reguł), '
+      + 'a modele reguł z ticketu (tablice decyzyjne, maszyny stanów, zbiory pairwise, każdy ze "src") zapisz narzędziem Write do WORK_DIR/technique-models.json. '
+      + 'Każdy check techniki ma w (src: ...) "ci: <id>" elementu, który sprawdza. Wymagany element celu, którego nie testujesz, wpisz z id do "Not covered:" punktu z powodem albo do "To confirm" — nie pomijaj po cichu. '
+      + 'Luki wykryte w regułach (kolumna bez reguły, sprzeczne reguły, nieosiągalny stan) to defekty wymagania: wpisz je do "To confirm" z id elementu (np. DT:discount:4) albo nazwą stanu, jako pytanie do właściciela wymagania. '
+      + 'Zasada "najpierw biznes" obowiązuje dalej: technikę deklarujesz tylko tam, gdzie reguła biznesowa ma jej kształt; deklaracja techniki oznacza pełne pokrycie jej elementów. '
+    : '';
   return 'APLIKACJA SPRAWDZIŁA TWÓJ RAPORT (dowody z pobranym kodem, zgodność ze zleceniem testera) i znalazła problemy:\n' + list + '\n\n'
-    + evidence + flow + bugs + concrete + business
+    + evidence + flow + bugs + concrete + business + oracle + techniques
     + 'Uruchom walidator raportu ponownie na poprawionej treści i zwróć CAŁĄ odpowiedź końcową od nowa, w tym samym formacie.';
 }
 

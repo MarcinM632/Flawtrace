@@ -11,7 +11,7 @@ An expected result is only as good as its source. A check whose expected value w
 In this order of authority:
 1. The ticket, its subtasks and its comments (a later comment can cancel the description), and the newest Confluence page. These say what the business wants.
 2. The rule in the code: validators, constants, enum values, messages, defaults. These say what the service enforces.
-3. The API contract (`mcp__sources__api_endpoints`): field names, types, status codes, error formats.
+3. The API contract (`mcp__sources__api_endpoints`): field names, types, status codes, error formats, and the constraints of the fields (minimum, maximum, lengths, enum, required). For a technique, the expected outcome of each partition, boundary value, column or transition is computed by the application (`mcp__sources__test_design_items`, skill `technique-coverage`); the check follows that oracle or puts the difference in "To confirm".
 
 When 1 and 2 differ, the expected result follows 1 (the requirement), the difference goes to "To confirm" with both sources, and the check states which source it follows.
 
@@ -37,4 +37,6 @@ Every expected result names its place of reading: the endpoint and the field (`G
 ## Format of a check
 `- <numbered steps with real endpoint, data> => <expected value, computed, with its place of reading and the state afterwards> (src: ...)`
 
-The `(src: ...)` is the source of the expected result: ticket key, `conf:<title>`, `file:line`, an endpoint or `bug:<key>`. When the code and the requirement both matter, cite both.
+The `(src: ...)` is the source of the expected result: ticket key, `conf:<title>`, `file:line`, an endpoint as `METHOD /path`, `kb:<service>#<section>` (the knowledge base of the service) or `bug:<key>`. When the code and the requirement both matter, cite both. A check of a technique adds `ci: <id>` of the coverage item it tests.
+
+The application looks up every source after you finish: a ticket key must be the tested ticket, its subtasks or a key in the downloaded material; an endpoint must be in the imported specification; a `bug:` key must be in the bug registry; a `kb:` entry must exist and not be empty; a `file:line` must exist in the downloaded code. A check whose sources all fail has an expected result without a source and comes back to you: fix the reference or move the check to "To confirm".

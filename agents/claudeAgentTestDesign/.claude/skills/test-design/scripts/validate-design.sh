@@ -28,6 +28,15 @@ if [ -f "$ci" ]; then
     [ -z "$miss" ] || problems+=("the line \"Coverage:\" does not map these conditions to a section or To confirm:$miss")
   fi
 fi
+# Rule models of the techniques (skill technique-coverage): when the file exists it must be a JSON array of models.
+tm="$(dirname "$f")/technique-models.json"
+if [ -f "$tm" ]; then
+  if command -v node >/dev/null 2>&1; then
+    err=$(node -e 'let j;try{j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))}catch(e){console.log("not valid JSON: "+e.message);process.exit()}const a=Array.isArray(j)?j:j.models;if(!Array.isArray(a)){console.log("not an array of models");process.exit()}a.forEach((m,i)=>{if(!m||!m.kind||!m.id)console.log("model "+(i+1)+" has no kind or id");else if(!m.src)console.log("model "+m.id+" has no src")})' "$tm")
+    [ -z "$err" ] || problems+=("technique-models.json: $(printf '%s' "$err" | head -3 | tr '\n' ';')")
+  fi
+fi
+grep -E '^- .*=>' "$f" | grep -E '\(src:[^)]*\bci *:' | grep -Eqv '\bci *: *(EP|BVA|DT|ST|PW):' && problems+=("a check has \"ci:\" without a coverage item id (EP:/BVA:/DT:/ST:/PW:...)")
 chars=$(wc -c < "$f")
 [ "$chars" -ge 200 ] || problems+=("the report is too short ($chars characters)")
 if [ ${#problems[@]} -eq 0 ]; then echo "PROJEKT OK"; exit 0; fi

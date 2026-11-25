@@ -751,6 +751,16 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
     const ev = auditEvidence(meta.report, workDir) || { checked: null, issues: [], noCode: true };
     if (auditKind === 'design') {
       const fl = [...auditDesignFlow(meta.report, ticket, notes), ...auditDesignBugs(meta.report, bugsLib.bugs, `${ticket}\n${notes || ''}`, workDir), ...auditDesignConcrete(meta.report, workDir), ...auditDesignBusiness(meta.report)];
+      // Wyrocznia i śledzalność (lib/design-oracle.js): każde (src:) rozwiązane w źródłach, pokrycie technik policzone
+      // przez lib/test-techniques.js ze specyfikacji i z WORK_DIR/technique-models.json, sprzeczności z wyrocznią.
+      try {
+        const oracle = require('./design-oracle');
+        const ctx = oracle.context({ ticket, notes, workDir, specsDir: sources.SPECS_DIR, bugs: bugsLib.bugs, knowledgeDir: sources.knowledgeDir() });
+        const od = oracle.audit(meta.report, ctx);
+        meta.traceability = od.traceability;
+        meta.techniques = od.techniques;
+        fl.push(...od.issues);
+      } catch (e) { meta.traceability = { error: String(e && e.message || e) }; }
       if (fl.length) return { ...ev, noCode: false, issues: [...ev.issues, ...fl] };
     }
     return ev;

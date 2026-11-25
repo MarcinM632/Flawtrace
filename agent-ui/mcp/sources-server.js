@@ -123,5 +123,23 @@ serve({
         return { total: rows.length, endpoints: rows.slice(0, Math.min(Number(a.limit) || 100, 500)).map((e) => ({ name: e.name, method: e.method, path: e.path, group: e.groupLabel, summary: e.summary, params: e.params, body: e.body })) };
       },
     },
+    {
+      name: 'test_design_items',
+      description: 'Coverage items of the ISTQB test techniques, COMPUTED by the application (no model): equivalence partitions and boundary values from the constraints of the API specification (minimum, maximum, lengths, enum, required, format, type), and decision-table columns, state transitions and pairwise rows from rule models you give. Every item has a stable id to cite as "ci: <id>" in the check, its expected outcome and its oracle. It also lists gaps in the rules (a column no rule covers, contradicting rules, an unreachable state) — those go to "To confirm". Save the same models to WORK_DIR/technique-models.json: the application measures coverage from that file.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          endpoints: { type: 'array', items: { type: 'string' }, description: 'Endpoints as "METHOD /path" (e.g. "POST /orders"), or ["all"] for every write endpoint.' },
+          models: { type: 'array', items: { type: 'object' }, description: 'Rule models taken from the ticket / Confluence / code, each with "src". {kind:"decision-table", id, src, conditions:[{name} | {name, threshold, op:">="|">"|"<"|"<=", step?}], rules:[{when:{cond:true|false|"-"}, then:{action:value}}], infeasible?:[{cond:value}]} | {kind:"state-machine", id, src, initial, transitions:[{from, event, to}], states?, events?} | {kind:"pairwise", id, src, parameters:{name:[values]}} or {kind:"pairwise", id, endpoint:"POST /x", fields:[enum fields]}, excluded?:[{a:x, b:y}].' },
+          bva: { type: 'number', description: '2 (default, ISTQB 2-value BVA) or 3 (3-value BVA).' },
+        },
+      },
+      handler: async (a) => {
+        const tech = require('../lib/test-techniques');
+        const eps = Array.isArray(a.endpoints) && a.endpoints.length === 1 && /^all$/i.test(a.endpoints[0]) ? 'all' : (a.endpoints || []);
+        const res = tech.build({ docs: tech.loadDocs(SPECS_DIR), endpoints: eps, models: Array.isArray(a.models) ? a.models : [], bva: Number(a.bva) === 3 ? 3 : 2 });
+        return clip(tech.render(res));
+      },
+    },
   ],
 });
