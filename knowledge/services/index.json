@@ -1,0 +1,27 @@
+{
+  "api": {
+    "source": "api",
+    "kind": "api-spec",
+    "title": "Shop API",
+    "url": "",
+    "status": "ready",
+    "error": null,
+    "builtAt": 1795613732058,
+    "stats": {
+      "resources": 1,
+      "endpoints": 0
+    },
+    "counts": {
+      "overview": 1,
+      "components": 1,
+      "capabilities": 1,
+      "flows": 0,
+      "surfaces": 0,
+      "dataModel": 1,
+      "risks": 0,
+      "terms": 0,
+      "people": 0,
+      "references": 0
+    }
+  }
+}

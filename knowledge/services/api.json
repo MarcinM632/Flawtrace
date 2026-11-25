@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "source": "api",
+  "kind": "api-spec",
+  "title": "Shop API",
+  "url": "",
+  "builtAt": 1795613732058,
+  "status": "ready",
+  "error": null,
+  "stats": {
+    "resources": 1,
+    "endpoints": 0
+  },
+  "notes": {
+    "flows": "specyfikacja nie opisuje pełnego cyklu życia zasobu",
+    "risks": "ryzyka wykrywa silnik pentestowy, nie model API",
+    "people": "specyfikacja API nie zawiera właścicieli"
+  },
+  "sections": {
+    "overview": [
+      {
+        "text": "API z 1 zasobami.",
+        "ref": "/orders"
+      }
+    ],
+    "components": [
+      {
+        "name": "orders",
+        "detail": "/orders",
+        "ref": "/orders"
+      }
+    ],
+    "capabilities": [
+      {
+        "name": "orders",
+        "detail": "",
+        "ref": "/orders"
+      }
+    ],
+    "flows": [],
+    "surfaces": [],
+    "dataModel": [
+      {
+        "entity": "orders",
+        "detail": "",
+        "ref": "/orders"
+      }
+    ],
+    "risks": [],
+    "terms": [],
+    "people": [],
+    "references": []
+  },
+  "counts": {
+    "overview": 1,
+    "components": 1,
+    "capabilities": 1,
+    "flows": 0,
+    "surfaces": 0,
+    "dataModel": 1,
+    "risks": 0,
+    "terms": 0,
+    "people": 0,
+    "references": 0
+  }
+}

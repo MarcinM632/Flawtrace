@@ -36,6 +36,7 @@ const workspace = require('./lib/workspace');
 // Full tests: the whole flow of one task, driven on the server (lib/pipeline.js). Started after loadAll(), so known runs are known.
 const lessonsLib = require('./lib/lessons');
 const onboarding = require('./lib/onboarding').create({ sources, llm: require('./lib/llm'), knowledgeDir: () => sources.knowledgeDir(), dataDir: DATA_DIR, runs: () => [...runs.values()] });
+const knowledgeBase = require('./lib/kb-init').create({ sources, knowledgeDir: () => sources.knowledgeDir() });
 const fullTests = require('./lib/pipeline').create({
   lessons: { record: (x) => lessonsLib.record(sources.knowledgeDir(), x) },
   dir: path.join(DATA_DIR, 'fulltests'), runs, AGENTS, agentAvailable, startRun, autotestsFromRun, persistRun: persist, uiTest: uiTestLib,
@@ -359,7 +360,14 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req, 1e6);
       if (!b || b.__tooLarge) return json(res, 400, { error: 'Invalid settings' });
       { const bad = await require('./lib/hosted').checkSources(b); if (bad) return json(res, 400, { error: bad }); }
-      try { return json(res, 200, sources.save(b)); } catch (e) { return json(res, 400, { error: e.message }); }
+      try {
+        const before = sources.read();
+        const view = sources.save(b);
+        // Nowo podłączone lub zmienione źródło → inicjalizacja jednolitej bazy wiedzy w tle (nie blokuje odpowiedzi).
+        let kbInit = [];
+        try { kbInit = knowledgeBase.onSourcesSaved(before, sources.read()).enqueued; } catch (_) { /* best-effort */ }
+        return json(res, 200, { ...view, knowledgeInit: kbInit });
+      } catch (e) { return json(res, 400, { error: e.message }); }
     }
     if (req.method === 'POST' && p === '/api/sources/test') {
       try { return json(res, 200, await sources.test()); } catch (e) { return json(res, 500, { error: e.message }); }
@@ -374,6 +382,14 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && p === '/api/sources/knowledge') return json(res, 200, sources.knowledgeFiles());
     if (req.method === 'GET' && p === '/api/sources/app-model') return json(res, 200, sources.appModel());
+    // Jednolita baza wiedzy per serwis (knowledge-base.js): status, pojedynczy dokument, ręczna (prze)budowa.
+    if (req.method === 'GET' && p === '/api/knowledge/base') return json(res, 200, knowledgeBase.status());
+    if (req.method === 'GET' && p.startsWith('/api/knowledge/base/')) { const d = knowledgeBase.doc(decodeURIComponent(p.slice('/api/knowledge/base/'.length))); return d ? json(res, 200, d) : json(res, 404, { error: 'Brak bazy dla tego serwisu — podłącz go albo zbuduj.' }); }
+    if (req.method === 'POST' && p === '/api/knowledge/init') {
+      const b = await body(req, 1e5) || {};
+      knowledgeBase.initConnected({ only: b.source ? [b.source] : null }).catch(() => {});
+      return json(res, 202, knowledgeBase.status());
+    }
     // Jira data check: what Jira returns for each search the app uses, next to what the app has loaded so far.
     if (req.method === 'POST' && p === '/api/sources/jira/check') {
       const b = (await body(req, 1e4)) || {};

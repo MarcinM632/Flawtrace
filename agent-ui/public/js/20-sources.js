@@ -38,6 +38,22 @@ async function loadSources(){
     $('#srcKbMeta').textContent=k.files.length+' documents';
     $('#srcKbFiles').innerHTML=k.files.length?k.files.map(f=>`<span>${esc(f.path)}</span>`).join(''):'<div class="muted-note">The folder is empty. Add Markdown or text files that describe how the team tests.</div>';
   }).catch(()=>{});
+
+function kbBadge(st){return st==='ready'?'ok':st==='running'||st==='queued'?'warn':st==='error'?'bad':'muted';}
+function renderKb(d){
+  const box=$('#srcKbServices'); if(!box) return;
+  const svc=(d&&d.services)||[];
+  if(!svc.length){box.innerHTML='<div class="muted-note">No sources connected yet. Connect Jira, Confluence, a repository or an API spec above and the knowledge base builds itself.</div>';return;}
+  box.innerHTML=svc.map(s=>{
+    const c=Object.entries(s.counts||{}).filter(([,v])=>v).map(([k,v])=>`${k} ${v}`).join(', ');
+    const label={ready:'ready',running:'building…',queued:'queued',error:'error','not-built':'not built yet'}[s.status]||s.status;
+    return `<div class="chk ${kbBadge(s.status)}"><b>${esc(s.source)}</b> — ${esc(label)}${s.error?': '+esc(s.error):''}${c?`<div class="muted-note">${esc(c)}</div>`:''}</div>`;
+  }).join('');
+  if(svc.some(s=>s.status==='running'||s.status==='queued')){clearTimeout(KB_T);KB_T=setTimeout(loadKb,2500);}
+}
+let KB_T=0;
+function loadKb(){api('/api/knowledge/base').then(renderKb).catch(()=>{});}
+loadKb();
 }
 
 function renderSources(){
@@ -75,7 +91,8 @@ function srcForm(){
     knowledgeDir:$('#srcKbDir').value,
   };
 }
-async function srcSave(){SRC.data=await post('/api/sources',srcForm());SRC.specs=SRC.data.api.specs.map(s=>({...s}));SRC.repos=SRC.data.repos.map(r=>({...r}));renderSources();return SRC.data}
+async function srcSave(){SRC.data=await post('/api/sources',srcForm());SRC.specs=SRC.data.api.specs.map(s=>({...s}));SRC.repos=SRC.data.repos.map(r=>({...r}));renderSources();setTimeout(loadKb,400);return SRC.data}
+const _kbRebuild=$('#srcKbRebuild');if(_kbRebuild)_kbRebuild.onclick=async()=>{_kbRebuild.disabled=true;try{renderKb(await post('/api/knowledge/init',{}))}catch(e){}finally{_kbRebuild.disabled=false;setTimeout(loadKb,800)}};
 const srcResult=rows=>'<div class="src-res">'+rows.map(r=>`<div class="chk ${r.ok?'ok':'bad'}"><b>${esc(r.label||r.name)}</b>: ${esc(r.ok?(r.operations!=null?r.operations+' endpoints':r.message||'ready'):r.message)}</div>`).join('')+'</div>';
 const srcBusy=(btn,on,text)=>{btn.disabled=on;if(text)btn.textContent=text};
 

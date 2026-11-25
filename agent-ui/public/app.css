@@ -1981,3 +1981,5 @@ input:focus,textarea:focus,select:focus{border-color:var(--border-accent);box-sh
 
 /* Silnik pentestowy: własny panel pod przebiegami agenta, na całą szerokość siatki zakładki Pentest. */
 #view-pentest>#peBox{grid-column:1/-1}
+
+.src-sep{border:0;border-top:1px solid var(--line,#e5e7eb);margin:16px 0 12px}
