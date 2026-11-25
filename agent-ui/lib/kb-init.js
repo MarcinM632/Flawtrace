@@ -2,6 +2,8 @@
 // jednolitej bazy wiedzy dla tego serwisu — odpytuje go przez konektor, strukturyzuje dane i zapisuje dokument o stałym
 // kształcie (knowledge-base.js). Budowa idzie w tle (sieć), jest wznawialna i ma status per serwis. Każdy serwis to
 // osobny dokument o identycznych sekcjach, więc struktura agentów testujących opiera się na jednym kształcie.
+const fs = require('fs');
+const path = require('path');
 const kb = require('./knowledge-base');
 const adapters = require('./kb-adapters');
 
@@ -12,6 +14,10 @@ const adapters = require('./kb-adapters');
  */
 function create({ sources, knowledgeDir, now = Date.now }) {
   const jobs = new Map(); // source -> { status:'queued'|'running'|'ready'|'error', startedAt, builtAt, error, stats, counts }
+  // Jedna kolejka na WSZYSTKIE budowy: serwisy budują się po kolei, nigdy równocześnie — żeby pierwszy przebieg był
+  // porządny i uporządkowany, a dwa wyzwalacze (auto po zapisie Sources + ręczna przebudowa) nie deptały sobie po danych.
+  let chain = Promise.resolve();
+  const serialize = (fn) => { const next = chain.then(fn, fn); chain = next.then(() => {}, () => {}); return next; };
   const storeFor = () => kb.store(knowledgeDir());
   const mark = (source, patch) => { jobs.set(source, { ...(jobs.get(source) || {}), source, ...patch }); };
 
@@ -27,7 +33,8 @@ function create({ sources, knowledgeDir, now = Date.now }) {
   }
 
   /** Buduje jeden serwis przez jego adapter. Błąd nie wywraca całości — zapisuje dokument ze statusem 'error'. */
-  async function initService(source) {
+  function initService(source) { return serialize(() => buildService(source)); }
+  async function buildService(source) {
     const svc = connectedServices().find((s) => s.source === source);
     if (!svc) { const e = `serwis nie jest podłączony: ${source}`; mark(source, { status: 'error', error: e }); return { source, status: 'error', error: e }; }
     mark(source, { status: 'running', startedAt: now(), error: null });
@@ -58,16 +65,29 @@ function create({ sources, knowledgeDir, now = Date.now }) {
     return Promise.resolve(kb.emptyDoc({ source: svc.source, kind: svc.kind, now: t }));
   }
 
-  /** Buduje wszystkie podłączone serwisy po kolei (łagodnie dla sieci). force pomija nic — zawsze przebudowuje podane. */
-  async function initConnected({ only = null } = {}) {
-    const list = connectedServices().filter((s) => !only || only.includes(s.source));
-    for (const s of list) mark(s.source, { status: 'queued' });
-    const results = [];
-    for (const s of list) results.push(await initService(s.source));
-    // Serwisy, które zniknęły z konfiguracji (odłączone), usuwamy z bazy, żeby nie zostawały nieaktualne.
-    const now = new Set(connectedServices().map((s) => s.source));
-    for (const old of Object.keys(storeFor().readIndex())) if (!now.has(old)) { storeFor().remove(old); jobs.delete(old); }
-    return results;
+  /** Buduje wszystkie podłączone serwisy PO KOLEI (nigdy równolegle), zapisuje README struktury, sprząta odłączone. */
+  function initConnected({ only = null } = {}) {
+    return serialize(async () => {
+      const list = connectedServices().filter((s) => !only || only.includes(s.source));
+      for (const s of list) mark(s.source, { status: 'queued' });
+      const results = [];
+      for (const s of list) results.push(await buildService(s.source)); // jeden serwis na raz, wprost (już w kolejce)
+      // Serwisy, które zniknęły z konfiguracji (odłączone), usuwamy z bazy, żeby nie zostawały nieaktualne.
+      const nowSet = new Set(connectedServices().map((s) => s.source));
+      for (const old of Object.keys(storeFor().readIndex())) if (!nowSet.has(old)) { storeFor().remove(old); jobs.delete(old); }
+      writeReadme();
+      return results;
+    });
+  }
+
+  /** Krótki opis struktury w services/README.md, żeby układ był od razu zrozumiały. */
+  function writeReadme() {
+    try {
+      const idx = storeFor().readIndex();
+      const rows = Object.values(idx).map((d) => `- \`${kb.slug(d.source)}.md\` — ${d.title || d.source} (${d.kind}, stan ${d.status})`).join('\n') || '- (brak serwisów — podłącz źródło w Sources)';
+      const md = `# Baza wiedzy per serwis\n\nKażdy podłączony serwis (Jira, Confluence, repozytorium, API) ma TU jeden dokument o tej samej strukturze\nsekcji: ${kb.SECTION_KEYS.join(', ')}. Budowane automatycznie przy podłączeniu źródła, po kolei. Agenci testujący\nczytają te pliki tak jak resztę folderu wiedzy.\n\n## Serwisy\n\n${rows}\n`;
+      fs.writeFileSync(path.join(storeFor().dir, 'README.md'), md);
+    } catch (_) { /* best-effort */ }
   }
 
   /**

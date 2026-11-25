@@ -386,9 +386,10 @@ wireFileField('flow',{drop:'#flFileDrop',input:'#flFileInput',empty:'#flFileEmpt
 /* Light, dark or auto (follows the system). The saved choice is applied before first paint by the script in <head>; settings (23-settings.js) change it. */
 
 /* ---------- navigation ---------- */
-const VIEWS=['workspace','sources','onboarding','runs','qamcp','pentest','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','tools','doc','ai','autodoc','testproc'];
+const VIEWS=['workspace','sources','onboarding','runs','qamcp','pentest','uitest','autotest','fulltest','flow','runsummary','bugs','risk','tfmonitor','fix','structure','tools','doc','ai','autodoc','testproc'];
 const PAGE={
   workspace:['Workspace','Workspace','Your assigned Jira tasks ranked by priority and service risk, with a testing checklist for each.'],
+  structure:['Reference','Structure','Agents, their skills, the per-service knowledge base and the knowledge files — view the whole setup and edit the files the agents rely on.'],
   runs:['Agents','Ticket analyses','Run a QA agent on a ticket and review its findings.'],
   qamcp:['Agents','QA MCP','Run a test process on the configured test environment.'],
   pentest:['Agents','Pentest','Run a thorough, persistent penetration test of the connected test environment — recon, threat modelling, every OWASP WSTG / API Security Top 10 category, many bypass tactics per control, and findings chained into real attack paths.'],
@@ -438,6 +439,7 @@ function showTab(t){
   if(t==='autotest'){loadAutotestMeta();refreshAll();qPendingSync();atSetSub(AT_SUB)}
   if(t==='runs')refreshAll();
   if(t==='tfmonitor')loadMonitor();
+  if(t==='structure')loadStructure();
   if(t==='runsummary')loadRunSummary();
   if(t==='tools')loadTools();
   if(t==='sources')loadSources();

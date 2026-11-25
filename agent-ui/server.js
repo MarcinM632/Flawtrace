@@ -37,6 +37,8 @@ const workspace = require('./lib/workspace');
 const lessonsLib = require('./lib/lessons');
 const onboarding = require('./lib/onboarding').create({ sources, llm: require('./lib/llm'), knowledgeDir: () => sources.knowledgeDir(), dataDir: DATA_DIR, runs: () => [...runs.values()] });
 const knowledgeBase = require('./lib/kb-init').create({ sources, knowledgeDir: () => sources.knowledgeDir() });
+const structure = require('./lib/structure');
+const agentsLib = require('./lib/agents');
 const fullTests = require('./lib/pipeline').create({
   lessons: { record: (x) => lessonsLib.record(sources.knowledgeDir(), x) },
   dir: path.join(DATA_DIR, 'fulltests'), runs, AGENTS, agentAvailable, startRun, autotestsFromRun, persistRun: persist, uiTest: uiTestLib,
@@ -389,6 +391,30 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req, 1e5) || {};
       knowledgeBase.initConnected({ only: b.source ? [b.source] : null }).catch(() => {});
       return json(res, 202, knowledgeBase.status());
+    }
+    // Zakładka Struktura: pełny obraz (agenci, skille, baza per serwis, pliki wiedzy) i edycja plików wiedzy.
+    if (req.method === 'GET' && p === '/api/structure') return json(res, 200, structure.build({ agentsLib, agentsRoot: require('./lib/config').AGENTS_ROOT, knowledgeDir: sources.knowledgeDir(), kbStatus: knowledgeBase.status }));
+    if (p === '/api/knowledge/file') {
+      const kdir = sources.knowledgeDir();
+      if (req.method === 'GET') {
+        const rel = new URL(req.url, 'http://x').searchParams.get('path');
+        const abs = structure.safePath(kdir, rel);
+        if (!abs) return json(res, 400, { error: 'Zła ścieżka pliku.' });
+        try { return json(res, 200, { path: rel, content: require('fs').readFileSync(abs, 'utf8'), generated: /^(services|product|lessons)\//.test(rel) }); } catch (_) { return json(res, 404, { error: 'Plik nie istnieje.' }); }
+      }
+      if (req.method === 'PUT') {
+        const b = await body(req, 2e6);
+        if (!b || b.__tooLarge) return json(res, 413, { error: 'Plik jest za duży.' });
+        const abs = structure.safePath(kdir, b.path);
+        if (!abs) return json(res, 400, { error: 'Zła ścieżka pliku.' });
+        try { require('fs').mkdirSync(require('path').dirname(abs), { recursive: true }); require('fs').writeFileSync(abs, String(b.content == null ? '' : b.content)); return json(res, 200, { path: b.path, saved: true }); } catch (e) { return json(res, 500, { error: e.message }); }
+      }
+      if (req.method === 'DELETE') {
+        const b = await body(req, 1e5) || {};
+        const abs = structure.safePath(kdir, b.path);
+        if (!abs) return json(res, 400, { error: 'Zła ścieżka pliku.' });
+        try { require('fs').unlinkSync(abs); return json(res, 200, { path: b.path, deleted: true }); } catch (_) { return json(res, 404, { error: 'Plik nie istnieje.' }); }
+      }
     }
     // Jira data check: what Jira returns for each search the app uses, next to what the app has loaded so far.
     if (req.method === 'POST' && p === '/api/sources/jira/check') {

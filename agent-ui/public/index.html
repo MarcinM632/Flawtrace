@@ -72,6 +72,7 @@
     <button data-tab="risk"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Risk</span></button>
     <button data-tab="tfmonitor"><svg width="16" height="16"><use href="#i-gauge"/></svg><span class="lbl">Release monitoring</span></button>
     <div class="nav-group">Reference</div>
+    <button data-tab="structure"><svg width="16" height="16"><use href="#i-layers"/></svg><span class="lbl">Structure</span></button>
     <button data-tab="tools"><svg width="16" height="16"><use href="#i-term"/></svg><span class="lbl">Tools</span></button>
     <button data-tab="doc"><svg width="16" height="16"><use href="#i-book"/></svg><span class="lbl">Manual testing</span></button>
     <button data-tab="ai"><svg width="16" height="16"><use href="#i-chip"/></svg><span class="lbl">AI testing</span></button>
@@ -679,6 +680,18 @@ Log in, open Settings, change the display name and save. The new name must appea
         <div class="src-save src-check"><button type="button" class="btn" id="srcTest">Test connections</button><button type="button" class="btn" id="srcTry"><svg width="13" height="13"><use href="#i-play"/></svg>Run a check in QA MCP</button></div>
         <div id="srcTestOut"></div>
       </div>
+    </section>
+  </div>
+</main>
+
+<main id="view-structure" class="wide" hidden>
+  <div class="struct-wrap">
+    <aside class="struct-tree">
+      <div class="struct-actions"><button type="button" class="btn ghost sm" id="stRebuildKb" title="Rebuild the per-service knowledge base">Rebuild knowledge base</button><button type="button" class="btn ghost sm" id="stNewFile">New knowledge file</button></div>
+      <div id="stTree" class="struct-nav"></div>
+    </aside>
+    <section class="struct-detail panel">
+      <div id="stDetail" class="struct-detailb"><div class="muted-note">Pick an agent, a skill or a knowledge file on the left to see and manage it.</div></div>
     </section>
   </div>
 </main>
@@ -2679,6 +2692,7 @@ Log in, open Settings, change the display name and save. The new name must appea
 <script src="/js/18-release-watch.js"></script>
 <script src="/js/19-run-summary.js"></script>
 <script src="/js/20-sources.js"></script>
+<script src="/js/30-structure.js"></script>
 <script src="/js/21-setup.js"></script>
 <script src="/js/21a-setup-ai.js"></script>
 <script src="/js/22-uitest.js"></script>
