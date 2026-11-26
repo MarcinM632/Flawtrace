@@ -338,14 +338,88 @@ function pairwise(model, docs) {
   return { items, problems, pairs: totalPairs, exhaustive };
 }
 
+/* ------------------------------------------------ formularze UI ------------------------------------------------ */
+// Ograniczenia pól formularza z jego kodu: HTML (maxlength="50", required, min/max/step, pattern, type, <select>) i JSX
+// (maxLength={50}, required, min={1}). Wynik ma kształt pól endpointu, więc EP/BVA liczą się tak samo jak dla API.
+const ATTR_RE = /([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*["']?([^}"']*)["']?\s*\}|([^\s>]+)))?/g;
+function attrs(tag) {
+  const out = {};
+  const body = tag.replace(/^<\s*[\w-]+/, '').replace(/\/?>$/, '');
+  for (const m of body.matchAll(ATTR_RE)) {
+    const k = m[1].toLowerCase();
+    const v = m[2] ?? m[3] ?? m[4] ?? m[5];
+    out[k] = v === undefined ? true : v;
+  }
+  return out;
+}
+const num = (v) => (v === undefined || v === true || v === '' || isNaN(Number(v)) ? undefined : Number(v));
+/** Pola formularza z jego kodu: [{ name, in:'form', required, type, minimum, maximum, multipleOf, minLength, maxLength, pattern, format, enum }] */
+function formFields(html) {
+  const src = String(html || '');
+  const fields = [];
+  const seen = new Set();
+  const add = (f) => { if (!f.name || seen.has(f.name)) return; seen.add(f.name); fields.push(f); };
+  // <input>, <textarea> i komponenty JSX z nazwą pola (<TextField name=... inputProps={{ maxLength: 20 }} />).
+  for (const m of src.matchAll(/<\s*(input|textarea|[A-Z][\w.]*)\b(?:[^>{]|\{\{[^}]*\}\}|\{[^}]*\})*>/g)) {
+    const a = attrs(m[0].replace(/\{\{[^}]*\}\}/g, '""'));
+    const isComp = /^[A-Z]/.test(m[1]);
+    if (isComp && !a.name) continue;
+    // inputProps={{ maxLength: 20, min: 1 }} i podobne obiekty w JSX: klucze ograniczeń wprost z obiektu.
+    for (const o of m[0].matchAll(/\b(maxLength|minLength|min|max|step|pattern)\s*:\s*["']?([^,}"']+)["']?/g)) a[o[1].toLowerCase()] = o[2].trim();
+    if (isComp && /select/i.test(m[1]) && !a.type) a.type = 'text';
+    const name = a.name || a.id || a['data-testid'] || a['aria-label'];
+    if (!name || name === true) continue;
+    const t = String(m[1].toLowerCase() === 'textarea' ? 'textarea' : (a.type && a.type !== true ? a.type : 'text')).toLowerCase();
+    if (/^(hidden|submit|button|reset|image|file|radio)$/.test(t)) continue;
+    const req = a.required !== undefined && a.required !== 'false';
+    const base = { name: String(name), in: 'form', required: req };
+    if (t === 'checkbox') { add({ ...base, type: 'boolean' }); continue; }
+    if (t === 'number' || t === 'range') {
+      const st = num(a.step);
+      add({ ...base, type: st != null && !Number.isInteger(st) ? 'number' : 'integer', minimum: num(a.min), maximum: num(a.max), ...(st != null && !Number.isInteger(st) ? { multipleOf: st } : {}) });
+      continue;
+    }
+    const format = { email: 'email', url: 'url', date: 'date', 'datetime-local': 'date-time' }[t];
+    add({ ...base, type: 'string', minLength: num(a.minlength), maxLength: num(a.maxlength), ...(a.pattern && a.pattern !== true ? { pattern: a.pattern } : {}), ...(format ? { format } : {}) });
+  }
+  for (const m of src.matchAll(/<\s*select\b([^>]*)>([\s\S]*?)<\/\s*select\s*>/gi)) {
+    const a = attrs('<select' + m[1] + '>');
+    const name = a.name || a.id || a['data-testid'];
+    if (!name || name === true) continue;
+    const opts = [...m[2].matchAll(/<\s*option\b([^>]*)>([^<]*)/gi)].map((o) => { const oa = attrs('<option' + o[1] + '>'); return oa.value !== undefined && oa.value !== true ? String(oa.value) : o[2].trim(); }).filter((v) => v !== '');
+    add({ name: String(name), in: 'form', required: a.required !== undefined && a.required !== 'false', type: 'string', ...(opts.length ? { enum: opts } : {}) });
+  }
+  // Pola bez żadnego ograniczenia nie dają elementów pokrycia poza "valid" — zostawiamy tylko te z ograniczeniem.
+  return fields.filter((f) => f.required || f.enum || f.type === 'boolean' || ['minimum', 'maximum', 'minLength', 'maxLength', 'format'].some((k) => f[k] !== undefined));
+}
+/** Elementy EP/BVA formularza: identyfikatory "EP:form-<nazwa>:<pole>:<partycja>". Oczekiwany wynik "reject" znaczy
+ * w UI: formularz nie zostaje wysłany albo pokazuje błąd walidacji, a dane nie są zapisane. */
+function formItems(name, html, { bva = 2 } = {}) {
+  const ep = 'form-' + idSlug(name);
+  const items = [];
+  for (const f of formFields(html)) for (const it of fieldItems(`form ${name}`, ep, f, { bva })) {
+    // Typów, których przeglądarka nie pozwoli wpisać w pole (obiekt w polu tekstowym, tekst w polu liczbowym), w UI
+    // nie da się przetestować: zostają tylko partycje możliwe do wpisania.
+    if (it.label === 'wrong-type' || it.label === 'null') continue;
+    items.push({ ...it, oracle: it.oracle.replace(/^spec:form [^#]+/, `form:${name}`), ui: true });
+  }
+  return items;
+}
+
 /* ------------------------------------------------ złożenie ------------------------------------------------ */
 /**
  * Liczy elementy pokrycia.
  * @param {object} o  { docs: [dokumenty OpenAPI], endpoints: ['POST /orders', ...] | 'all', models: [...], bva: 2|3 }
  * @returns {{ items, targets, problems, notes }}
  */
-function build({ docs = [], endpoints = [], models = [], bva = 2 } = {}) {
+function build({ docs = [], endpoints = [], models = [], bva = 2, forms = [] } = {}) {
   const items = [], problems = [], notes = [];
+  for (const fm of forms || []) {
+    if (!fm || !fm.html) continue;
+    const its = formItems(fm.name || 'form', fm.html, { bva });
+    if (!its.length) notes.push(`form "${fm.name || 'form'}": no field with a constraint (required, min/max, length, type, options) in its code`);
+    items.push(...its);
+  }
   const want = endpoints === 'all' ? operations(docs).filter((o) => o.method !== 'GET' && o.method !== 'DELETE').map((o) => `${o.method} ${o.path}`) : (endpoints || []);
   for (const ref of want) {
     const o = findOperation(docs, ref);
@@ -363,7 +437,9 @@ function build({ docs = [], endpoints = [], models = [], bva = 2 } = {}) {
   for (const m of models || []) {
     if (!m || typeof m !== 'object') continue;
     const kind = String(m.kind || '').toLowerCase();
-    const res = /decision/.test(kind) ? decisionTable(m) : /state/.test(kind) ? stateMachine(m) : /pair/.test(kind) ? pairwise(m, docs) : { items: [], problems: [`model "${m.id || '?'}": unknown kind "${m.kind}" (decision-table, state-machine, pairwise)`] };
+    const res = /decision/.test(kind) ? decisionTable(m) : /state/.test(kind) ? stateMachine(m) : /pair/.test(kind) ? pairwise(m, docs)
+      : /form/.test(kind) ? { items: formItems(m.id || 'form', m.html || '', { bva }), problems: m.html ? [] : [`form "${m.id || '?'}": no "html" (the code of the form)`] }
+      : { items: [], problems: [`model "${m.id || '?'}": unknown kind "${m.kind}" (decision-table, state-machine, pairwise, form)`] };
     items.push(...res.items);
     problems.push(...res.problems);
     if (res.pairs != null) notes.push(`pairwise "${idSlug(m.id)}": ${res.items.length} rows cover all ${res.pairs} pairs (exhaustive would be ${res.exhaustive})`);
@@ -410,7 +486,7 @@ function coverage(res, cited, excused = new Set()) {
 /** Tekst dla agenta: elementy pokrycia pogrupowane po celu, z oczekiwanym wynikiem i wyrocznią. */
 function render(res) {
   const fmt = (v) => (v === undefined ? '' : typeof v === 'string' ? JSON.stringify(v.length > 40 ? v.slice(0, 20) + `…(${v.length} chars)` : v) : JSON.stringify(v));
-  const exp = (it) => (it.expect === 'accept' ? 'accepted' : it.expect === 'reject' ? 'rejected (4xx, nothing stored)' : it.expect === 'unknown' ? 'UNKNOWN — no rule in the source (To confirm)' : it.expect.state ? `state becomes "${it.expect.state}"` : it.expect.action ? Object.entries(it.expect.action).map(([k, v]) => `${k} = ${v}`).join(', ') : JSON.stringify(it.expect));
+  const exp = (it) => (it.expect === 'accept' ? (it.ui ? 'the form is submitted and the value saved as typed' : 'accepted') : it.expect === 'reject' ? (it.ui ? 'a validation message, the form is not submitted, nothing saved' : 'rejected (4xx, nothing stored)') : it.expect === 'unknown' ? 'UNKNOWN — no rule in the source (To confirm)' : it.expect.state ? `state becomes "${it.expect.state}"` : it.expect.action ? Object.entries(it.expect.action).map(([k, v]) => `${k} = ${v}`).join(', ') : JSON.stringify(it.expect));
   const out = [];
   const groups = {};
   for (const it of res.items) (groups[it.target] = groups[it.target] || []).push(it);
@@ -444,6 +520,6 @@ function loadModels(workDir) {
 
 module.exports = {
   TECH, build, coverage, render, ciRefs, targetOf, loadDocs, loadModels,
-  endpointFields, findOperation, operations, validValue, range, epSlug,
+  endpointFields, findOperation, operations, validValue, range, epSlug, formFields, formItems,
   decisionTable, stateMachine, pairwise, fieldItems,
 };

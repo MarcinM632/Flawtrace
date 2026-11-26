@@ -120,3 +120,30 @@ test('pokrycie: przywołane, świadomie pominięte, brakujące i nieznane identy
   assert.deepEqual(t.ciRefs('(src: SHOP-1; ci: BVA:post-orders:quantity:max+1, DT:discount:3, ST:order:paid+ship)'), ['BVA:post-orders:quantity:max+1', 'DT:discount:3', 'ST:order:paid+ship']);
   assert.ok(t.render(r).includes('`BVA:post-orders:quantity:max+1` quantity=101 → rejected'));
 });
+
+test('formularze UI: ograniczenia z HTML i JSX, partycje możliwe do wpisania, formularz jako model, podpowiedzi dla testu UI', async () => {
+  const html = '<form><input name="qty" type="number" min="1" max="100" required><input type="email" name="email" required>'
+    + '<textarea name="note" maxlength="50"></textarea><select name="currency" required><option value="">--</option><option value="PLN">PLN</option><option>EUR</option></select>'
+    + '<input type="hidden" name="csrf" value="x"><input name="free"><button type="submit">Save</button></form>';
+  const f = t.formFields(html);
+  assert.deepEqual(f.map((x) => x.name), ['qty', 'email', 'note', 'currency']); // hidden i pole bez ograniczeń pominięte
+  assert.deepEqual(f.find((x) => x.name === 'currency').enum, ['PLN', 'EUR']);
+  const jsx = t.formFields('<TextField name="customerId" required inputProps={{ maxLength: 20 }} /><input name="price" type="number" step="0.01" min={0} max={999.99} />');
+  assert.deepEqual(jsx.map((x) => [x.name, x.maxLength, x.maximum, x.multipleOf]), [['customerId', 20, undefined, undefined], ['price', undefined, 999.99, 0.01]]);
+  const items = t.formItems('order', html);
+  assert.ok(items.some((x) => x.id === 'BVA:form-order:qty:max+1' && x.value === 101 && x.expect === 'reject' && x.ui));
+  assert.ok(!items.some((x) => /:(wrong-type|null)$/.test(x.id)), 'w UI nie da się wpisać obiektu ani null');
+  assert.ok(items.some((x) => x.id === 'EP:form-order:email:bad-format'));
+  // Formularz zapisany w technique-models.json liczy się w audycie jak każdy model.
+  const viaModel = t.build({ models: [{ kind: 'form', id: 'order', src: 'web/OrderForm.tsx:12', html }] });
+  assert.deepEqual(viaModel.items.map((x) => x.id), items.map((x) => x.id));
+  assert.match(t.render(viaModel), /qty=101 → a validation message, the form is not submitted, nothing saved/);
+  // Test UI: aplikacja czyta formularz ze strony startowej i dokłada wartości do promptu agenta.
+  const ui = require('../lib/uitest');
+  const fakeFetch = async () => ({ ok: true, headers: { get: () => 'text/html; charset=utf-8' }, text: async () => `<html><body>${html}</body></html>` });
+  const hints = await ui.formHints('https://shop.example.com/order', { fetchImpl: fakeFetch });
+  assert.match(hints, /`BVA:form-order:qty:max\+1` qty=101/);
+  assert.match(ui.uiPrompt({ goal: 'Order validation', url: 'https://shop.example.com/order', forms: hints }), /FORM CONSTRAINTS ON THE START PAGE[\s\S]*BVA:form-order:qty:max\+1/);
+  assert.equal(await ui.formHints('https://spa.example.com/', { fetchImpl: async () => ({ ok: true, headers: { get: () => 'text/html' }, text: async () => '<div id="root"></div>' }) }), '');
+  assert.equal(await ui.formHints('https://x.example.com/', { fetchImpl: async () => { throw new Error('offline'); } }), '');
+});

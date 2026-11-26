@@ -132,12 +132,13 @@ serve({
           endpoints: { type: 'array', items: { type: 'string' }, description: 'Endpoints as "METHOD /path" (e.g. "POST /orders"), or ["all"] for every write endpoint.' },
           models: { type: 'array', items: { type: 'object' }, description: 'Rule models taken from the ticket / Confluence / code, each with "src". {kind:"decision-table", id, src, conditions:[{name} | {name, threshold, op:">="|">"|"<"|"<=", step?}], rules:[{when:{cond:true|false|"-"}, then:{action:value}}], infeasible?:[{cond:value}]} | {kind:"state-machine", id, src, initial, transitions:[{from, event, to}], states?, events?} | {kind:"pairwise", id, src, parameters:{name:[values]}} or {kind:"pairwise", id, endpoint:"POST /x", fields:[enum fields]}, excluded?:[{a:x, b:y}].' },
           bva: { type: 'number', description: '2 (default, ISTQB 2-value BVA) or 3 (3-value BVA).' },
+          forms: { type: 'array', items: { type: 'object' }, description: 'UI forms: [{name, html}] with the code of the form from the frontend repository (HTML or JSX: required, min/max/step, minlength/maxlength, pattern, type, <select> options). Gives EP/BVA items for the form fields ("EP:form-<name>:<field>:..."). Save it to technique-models.json as {"kind":"form", "id":<name>, "src":"<file:line>", "html":...} so the app can measure coverage.' },
         },
       },
       handler: async (a) => {
         const tech = require('../lib/test-techniques');
         const eps = Array.isArray(a.endpoints) && a.endpoints.length === 1 && /^all$/i.test(a.endpoints[0]) ? 'all' : (a.endpoints || []);
-        const res = tech.build({ docs: tech.loadDocs(SPECS_DIR), endpoints: eps, models: Array.isArray(a.models) ? a.models : [], bva: Number(a.bva) === 3 ? 3 : 2 });
+        const res = tech.build({ docs: tech.loadDocs(SPECS_DIR), endpoints: eps, models: Array.isArray(a.models) ? a.models : [], bva: Number(a.bva) === 3 ? 3 : 2, forms: Array.isArray(a.forms) ? a.forms : [] });
         return clip(tech.render(res));
       },
     },

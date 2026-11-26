@@ -19,6 +19,10 @@ When a business rule has the shape of a technique, write it as a model. Take eve
   `{"kind":"pairwise","id":"quote","src":"PRJ-12","parameters":{"shipping":["standard","express"],"country":["PL","DE"]}}`
   Or `{"kind":"pairwise","id":"quote","endpoint":"POST /quotes","fields":["shipping","country"]}`, which takes the values from the enums of the specification.
 
+- UI form (fields with limits on a screen):
+  `{"kind":"form","id":"order","src":"web/src/OrderForm.tsx:12","html":"<input name=\"qty\" type=\"number\" min=\"1\" max=\"100\" required>…"}`
+  Copy the code of the form from the frontend repository (HTML or JSX). The application reads `required`, `min`/`max`/`step`, `minlength`/`maxlength`, `pattern`, the input type and the `<select>` options. It then gives EP/BVA items like `BVA:form-order:qty:max+1`. In the UI, "rejected" means a validation message, the form is not submitted and nothing is saved.
+
 Add `"quote"`: the sentence of the source that states the rule, copied word for word. The application checks the model against its source:
 - every threshold, rule result, state name and parameter value must appear in the quote, or in the source when there is no quote;
 - the quote must appear in the source word for word, when the application has the text of that source.
