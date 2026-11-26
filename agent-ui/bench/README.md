@@ -84,3 +84,39 @@ Regresję pilnuje `test/functional-bench.test.js`.
   niewykrywalny dla wyroczni — i dobrze, bo inaczej silnik by zgadywał. Takie miejsca muszą trafić do „To confirm”.
 - **Modele reguł są poprawne z założenia.** Gdy agent źle przepisze regułę z ticketu do modelu, silnik policzy
   poprawne elementy dla złej reguły. Dlatego każdy model ma `src`, a weryfikator sprawdza go ze źródłem.
+
+---
+
+# Benchmark agenta Test design
+
+Benchmark silnika mierzy część deterministyczną. Ten mierzy **agenta**: czy z ticketu wyciąga reguły, czy jego
+oczekiwane wyniki są poprawne, czy pyta o luki w wymaganiu zamiast je domyślać.
+
+```
+node bench/design-bench.js --live http://localhost:3000     # prawdziwe przebiegi agenta przez API serwera
+node bench/design-bench.js --reports <katalog>              # ocena gotowych raportów <katalog>/<przypadek>.md
+node bench/design-bench.js --spec > shop.json               # specyfikacja sklepu do zaimportowania w Sources
+```
+
+Przypadki (`bench/design-cases.js`) to cztery tickety sklepu z `bench/shop-app.js`:
+- walidacja zamówienia (EP/BVA),
+- rabaty (tablica decyzyjna),
+- cykl życia zamówienia (przejścia stanów),
+- wycena wysyłki (pairwise).
+
+**Każdy ma celową lukę**, np. ticket nie mówi, jaki rabat dostaje klient zwykły poniżej 100 PLN, albo nie podaje cennika. Wzorzec każdego przypadku zawiera:
+- **reguły**, które projekt musi przetestować (check o pasującej akcji i wyniku),
+- **błędne wyniki** (check o właściwej akcji z wynikiem sprzecznym z wymaganiem),
+- **luki**, które muszą trafić do „To confirm”,
+- **wartości, których wymaganie nie podaje** — check, który je twierdzi, wymyślił wynik.
+
+Dodatkowo na tym samym raporcie działa audyt wyroczni aplikacji (źródła, sprzeczności, pokrycie technik).
+
+Wynik łączny: 60% za pokryte reguły, 40% za zgłoszone luki, minus kara za każdy błędny lub wymyślony wynik. Fałszywy
+wynik testu jest gorszy niż brak testu, więc dodatkowe checki go nie nadrabiają. Wzorcowe raporty
+(`bench/design-reference/`) dostają 100, co dowodzi, że wzorzec da się spełnić. `test/design-bench.test.js` pilnuje,
+że typowe błędy agenta obniżają wynik.
+
+**Czego jeszcze nie ma:** zmierzonego wyniku prawdziwego agenta. Wymaga działającego modelu i zaimportowanej
+specyfikacji sklepu, czyli przebiegu `--live` na skonfigurowanej instancji. To pierwsza liczba do zebrania przed
+każdą zmianą promptów: uruchomić przed zmianą i po niej, a potem porównać.
