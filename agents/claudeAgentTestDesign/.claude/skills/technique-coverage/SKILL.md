@@ -19,6 +19,12 @@ When a business rule has the shape of a technique, write it as a model. Take eve
   `{"kind":"pairwise","id":"quote","src":"PRJ-12","parameters":{"shipping":["standard","express"],"country":["PL","DE"]}}`
   Or `{"kind":"pairwise","id":"quote","endpoint":"POST /quotes","fields":["shipping","country"]}`, which takes the values from the enums of the specification.
 
+Add `"quote"`: the sentence of the source that states the rule, copied word for word. The application checks the model against its source:
+- every threshold, rule result, state name and parameter value must appear in the quote, or in the source when there is no quote;
+- the quote must appear in the source word for word, when the application has the text of that source.
+
+A value the source does not state (you assumed "no discount" for the last column) is a gap. Put it in "To confirm" instead of the model.
+
 Save all models with Write to `WORK_DIR/technique-models.json` (a JSON array). The application measures coverage from this file. A model that is only in your head is not measured.
 
 ## 2. Get the items

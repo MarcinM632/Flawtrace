@@ -147,6 +147,74 @@ function resolveSrc(src, ctx) {
   return rest.split(/[;,]/).map((p) => resolveRef(p, ctx)).filter(Boolean);
 }
 
+/* ------------------------------------------------ weryfikacja modeli reguł ------------------------------------------------ */
+// Model reguł to przepisanie wymagania. Gdy agent przepisze je źle (próg 150 zamiast 100), silnik policzy poprawne
+// testy dla złej reguły — dlatego każda wartość modelu musi wystąpić w źródle, które model cytuje (jak cytat w pentestach).
+const numRe = (n) => { const [i, d] = String(n).split('.'); return new RegExp(`(^|[^\\d.,])${i}(?:[.,]${d ? d + '0*' : '0+'})${d ? '' : '?'}(?![\\d])`); };
+const ZERO = /\b(no|none|zero|without|free|brak\w*|bez|żadn\w*|nie ma)\b/i;
+/** Tekst źródła modelu: { text } albo { unchecked: powód }. */
+function modelSourceText(src, ctx) {
+  const refs = String(src || '').split(/[;,]/).map((x) => x.trim()).filter(Boolean);
+  if (!refs.length) return { missing: true };
+  const texts = [];
+  for (const r of refs) {
+    const res = resolveRef(r, ctx);
+    if (!res) continue;
+    if (res.status === 'unresolved') return { unresolved: `${r}${res.why ? ' (' + res.why + ')' : ''}` };
+    if (res.kind === 'ticket' || res.kind === 'bug' || (res.kind === 'confluence' && res.status === 'resolved')) texts.push(ctx.texts);
+    else if (res.kind === 'kb') { const m = r.match(/^kb:\s*([\w.\-]+)/i); texts.push(JSON.stringify(ctx.kb[m[1].toLowerCase()] || {})); }
+    else if (res.kind === 'spec') texts.push(JSON.stringify(ctx.docs));
+  }
+  return texts.length ? { text: texts.join('\n') } : { unchecked: true };
+}
+function valueInText(v, text) {
+  if (typeof v === 'boolean' || v == null) return true;
+  if (typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(String(v))) {
+    if (Number(v) === 0) return numRe(0).test(text) || ZERO.test(text);
+    return numRe(Number(v)).test(text);
+  }
+  const w = String(v).trim();
+  if (has(text, w)) return true;
+  // Słowo w innej formie gramatycznej ("shipped" / "shipping", "anulowane" / "anulowanie"): wspólny rdzeń ≥ 5 znaków.
+  return w.length >= 6 && new RegExp(`\\b${w.slice(0, Math.max(5, w.length - 3)).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(text);
+}
+/** Wartości modelu, które muszą wystąpić w źródle: [opis, wartość]. */
+function modelValues(m) {
+  const k = String(m.kind || '');
+  const out = [];
+  if (/decision/.test(k)) {
+    for (const c of m.conditions || []) if (c.threshold != null) out.push([`threshold of "${c.name}"`, c.threshold]);
+    for (const c of m.conditions || []) for (const v of c.values || []) if (typeof v !== 'boolean') out.push([`value "${v}" of "${c.name}"`, v]);
+    (m.rules || []).forEach((r, i) => { for (const [a, v] of Object.entries(r.then || {})) out.push([`result ${a}=${v} of rule ${i + 1}`, v]); });
+  } else if (/state/.test(k)) {
+    const states = [...new Set([m.initial, ...(m.transitions || []).flatMap((t) => [t.from, t.to])].filter(Boolean))];
+    for (const st of states) out.push([`state "${st}"`, st]);
+  } else if (/pair/.test(k) && !m.endpoint) {
+    for (const [p, vs] of Object.entries(m.parameters || {})) for (const v of vs || []) out.push([`value "${v}" of "${p}"`, v]);
+  }
+  return out;
+}
+function verifyModels(ctx) {
+  const issues = [];
+  const report = [];
+  for (const m of ctx.models || []) {
+    const id = m.id || '?';
+    const src = modelSourceText(m.src, ctx);
+    if (src.missing) { issues.push(`model "${id}" has no "src" — a rule without a source cannot be checked`); report.push({ id, status: 'no-source' }); continue; }
+    if (src.unresolved) { issues.push(`model "${id}": its source ${src.unresolved} cannot be found`); report.push({ id, status: 'unresolved' }); continue; }
+    const norm = (x) => String(x || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    // "quote": dosłowny fragment źródła z regułą. Wartości sprawdzane w nim (precyzyjnie: w tym zdaniu, nie gdziekolwiek
+    // w tickecie), a sam cytat — w źródle, gdy aplikacja ma jego tekst.
+    if (m.quote && src.text && !norm(src.text).includes(norm(m.quote))) { issues.push(`model "${id}": its quote is not in ${m.src} word for word`); report.push({ id, status: 'quote-mismatch' }); continue; }
+    const where = m.quote ? String(m.quote) : src.text;
+    if (!where) { report.push({ id, status: 'unchecked' }); continue; }
+    const miss = modelValues(m).filter(([, v]) => !valueInText(v, where)).map(([d]) => d);
+    if (miss.length) issues.push(`model "${id}" (src: ${m.src}): ${miss.slice(0, 6).join('; ')}${miss.length > 6 ? `; … (${miss.length})` : ''} — not found in ${m.quote ? 'its quote' : 'that source'}`);
+    report.push({ id, status: miss.length ? 'mismatch' : 'verified', missing: miss });
+  }
+  return { issues, report };
+}
+
 /* ------------------------------------------------ porównanie z wyrocznią ------------------------------------------------ */
 function contradiction(item, expected) {
   const e = String(expected || '');
@@ -232,13 +300,17 @@ function audit(report, ctx) {
   });
   if (gaps.length) issues.push({ code: 'requirement-gap', items: gaps, text: `The rules from technique-models.json have gaps that are not in "To confirm": ${gaps.slice(0, 5).join(' | ')}` });
 
+  // Modele reguł zgodne ze źródłem, które cytują.
+  const mv = verifyModels(ctx);
+  if (mv.issues.length) issues.push({ code: 'model-unverified', items: mv.issues, text: `${mv.issues.length} rule model(s) in technique-models.json do not match their source: ${mv.issues.slice(0, 4).join(' | ')}` });
+
   const byKind = {};
   for (const r of rows) for (const s of r.sources) byKind[s.kind] = (byKind[s.kind] || 0) + 1;
   const traceability = {
     rows, businessCases: d.businessCases,
     summary: { checks: rows.length, traced: rows.filter((r) => r.status === 'traced').length, unresolved: rows.filter((r) => r.status === 'unresolved').length, noSource: noSrc.length, withItems: rows.filter((r) => r.items.length).length, byKind },
   };
-  const techniques = { available: avail, byTechnique: cov.byTechnique, targets: cov.targets, problems: res.problems, models: ctx.models.length };
+  const techniques = { available: avail, byTechnique: cov.byTechnique, targets: cov.targets, problems: res.problems, models: ctx.models.length, modelCheck: mv.report };
   return { issues, traceability, techniques };
 }
 
@@ -251,4 +323,4 @@ function traceabilityCsv(t) {
   return lines.join('\n');
 }
 
-module.exports = { audit, parse, context, resolveRef, resolveSrc, contradiction, traceabilityCsv };
+module.exports = { audit, parse, context, resolveRef, resolveSrc, contradiction, traceabilityCsv, verifyModels, valueInText };

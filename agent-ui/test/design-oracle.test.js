@@ -18,7 +18,8 @@ const kbDir = () => {
   fs.writeFileSync(path.join(d, 'services', 'shop.json'), JSON.stringify({ source: 'shop', sections: { capabilities: { items: [{ name: 'orders' }] }, risks: { items: [] } } }));
   return d;
 };
-const ctx = (extra = {}) => o.context({ ticket: 'SHOP-1 Orders with a discount', docs: [doc], models, bugs: [{ source: 'jira:SHOP-7' }], knowledgeDir: kbDir(), ...extra });
+const TICKET = 'SHOP-1 Orders with a discount: a premium customer with a total of 100 or more gets 10%, below 100 gets 5%; other customers get 5% from 100.';
+const ctx = (extra = {}) => o.context({ ticket: TICKET, docs: [doc], models, bugs: [{ source: 'jira:SHOP-7' }], knowledgeDir: kbDir(), ...extra });
 const codes = (r) => r.issues.map((i) => i.code).sort();
 
 const GOOD = `SHOP-1 — Orders
@@ -111,8 +112,35 @@ test('modele z WORK_DIR/technique-models.json i teksty z WORK_DIR rozwiązują o
   const wd = fs.mkdtempSync(path.join(os.tmpdir(), 'oracle-wd-'));
   fs.writeFileSync(path.join(wd, 'technique-models.json'), JSON.stringify(models));
   fs.writeFileSync(path.join(wd, 'ticket.md'), 'Subtask SHOP-2: express shipping');
-  const c = o.context({ ticket: 'SHOP-1', workDir: wd, docs: [doc] });
+  const c = o.context({ ticket: TICKET, workDir: wd, docs: [doc] });
   assert.equal(c.models.length, 1);
   assert.equal(o.resolveRef('SHOP-2', c).status, 'resolved');
   assert.equal(o.resolveRef('SHOP-3', c).status, 'unresolved');
+});
+
+test('model reguł niezgodny ze źródłem: zły próg i wymyślony wynik wracają do agenta; poprawny przechodzi', () => {
+  const wrong = [{ ...models[0], conditions: [{ name: 'premium' }, { name: 'total', threshold: 150, op: '>=' }], rules: [...models[0].rules.slice(0, 2), { when: { premium: false, total: true }, then: { discount: 7 } }] },
+    { kind: 'state-machine', id: 'order', src: 'SHOP-1', initial: 'created', transitions: [{ from: 'created', event: 'pay', to: 'paid' }] },
+    { kind: 'pairwise', id: 'p', parameters: { a: ['x', 'y'], b: ['1', '2'] } }];
+  const r = o.audit(GOOD, ctx({ models: wrong }));
+  const m = r.issues.find((i) => i.code === 'model-unverified');
+  assert.ok(m, JSON.stringify(r.issues.map((i) => i.code)));
+  assert.match(m.items[0], /model "discount".*threshold of "total".*result discount=7 of rule 3.*not found/);
+  assert.match(m.items[1], /model "order".*state "created".*state "paid"/);
+  assert.match(m.items[2], /model "p" has no "src"/);
+  assert.deepEqual(r.techniques.modelCheck.map((x) => x.status), ['mismatch', 'mismatch', 'no-source']);
+  assert.match(require('../lib/report-format').correctionPrompt('design', r.issues), /MODELE REGUŁ/);
+  assert.deepEqual(o.audit(GOOD, ctx()).techniques.modelCheck, [{ id: 'discount', status: 'verified', missing: [] }]);
+  // Źródło, którego nie da się przeczytać (strona Confluence nie zapisana), nie jest zarzutem.
+  assert.equal(o.verifyModels(o.context({ models: [{ ...models[0], src: 'conf:Discount rules' }] })).report[0].status, 'unchecked');
+});
+
+test('cytat modelu: wartości sprawdzane w cytacie, cytat musi stać w źródle słowo w słowo', () => {
+  const quote = 'a premium customer with a total of 100 or more gets 10%, below 100 gets 5%; other customers get 5% from 100.';
+  assert.equal(o.verifyModels(ctx({ models: [{ ...models[0], quote }] })).report[0].status, 'verified');
+  const fake = o.verifyModels(ctx({ models: [{ ...models[0], quote: 'premium customers get 10% from 100' }] }));
+  assert.equal(fake.report[0].status, 'quote-mismatch');
+  // Cytat z Confluence (strona niezapisana): sprawdzamy przynajmniej wartości w samym cytacie.
+  const conf = o.verifyModels(o.context({ models: [{ ...models[0], src: 'conf:Discount rules', quote: 'premium from 100 gets 10%, otherwise 5%' }] }));
+  assert.equal(conf.report[0].status, 'verified');
 });
