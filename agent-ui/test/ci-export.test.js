@@ -39,3 +39,15 @@ test('forProvider returns the right path and content', () => {
   assert.equal(ci.forProvider('gitlab').path, '.gitlab-ci.yml');
   assert.match(ci.forProvider('gitlab', 'ts-playwright').content, /image: node:20/);
 });
+
+test('CI: osobny job mutation testing — ręcznie i co tydzień, nie na push; Node także dla stosu Python', () => {
+  const ci = require('../lib/ci-export');
+  const gh = ci.githubActions('python');
+  assert.match(gh, /workflow_dispatch:/);
+  assert.match(gh, /mutation:\n    if: github.event_name == 'workflow_dispatch' \|\| github.event_name == 'schedule'/);
+  assert.match(gh, /test:\n    if: github.event_name == 'push' \|\| github.event_name == 'pull_request'/);
+  assert.match(gh, /setup-node[\s\S]*node flawtrace-mutation.js --target "\$BASE_URL" --cmd "pytest -q"/);
+  const gl = ci.gitlabCi('ts-playwright');
+  assert.match(gl, /mutation:[\s\S]*when: manual[\s\S]*node flawtrace-mutation.js --target "\$BASE_URL" --cmd "npx playwright test"/);
+  assert.doesNotMatch(gl, /apt-get install -y -qq nodejs/);
+});

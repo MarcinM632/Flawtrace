@@ -64,3 +64,17 @@ Test design nie zgaduje wartości do testu ani oczekiwanych wyników. Liczy je a
 
   Problemy wracają do agenta w jednej turze korekty. Wynik trafia do UI jako pokrycie per technika i macierz śledzalności: przypadek biznesowy → punkt → check → źródła ze statusem → elementy pokrycia. Macierz da się pobrać jako CSV.
 - **Benchmark** (`agent-ui/bench/functional-bench.js`, opis w `agent-ui/bench/README.md`) mierzy wykrywalność znanych błędów funkcjonalnych i fałszywe alarmy, razem z uczciwym opisem, czego wynik nie dowodzi.
+
+## Mutation testing autotestów
+
+Wygenerowane autotesty mogą przechodzić, niczego nie sprawdzając. `agent-ui/lib/mutation-proxy.js` mierzy, czy suita wykrywa zmiany danych. Skrypt jest samodzielny, bez zależności: do pobrania z `/api/tools/mutation-test.js` jako `flawtrace-mutation.js`, a eksport CI ma gotowy job `mutation`.
+
+Jak działa:
+1. Proxy staje między suitą a aplikacją: suita dostaje `BASE_URL` wskazujący na proxy.
+2. Przebieg bazowy, dwa razy. Suita musi przejść za każdym razem. Suita zależna od stanu danych z poprzedniego przebiegu nie dostaje wyniku, bo porażki wynikałyby z danych, a nie z mutacji.
+3. Z zapisanych odpowiedzi powstają mutanty. Każdy zmienia jedną rzecz w jednym endpoincie: liczbę o 1, tekst, wartość logiczną, usunięte pole, krótszą listę albo odpowiedź błędu zamienioną na 200. Pola identyfikatorów, dat i linków są pomijane, bo ich zmiana psuje kolejne wywołania i zawyżałaby wynik.
+4. Suita biegnie raz dla każdego mutanta. Wynik = zabite / (zabite + przeżyłe). Raport wypisuje przeżyłe mutanty per endpoint, czyli konkretne pola, których żaden test nie sprawdza.
+
+Mutacje dotyczą odpowiedzi API, więc metoda działa z każdym stosem (Playwright, Cypress, pytest, REST Assured) i nie wymaga przebudowy aplikacji. Testy UI też: mutowane są odpowiedzi JSON, które frontend pobiera z tego samego adresu.
+
+Ograniczenie: mutacja odpowiedzi nie zastąpi mutowania logiki serwera. Nie zmierzy, czy testy wykryją błąd w obliczeniu, którego wynik nie wraca w odpowiedzi.
