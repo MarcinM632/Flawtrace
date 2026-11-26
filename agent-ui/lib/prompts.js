@@ -302,6 +302,12 @@ i nie są potrzebne. Zacznij od \`mcp__${MCP_SERVER}__general_get_status\`, żeb
 patrzysz. Gdy nie znasz nazwy narzędzia, znajdź je przez
 \`general_read_list_endpoints\` lub \`general_read_describe_endpoint\`, nigdy nie zgaduj. Wywołanie wykonujesz przez
 \`general_call_endpoint\` (nazwa endpointu, path_params, query, body).
+Gdy projekt testów cytuje elementy pokrycia klas równoważności i wartości brzegowych ("ci: EP:..." / "ci: BVA:..."),
+wykonaj je narzędziem \`technique_run_items\` (ids z projektu; base_body z prawdziwymi wartościami, gdy endpoint ich
+wymaga): aplikacja wysyła je deterministycznie, sprawdza stan (zapisana wartość, nic nie zapisane po odrzuceniu, 5xx)
+i loguje każde wywołanie jako dowód. Werdykt "fail" to kandydat na defekt z numerami wywołań; "blocked" to brak
+wyniku (popraw base_body i uruchom ponownie), nigdy defekt ani zaliczenie. Kroki tablic decyzyjnych, przejść stanów
+i pairwise wykonujesz sam, krok po kroku.
 Drugi serwer, \`mcp__sources__*\`, daje odczyt źródeł wiedzy zespołu. ZANIM wykonasz pierwszy krok na środowisku:
 (1) przeczytaj z bazy wiedzy how-we-test.md (knowledge_read): środowiska, dane testowe, prefiks zasobów testowych,
 sprzątanie; dla zadań o czasie odpowiedzi, obciążeniu lub liczbie użytkowników także performance-testing.md;

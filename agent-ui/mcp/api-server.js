@@ -167,6 +167,45 @@ serve({
       handler: call,
     },
     {
+      name: 'technique_run_items',
+      description: 'Runs the equivalence-partition and boundary-value items of the test design (ids like "BVA:post-orders:quantity:max+1", computed by the application) against the test environment, deterministically. For each item: a valid body with only that field changed, then checks on the STATE, not only the status: an accepted value must be stored as sent (read back), a rejected one must not store anything (the list is counted before and after), and a 5xx is always a defect. A control request with a valid body runs first for every endpoint: when the environment refuses it, the items are "blocked" (pass base_body with real values, e.g. an existing customer), never false defects. Every HTTP call gets its own _call number in the call log, as evidence.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ids: { type: 'array', items: { type: 'string' }, description: 'EP/BVA item ids from the design report ("ci: ..."). DT/ST/PW items need business steps: run those with general_call_endpoint.' },
+          endpoints: { type: 'array', items: { type: 'string' }, description: 'Or every EP/BVA item of these endpoints, as "METHOD /path".' },
+          base_body: { type: 'object', description: 'Real values merged into the generated valid body, per endpoint: {"POST /orders": {"customerId": "C-1001"}}.' },
+          path_params: { type: 'object', description: 'Values of path parameters, e.g. {"id": "42"}.' },
+          bva: { type: 'number', description: '2 (default) or 3.' },
+        },
+      },
+      handler: async (a) => {
+        if (!BASE) throw new Error('No base address of the test environment. Set it in the Sources tab.');
+        const tech = require('../lib/test-techniques');
+        const exec = require('../lib/technique-exec');
+        const docs = tech.loadDocs(SPECS_DIR);
+        const ids = (Array.isArray(a.ids) ? a.ids : []).map(String);
+        const epFromIds = tech.operations(docs).filter((o) => ids.some((id) => id.split(':')[1] === tech.epSlug(o.method, o.path))).map((o) => `${o.method} ${o.path}`);
+        const eps = [...new Set([...(Array.isArray(a.endpoints) ? a.endpoints : []), ...epFromIds])];
+        const built = tech.build({ docs, endpoints: eps, bva: Number(a.bva) === 3 ? 3 : 2 });
+        const items = built.items.filter((x) => (x.technique === 'EP' || x.technique === 'BVA') && (!ids.length || ids.includes(x.id)));
+        const unknown = ids.filter((id) => !built.items.some((x) => x.id === id));
+        const onCall = (c) => {
+          const ref = 'c' + (++seq);
+          const response = { _call: ref, status: c.status, ok: c.status >= 200 && c.status < 300, ms: c.ms, url: c.path, body: c.response };
+          log({ ref, tool: 'technique_run_items', endpoint: `${c.method} ${c.path}`, args: { method: c.method, path: c.path, body: c.body }, ok: c.status > 0, response, at: new Date().toISOString() });
+          return ref;
+        };
+        const r = await exec.runItems({ baseUrl: BASE, docs, items, headers: AUTH_VALUE ? { [AUTH_HEADER]: AUTH_VALUE } : {}, onCall, readOnly: READ_ONLY, baseBody: a.base_body || {}, pathParams: a.path_params || {}, timeoutMs: 30000 });
+        return clip(JSON.stringify({
+          summary: r.summary,
+          unknownIds: unknown,
+          note: 'fail = defect candidate (cite its _call numbers); blocked = could not run (fix base_body/path_params and run again), not a result; skip = not runnable here.',
+          results: r.results.map((x) => ({ id: x.id, verdict: x.verdict, why: x.why, status: x.status, sent: x.sent, calls: x.calls })),
+        }, null, 2));
+      },
+    },
+    {
       name: 'general_read_get_coverage',
       description: 'Which endpoints were called in this run and how many of each group were not called.',
       inputSchema: { type: 'object', properties: {} },

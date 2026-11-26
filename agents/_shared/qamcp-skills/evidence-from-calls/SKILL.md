@@ -13,3 +13,4 @@ Rules:
 4. Compare numbers after bringing both to the same scale and unit; say which scale was used.
 5. A condition that holds only after some time is read with general_read_wait_until; met=false with the last values is a result, not a reason to wait longer.
 6. Never write what a read returns when you only read the description of the endpoint.
+7. Equivalence-partition and boundary-value items of the design ("ci: EP:..." / "ci: BVA:...") are run with technique_run_items, not by hand. Its verdict is evidence: "fail" with its call numbers is a defect candidate, "blocked" means the control request with a valid body was refused and nothing was measured. Never report a blocked item as passed or failed.
