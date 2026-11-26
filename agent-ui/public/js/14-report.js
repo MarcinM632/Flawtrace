@@ -160,12 +160,14 @@ const TECH_LABEL={EP:'Equivalence partitioning',BVA:'Boundary values',DT:'Decisi
 function rvTechniques(m){
   const t=m.techniques;if(m.agent!=='design'||!t||!t.targets)return '';
   const kinds=Object.entries(t.byTechnique||{});
-  if(!kinds.length&&!(t.problems||[]).length)return '';
-  const full=t.targets.every(x=>!x.missing.length);
+  if(!kinds.length&&!(t.problems||[]).length&&!(t.modelCheck||[]).length&&!t.static)return '';
+  const full=t.targets.every(x=>!x.missing.length)&&!(t.modelCheck||[]).some(x=>/mismatch|unresolved|no-source/.test(x.status))&&!(t.static&&(t.static.unaddressed.length||t.static.questionsMissing));
   return `<div class="rv-audit ${full?'ok':'bad'}">${ico(full?'check':'shield',13)} <span><b>Technique coverage (computed by the app from the specification and the rule models):</b> `
     +(kinds.length?kinds.map(([k,b])=>`${esc(TECH_LABEL[k]||k)} ${b.covered}/${b.required}${b.excused?` (+${b.excused} excused)`:''}`).join(' · '):'no technique items cited')
     +(t.targets.length?'<ul>'+t.targets.map(x=>`<li><code>${esc(x.target)}</code> ${x.covered}/${x.required}${x.optional?`, optional ${x.optionalCovered}/${x.optional}`:''}${x.missing.length?' — missing '+x.missing.slice(0,8).map(esc).join(', ')+(x.missing.length>8?', …':''):''}</li>`).join('')+'</ul>':'')
     +((t.problems||[]).length?'<div class="rv-line"><b>Gaps in the rules:</b><ul>'+t.problems.slice(0,10).map(p=>`<li>${esc(p)}</li>`).join('')+'</ul></div>':'')
+    +((t.modelCheck||[]).length?'<div class="rv-line"><b>Rule models checked against their source:</b> '+t.modelCheck.map(x=>`<code>${esc(x.id)}</code> ${esc(x.status)}${x.missing&&x.missing.length?' ('+x.missing.slice(0,3).map(esc).join('; ')+')':''}`).join(' · ')+'</div>':'')
+    +(t.static?`<div class="rv-line"><b>Static review findings:</b> ${t.static.findings-t.static.unaddressed.length}/${t.static.findings} answered${t.static.questions?`, open questions ${t.static.questions-t.static.questionsMissing}/${t.static.questions} in To confirm`:''}</div>`:'')
     +'</span></div>';
 }
 const TRACE_ST={traced:'ok',unresolved:'bad','no-source':'bad'};

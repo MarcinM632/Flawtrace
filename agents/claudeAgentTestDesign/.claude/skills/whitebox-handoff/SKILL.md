@@ -26,3 +26,10 @@ The whitebox review read the code and found where the system will behave wrongly
 - Do not copy wording, values or steps from the findings. The check is written for this feature with this feature's real resources.
 - Do not drop a high-severity finding silently. It is a check, or it is named in "Not covered:" or "To confirm" with the reason.
 - The whitebox digest says which findings the review proved and which it left for manual checking. The second kind goes to "To confirm" unless a source settles it.
+
+## The application checks the static findings
+Every Critical or Major finding of `static-review.md` gets an answer in the design, and so does every open question:
+- **A check**, when the finding can be tested on the environment. Its source names the finding: `(src: PRJ-12; static #1)`.
+- **A question in "To confirm"**, when only the author can decide. It names the finding too: `- static #2: is a cancelled paid order refunded?`
+
+Copy every open question of the review into "To confirm". Do not design a confident expected result on a requirement the review called contradictory or unclear. Take the result from where the source settles it, or ask. A finding or a question without an answer is reported back to you.

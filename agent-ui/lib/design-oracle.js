@@ -96,6 +96,7 @@ function context({ ticket = '', notes = '', workDir = '', specsDir = '', docs = 
     texts, hasTicket: !!(ticket || '').trim() || /[A-Z][A-Z0-9_]+-\d+/.test(texts),
     docs: docsList, endpoints: eps, bugs: bugs || [], kb, hasKb: Object.keys(kb).length > 0,
     models: models || (workDir ? tech.loadModels(workDir) : []),
+    staticText: (() => { try { return workDir ? fs.readFileSync(path.join(workDir, 'static-review.md'), 'utf8') : ''; } catch (_) { return ''; } })(),
   };
 }
 
@@ -215,6 +216,51 @@ function verifyModels(ctx) {
   return { issues, report };
 }
 
+/* ------------------------------------------------ wyniki Static → Test design ------------------------------------------------ */
+// Static (testowanie statyczne ticketu) znajduje wymagania sprzeczne, niejasne, niemożliwe i luki. Projekt testów,
+// który je pomija, buduje pewne oczekiwane wyniki na wymaganiu oznaczonym jako wadliwe. Każde ustalenie Critical/Major
+// i każde otwarte pytanie z WORK_DIR/static-review.md musi więc mieć w projekcie odpowiedź: check, który je testuje,
+// albo pytanie w "To confirm". Odwołanie wprost: "static #<n>" (ustalenie) — albo ta sama treść własnymi słowami.
+const STOP = new Set('about after again also because before being between both could does doing during each from have having here into just more most must only other over same should since some such than that their them then there these they this those through under until very what when where which while will with within would your task says system source requirement question author'.split(' '));
+const tokens = (t) => [...new Set(String(t || '').toLowerCase().replace(/[^a-z0-9ąćęłńóśźż\s-]/g, ' ').split(/\s+/).filter((w) => w.length >= 4 && !STOP.has(w) && !/^\d+$/.test(w)))];
+function staticFindings(text) {
+  const out = [];
+  const re = /^(\d+)\.\s+\[([^\]]+)\]\s+\[(Critical|Major|Minor)\]\s+(.+)$/gm;
+  let m;
+  while ((m = re.exec(text))) {
+    const rest = text.slice(m.index + m[0].length).split(/\n(?=\d+\.\s+\[|##\s)/)[0];
+    const q = (rest.match(/^Question for the author:\s*(.+)$/m) || [])[1] || '';
+    const req = (rest.match(/^Requirement:\s*(.+)$/m) || [])[1] || '';
+    out.push({ n: +m[1], cls: m[2], severity: m[3], title: m[4].trim(), question: q.trim(), requirement: req.trim() });
+  }
+  return out;
+}
+function staticQuestions(text) {
+  const sec = (String(text).split(/^##\s+Open questions\s*$/im)[1] || '').split(/^##\s/m)[0];
+  return sec.split('\n').map((l) => l.replace(/^\s*[-*]\s*/, '').trim()).filter((l) => l && !/^none\b/i.test(l));
+}
+/** Czy projekt odnosi się do ustalenia: wprost (static #n / finding n) albo co najmniej połową jego słów kluczowych. */
+function addressed(textLower, f, n) {
+  if (n != null && new RegExp(`\\b(static\\s*#\\s*${n}|finding\\s*#?\\s*${n})\\b`, 'i').test(textLower)) return true;
+  const tk = tokens(f);
+  if (tk.length < 2) return false;
+  const hit = tk.filter((w) => textLower.includes(w)).length;
+  return hit >= Math.max(2, Math.ceil(tk.length * 0.5));
+}
+function auditStatic(report, d, staticText) {
+  if (!staticText) return { issues: [], report: null };
+  const findings = staticFindings(staticText).filter((f) => f.severity !== 'Minor');
+  const questions = staticQuestions(staticText);
+  const confirmText = (d.confirm + '\n' + d.sections.map((s) => s.notCovered).join('\n')).toLowerCase();
+  const allText = String(report || '').toLowerCase();
+  const missF = findings.filter((f) => !addressed(allText, `${f.title} ${f.question}`, f.n));
+  const missQ = questions.filter((q) => !addressed(confirmText, q, null) && !addressed(allText, q, null));
+  const issues = [];
+  if (missF.length) issues.push({ code: 'static-unaddressed', items: missF.map((f) => `static #${f.n} [${f.severity}] ${f.title}`), text: `${missF.length} Critical/Major finding(s) of the Static review have no check and no question in this design: ${missF.slice(0, 5).map((f) => `#${f.n} ${f.title}`).join(' | ')}` });
+  if (missQ.length) issues.push({ code: 'static-unaddressed', items: missQ.map((q) => 'open question: ' + q), text: `${missQ.length} open question(s) of the Static review are not in "To confirm": ${missQ.slice(0, 4).join(' | ')}` });
+  return { issues, report: { findings: findings.length, questions: questions.length, unaddressed: missF.map((f) => f.n), questionsMissing: missQ.length } };
+}
+
 /* ------------------------------------------------ porównanie z wyrocznią ------------------------------------------------ */
 function contradiction(item, expected) {
   const e = String(expected || '');
@@ -300,6 +346,9 @@ function audit(report, ctx) {
   });
   if (gaps.length) issues.push({ code: 'requirement-gap', items: gaps, text: `The rules from technique-models.json have gaps that are not in "To confirm": ${gaps.slice(0, 5).join(' | ')}` });
 
+  // Ustalenia i pytania Static, które projekt musi podjąć.
+  const sa = auditStatic(report, d, ctx.staticText);
+  issues.push(...sa.issues);
   // Modele reguł zgodne ze źródłem, które cytują.
   const mv = verifyModels(ctx);
   if (mv.issues.length) issues.push({ code: 'model-unverified', items: mv.issues, text: `${mv.issues.length} rule model(s) in technique-models.json do not match their source: ${mv.issues.slice(0, 4).join(' | ')}` });
@@ -310,7 +359,7 @@ function audit(report, ctx) {
     rows, businessCases: d.businessCases,
     summary: { checks: rows.length, traced: rows.filter((r) => r.status === 'traced').length, unresolved: rows.filter((r) => r.status === 'unresolved').length, noSource: noSrc.length, withItems: rows.filter((r) => r.items.length).length, byKind },
   };
-  const techniques = { available: avail, byTechnique: cov.byTechnique, targets: cov.targets, problems: res.problems, models: ctx.models.length, modelCheck: mv.report };
+  const techniques = { available: avail, byTechnique: cov.byTechnique, targets: cov.targets, problems: res.problems, models: ctx.models.length, modelCheck: mv.report, static: sa.report };
   return { issues, traceability, techniques };
 }
 
@@ -323,4 +372,4 @@ function traceabilityCsv(t) {
   return lines.join('\n');
 }
 
-module.exports = { audit, parse, context, resolveRef, resolveSrc, contradiction, traceabilityCsv, verifyModels, valueInText };
+module.exports = { audit, parse, context, resolveRef, resolveSrc, contradiction, traceabilityCsv, verifyModels, valueInText, staticFindings, staticQuestions, auditStatic };

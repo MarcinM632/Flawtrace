@@ -144,3 +144,39 @@ test('cytat modelu: wartości sprawdzane w cytacie, cytat musi stać w źródle 
   const conf = o.verifyModels(o.context({ models: [{ ...models[0], src: 'conf:Discount rules', quote: 'premium from 100 gets 10%, otherwise 5%' }] }));
   assert.equal(conf.report[0].status, 'verified');
 });
+
+test('wyniki Static: ustalenie Critical/Major i otwarte pytanie bez odpowiedzi w projekcie wracają do agenta', () => {
+  const wd = fs.mkdtempSync(path.join(os.tmpdir(), 'oracle-static-'));
+  fs.writeFileSync(path.join(wd, 'static-review.md'), `# Static review of the task
+Verdict: NEEDS REWORK
+## Findings
+1. [Inconsistency] [Major] Discount threshold differs between the ticket and Confluence
+Requirement: R2
+Task says: from 100 PLN (src: SHOP-1)
+System or source says: from 150 PLN (src: conf:Pricing)
+Why it matters: customers get a wrong discount
+Question for the author: is the threshold 100 PLN or 150 PLN?
+2. [Gap] [Critical] Refund on cancellation is not described
+Requirement: R5
+Question for the author: is a cancelled paid order refunded automatically?
+3. [Wording] [Minor] Typo in the title
+## Scenarios that did not match
+none
+## Open questions
+- Does the discount apply to the shipping cost too?
+`);
+  const c = ctx({ workDir: wd });
+  const r = o.audit(GOOD, c);
+  const st = r.issues.filter((i) => i.code === 'static-unaddressed');
+  assert.equal(st.length, 2);
+  assert.deepEqual(st[0].items, ['static #1 [Major] Discount threshold differs between the ticket and Confluence', 'static #2 [Critical] Refund on cancellation is not described']);
+  assert.match(st[1].items[0], /shipping cost/);
+  assert.deepEqual(r.techniques.static, { findings: 2, questions: 1, unaddressed: [1, 2], questionsMissing: 1 });
+  // Odpowiedź wprost (static #1), własnymi słowami (zwrot przy anulowaniu) i pytanie przepisane do To confirm.
+  const fixed = GOOD.replace('## To confirm\n', '## To confirm\n- static #1: is the discount threshold 100 PLN or 150 PLN?\n- Is a cancelled paid order refunded automatically (refund on cancellation)?\n- Does the discount apply to the shipping cost?\n');
+  const r2 = o.audit(fixed, c);
+  assert.ok(!r2.issues.some((i) => i.code === 'static-unaddressed'), JSON.stringify(r2.issues.filter((i) => i.code === 'static-unaddressed')));
+  assert.match(require('../lib/report-format').correctionPrompt('design', r.issues), /WYNIKI STATIC/);
+  // Bez przeglądu Static nic się nie zmienia.
+  assert.equal(o.audit(GOOD, ctx()).techniques.static, null);
+});

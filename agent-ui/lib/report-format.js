@@ -636,6 +636,11 @@ function correctionPrompt(mode, issues) {
     ? 'MODELE REGUŁ: każda wartość w WORK_DIR/technique-models.json (próg, wynik reguły, nazwa stanu, wartość parametru) musi stać w źródle z "src" modelu. '
       + 'Wartość, której tam nie ma, popraw na tę ze źródła i przelicz elementy narzędziem mcp__sources__test_design_items; gdy źródło jej nie podaje, regułę przenieś do "To confirm" zamiast ją zakładać. '
     : '';
+  const statics = issues.some((i) => i.code === 'static-unaddressed')
+    ? 'WYNIKI STATIC: przegląd statyczny tego ticketu (WORK_DIR/static-review.md) znalazł problemy w wymaganiu. Każde ustalenie Critical/Major dostaje w projekcie odpowiedź: '
+      + 'check, który je sprawdza na środowisku (z "static #<n>" w (src: ...)), albo pytanie w "To confirm" z "static #<n>". Na wymaganiu, które przegląd uznał za sprzeczne lub niejasne, nie projektuj pewnego oczekiwanego wyniku — '
+      + 'oczekiwany wynik bierzesz z rozstrzygnięcia w źródle albo pytasz. Każde otwarte pytanie przeglądu przepisz do "To confirm". '
+    : '';
   const techniques = issues.some((i) => /^technique-|^requirement-gap$/.test(i.code))
     ? 'TECHNIKI LICZY APLIKACJA (skill technique-coverage): elementy pokrycia pobierz narzędziem mcp__sources__test_design_items (endpointy i modele reguł), '
       + 'a modele reguł z ticketu (tablice decyzyjne, maszyny stanów, zbiory pairwise, każdy ze "src") zapisz narzędziem Write do WORK_DIR/technique-models.json. '
@@ -644,7 +649,7 @@ function correctionPrompt(mode, issues) {
       + 'Zasada "najpierw biznes" obowiązuje dalej: technikę deklarujesz tylko tam, gdzie reguła biznesowa ma jej kształt; deklaracja techniki oznacza pełne pokrycie jej elementów. '
     : '';
   return 'APLIKACJA SPRAWDZIŁA TWÓJ RAPORT (dowody z pobranym kodem, zgodność ze zleceniem testera) i znalazła problemy:\n' + list + '\n\n'
-    + evidence + flow + bugs + concrete + business + oracle + models + techniques
+    + evidence + flow + bugs + concrete + business + oracle + models + statics + techniques
     + 'Uruchom walidator raportu ponownie na poprawionej treści i zwróć CAŁĄ odpowiedź końcową od nowa, w tym samym formacie.';
 }
 
