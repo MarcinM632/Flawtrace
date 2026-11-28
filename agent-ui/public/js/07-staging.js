@@ -23,6 +23,7 @@ function savedBlock(m){
     h+='<div class="sec-head" style="margin-top:20px"><h4>Run on the environment</h4><span class="sec-meta">the app ran these tests itself'+((v.attempts||[]).some(a=>a.note)?' and sent failures back to the agent':'')+'</span></div>'
       +'<div class="chk '+cls+' vf"><b>'+lab+'</b> · '+esc(v.summary||'')+att+(v.output?'<details><summary>pytest output</summary><pre>'+esc(v.output)+'</pre></details>':'')+'</div>';
   }
+  if(!m.stack&&st==='pending')h+=mutationBlock(m);
   h+=tsRunBlock(m);
   if(st==='pending'){
     const proj=!!m.stack;
@@ -69,7 +70,9 @@ function tsRunBlock(m){
 const MU_VERDICT={strong:['Strong: the tests catch most broken answers','ok'],weak:['Weak: the tests pass while the app is broken','bad'],none:['Not measurable','warn']};
 function mutationBlock(m){
   const tr=m.testRun,mu=m.mutation;
-  if(!tr||tr.state!=='passed')return '';
+  // Playwright UI tests after a green run on the page; Python API tests after they passed twice on the environment.
+  const ready=(tr&&tr.state==='passed')||(!m.stack&&m.verify&&m.verify.state==='passed'&&m.staging&&m.staging.state==='pending');
+  if(!ready)return '';
   let h='<div class="sec-head" style="margin-top:20px"><h4>Does the test catch a broken app?</h4><span class="sec-meta">the app changes one answer of the API at a time (a number, a text, a missing field, an error turned into success) and runs the test again</span></div>';
   if(mu&&mu.state==='running')return h+'<div class="chk warn"><b>Checking</b> · '+(mu.total?mu.done+' of '+mu.total+' broken versions':'baseline run')+' · '+Math.max(0,Math.round((Date.now()-mu.startedAt)/1000))+' s</div>';
   if(mu&&mu.state==='error')h+='<div class="chk bad">'+esc(mu.error||'The check failed.')+'</div>';

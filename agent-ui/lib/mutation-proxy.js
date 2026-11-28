@@ -159,10 +159,11 @@ function runCommand(cmd, { cwd, env, timeoutMs }) {
  * @param {object} o { target, cmd, cwd, envVar='BASE_URL', max=40, only='', timeoutMs=600000, log }
  * @returns {{ baseline, score, killed, survived, notReached, mutants, survivors }}
  */
-async function run({ target, cmd, cwd = process.cwd(), envVar = 'BASE_URL', env = process.env, max = 40, only = '', timeoutMs = 600000, log = () => {} } = {}) {
+async function run({ target, cmd, cwd = process.cwd(), envVar = 'BASE_URL', env = process.env, envFor: makeEnv = null, max = 40, only = '', timeoutMs = 600000, log = () => {} } = {}) {
   const proxy = await startProxy(target);
   try {
-    const envFor = { ...env, [envVar]: proxy.url };
+    // envFor(proxyUrl): the suite's environment once the proxy address is known (e.g. a rewritten .env file).
+    const envFor = makeEnv ? await makeEnv(proxy.url) : { ...env, [envVar]: proxy.url };
     const base = await runCommand(cmd, { cwd, env: envFor, timeoutMs });
     if (base.code !== 0) return { baseline: { ok: false, code: base.code, tail: base.tail }, error: 'The suite fails without any mutant — fix it first; a mutation score of a red suite means nothing.' };
     // Drugi przebieg bazowy, już bez zapisu: suita, która pada przy powtórce na tych samych danych (zależy od stanu

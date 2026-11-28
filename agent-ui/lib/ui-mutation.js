@@ -79,7 +79,7 @@ function startMutation(r, creds, { max = Number(process.env.QA_UI_MUTANTS) || 12
 /** A check saved as running by a server that has since restarted is not running. */
 function reconcile(meta) {
   const mu = meta.mutation;
-  if (mu && mu.state === 'running' && !active.has(meta.id)) { mu.state = 'error'; mu.error = 'Interrupted by a restart of the app.'; }
+  if (mu && mu.kind !== 'api' && mu.state === 'running' && !active.has(meta.id)) { mu.state = 'error'; mu.error = 'Interrupted by a restart of the app.'; }
 }
 
 module.exports = { startMutation, reconcile, verdictOf, CONFIG, STRONG };
