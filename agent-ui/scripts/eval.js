@@ -30,6 +30,8 @@ const opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : arg
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a); // local time, like the rest of the machine
 
+// Failures of the model account or service (limits, auth, overload): not a result of the flow.
+const INFRA = /hit your .*limit|usage limit|rate limit|overloaded|credit balance|authenticat|not logged in|invalid api key|quota/i;
 const freePort = () => new Promise((r) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 
 async function http(base, method, p, body) {
@@ -84,6 +86,8 @@ async function runCase(base, ticket, shopBase, budget, timeoutMin) {
     if (v.status === 'paused') {
       const p = v.pause || {};
       notes.push(`paused at ${p.stage}: ${p.reason}`);
+      // The model account, not the agent, failed: a score now would measure the outage. Stop and say so.
+      if (INFRA.test(p.reason || '')) { await http(base, 'POST', `/api/fulltest/${c.id}/stop`, {}); throw Object.assign(new Error(`${ticket}: ${p.reason}`), { infra: true }); }
       if (/budget/i.test(p.reason || '')) { await http(base, 'POST', `/api/fulltest/${c.id}/stop`, {}); continue; }
       if (p.stage === 'static' && (p.actions || []).includes('continue')) { log(`${ticket}: review said BLOCKED, continuing`); await http(base, 'POST', `/api/fulltest/${c.id}/continue`, {}); continue; }
       if ((p.actions || []).includes('retry') && !retried) { retried = true; log(`${ticket}: ${p.reason} - retrying once`); await http(base, 'POST', `/api/fulltest/${c.id}/retry`, {}); continue; }
@@ -147,8 +151,17 @@ async function main() {
 
     const started = Date.now();
     const outcomes = {};
-    const one = async (t) => { try { outcomes[t] = await runCase(base, t, shopBase, budget, timeoutMin); } catch (e) { outcomes[t] = { error: e.message, notes: [] }; log(`${t}: ${e.message}`); } };
+    let infra = '';
+    const one = async (t) => {
+      if (infra) return;
+      try { outcomes[t] = await runCase(base, t, shopBase, budget, timeoutMin); } catch (e) { outcomes[t] = { error: e.message, notes: [] }; log(`${t}: ${e.message}`); if (e.infra) infra = e.message; }
+    };
     if (opt('parallel')) await Promise.all(only.map(one)); else for (const t of only) await one(t);
+    if (infra) {
+      console.log(`\nNo score: the run hit a problem of the model account, not of the agents (${infra}).\nNothing was written to eval/history.jsonl. Run the benchmark again when the account works.`);
+      process.exitCode = 2;
+      return;
+    }
 
     // Reports of every phase, saved as files so they can be read and scored again.
     const reports = {};
