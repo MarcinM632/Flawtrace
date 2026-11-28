@@ -681,3 +681,16 @@ test('QA MCP audit: every value cited with [cN] must be in that call, units may 
   assert.deepEqual(rf.auditQamcp(rep('1. Klient 1001 ma 7 lotów SYMBOL1.'), 'SUKCES', ev, path.join(tmp, 'no-calls')), [], 'runs without a call log are not checked');
   assert.match(rf.correctionPrompt('qamcp', bad), /\(wyliczone/);
 });
+
+test('pathRules: a permission rule for the given path and for its long real form (Windows 8.3 short names)', () => {
+  const fs = require('fs'), os = require('os'), path = require('path');
+  const { pathRules } = require('../lib/run-agent');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-rules-'));
+  const rules = pathRules(dir);
+  const long = fs.realpathSync.native(dir).replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '//' + d.toLowerCase());
+  assert.ok(rules.includes(long), rules.join(' | '));
+  assert.ok(rules.every((r) => !r.includes('\\')));
+  if (process.platform === 'win32') assert.ok(rules.every((r) => /^\/\/[a-z]\//.test(r)));
+  assert.deepStrictEqual(pathRules(path.join(dir, 'missing')).length, 1, 'a folder that does not exist yet keeps its given form');
+  fs.rmSync(dir, { recursive: true, force: true });
+});

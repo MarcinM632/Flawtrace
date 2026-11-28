@@ -111,7 +111,8 @@ async function main() {
   const resultsDir = path.join(EVAL, 'results', stamp);
   fs.mkdirSync(resultsDir, { recursive: true });
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'flawtrace-eval-'));
+  // The long form of the temp folder: the 8.3 short form (PCGAME~1) does not match the agents' permission rules.
+  const work = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'flawtrace-eval-'));
   const dataDir = path.join(work, 'data');
   const knowledge = path.join(work, 'knowledge');
   fs.mkdirSync(dataDir, { recursive: true }); fs.mkdirSync(knowledge, { recursive: true });

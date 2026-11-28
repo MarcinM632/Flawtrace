@@ -118,6 +118,14 @@ function writeRiskMetrics(workDir) {
   fs.writeFileSync(path.join(workDir, 'risk-metrics.md'), out.join('\n') + '\n');
 }
 
+/** A folder as Claude Code permission paths ("//c/..."): the path as given and, when it differs, its long real form. */
+function pathRules(dir) {
+  const rule = (p) => String(p).replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '//' + d.toLowerCase());
+  let real = dir;
+  try { real = fs.realpathSync.native(dir); } catch (_) { /* not created yet: the given form only */ }
+  return [...new Set([rule(dir), rule(real)])];
+}
+
 /** What the browser tools returned in this run (page snapshots), kept in memory for the UI report audit, never in the event log. */
 function noteSeen(r, text) {
   const t = String(text || '');
@@ -416,10 +424,12 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
     dataFileBlock;
 
   // dontAsk: wszystko spoza allowlisty jest odrzucane (bez pytań i bez obchodzenia uprawnień).
-  const workRule = workDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '//' + d.toLowerCase());
+  // Claude Code matches a path rule against the LONG form of the path. A Windows 8.3 short form (C:/Users/PCGAME~1/...,
+  // what os.tmpdir() gives for a user name with a space) never matches, so every Write of the agent was denied.
+  // The rules are given for both forms.
   const allowed = [
     'Read', 'Grep', 'Glob', 'Agent', 'Skill',
-    `Edit(${workRule}/**)`,
+    ...pathRules(workDir).map((p) => `Edit(${p}/**)`),
     'Bash(git -C * fetch *)', 'Bash(git -C * diff *)', 'Bash(git -C * log *)', 'Bash(git -C * show *)',
     'Bash(git -C * show-ref *)', 'Bash(git -C * cat-file *)', 'Bash(git -C * for-each-ref *)',
     'Bash(git -C * ls-tree *)', 'Bash(git -C * rev-parse *)', 'Bash(git ls-remote *)',
@@ -448,11 +458,11 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   // Autotests pisze pliki, więc jako jedyny ma Write/Edit — ograniczone do repo autotestów. Z MCP dostaje
   // tylko narzędzia do czytania kontraktów endpointów: nic, co mogłoby cokolwiek wykonać na środowisku.
   // Git pozostaje zablokowany przez DENY_WRITE, więc nic stąd nie trafi do zdalnego repo.
-  const repoRule = (stagingDir || AUTOTEST_REPO).replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '//' + d.toLowerCase());
+  const repoRules = pathRules(stagingDir || AUTOTEST_REPO);
   const autotestTools = [
     'Read', 'Grep', 'Glob', 'Skill',
     ...['general_get_status', 'general_read_app_model', 'general_read_list_endpoints', 'general_read_describe_endpoint', 'general_read_get_coverage'].map((n) => `mcp__${MCP_SERVER}__${n}`),
-    `Write(${repoRule}/**)`, `Edit(${repoRule}/**)`,
+    ...repoRules.flatMap((p) => [`Write(${p}/**)`, `Edit(${p}/**)`]),
   ];
   // QA MCP with a page link: the agent also drives a browser of its own (Playwright MCP, headless, not the tester's
   // Chrome) and reads the page as accessibility snapshots. The run log keeps every browser step, so
@@ -1033,6 +1043,7 @@ function pushToNext(id, { auto } = {}) {
 }
 
 module.exports = {
+  pathRules,
   pruneWork,
   pushToNext,
   startRun,
