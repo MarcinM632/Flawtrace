@@ -54,11 +54,25 @@ function ftRenderForm(){
   $('#ftPlan').textContent=plan.length?'Runs: '+plan.join(' → ')+'. One pass each, nothing repeated. You confirm the results before autotests and documentation.':'Pick at least one phase to run.';
   $('#ftGo').disabled=!plan.length;
 }
+/* Before anything is spent: is the task ready to be tested? Shown once per task text; pressing Run again starts anyway. */
+function ftReadyHtml(r){
+  return '<div class="ft-ready"><b>Before you start</b>'+r.items.map(i=>'<div class="chk '+(i.level==='stop'?'bad':'warn')+'">'+esc(i.text)+'</div>').join('')
+    +'<div class="hint">Fix the task and run again, or press Run full test once more to start as it is.</div></div>';
+}
 async function ftStart(){
   $('#ftErr').textContent='';$('#ftGo').disabled=true;
+  const stages=Object.fromEntries(FT_STAGES.map(x=>[x[0],(FT.pick||[]).includes(x[0])]));
+  const sig=JSON.stringify([$('#ftTask').value,$('#ftDetails').value,stages,$('#ftUrl').value]);
+  if(FT.readySig!==sig){
+    try{
+      const r=await post('/api/fulltest/readiness',{task:$('#ftTask').value,details:$('#ftDetails').value,stages,url:$('#ftUrl').value});
+      if(r.items&&r.items.length){FT.readySig=sig;$('#ftErr').innerHTML=ftReadyHtml(r);ftRenderForm();return}
+    }catch(_){/* the check is advice; a failed check never blocks the start */}
+  }
+  FT.readySig=null;
   try{
     ftSaveOpts();
-    const v=await post('/api/fulltest',{task:$('#ftTask').value,details:$('#ftDetails').value,family:$('#ftFam').value,stages:Object.fromEntries(FT_STAGES.map(x=>[x[0],(FT.pick||[]).includes(x[0])])),url:$('#ftUrl').value,username:$('#ftUser').value,password:$('#ftPass').value,budgetUsd:$('#ftBudget').value});
+    const v=await post('/api/fulltest',{task:$('#ftTask').value,details:$('#ftDetails').value,family:$('#ftFam').value,stages,url:$('#ftUrl').value,username:$('#ftUser').value,password:$('#ftPass').value,budgetUsd:$('#ftBudget').value});
     $('#ftTask').value='';$('#ftDetails').value='';$('#ftPass').value='';
     FT.sel=v.id;FT.decisions={};FT.docs=null;await ftRefresh(true);
   }catch(e){$('#ftErr').textContent=e.message}

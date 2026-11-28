@@ -58,6 +58,8 @@ async function waitCase(id, until, ms = 60000) {
 test('Full tests: static -> design -> API and UI together -> confirmation -> lesson and documentation', async () => {
   const agents = (await call('GET', '/api/fulltest')).data.agents;
   assert.equal(agents.api, true, 'the API track is available (spec + base URL)');
+  const ready = (await call('POST', '/api/fulltest/readiness', { task: 'DEMO-1', stages: { static: true } })).data;
+  assert.deepEqual([ready.ready, ready.items.map((i) => i.code)], [false, ['key-without-jira']], 'the readiness check sees that Jira is not connected');
   const created = await call('POST', '/api/fulltest', { task: 'DEMO-1: registration with a password of at least 8 characters', stages: { static: true, whitebox: false, design: true, api: true, ui: true }, url: 'http://127.0.0.1:9/#/register' });
   assert.equal(created.status, 201, JSON.stringify(created.data));
   const id = created.data.id;

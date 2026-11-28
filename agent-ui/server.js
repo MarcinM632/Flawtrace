@@ -273,6 +273,11 @@ const server = http.createServer(async (req, res) => {
       const fail = (e) => json(res, e.status || 500, { error: String((e && e.message) || e) });
       try {
         if (req.method === 'GET' && p === '/api/fulltest') return json(res, 200, { cases: fullTests.list(), confluence: sources.confluencePublishTarget(), agents: { whitebox: ['core', 'svc', 'mcp'].filter((k) => agentAvailable(AGENTS[k])), api: agentAvailable(AGENTS.execution), ui: agentAvailable(AGENTS.uitest) } });
+        // Is the task ready to be tested? Plain rules, no model, nothing spent (lib/readiness.js).
+        if (req.method === 'POST' && p === '/api/fulltest/readiness') {
+          const b = await body(req, 2 * 1024 * 1024);
+          return json(res, 200, require('./lib/readiness').assess({ task: b.task, details: b.details, stages: b.stages || {}, url: b.url, sources: sources.status() }));
+        }
         if (req.method === 'POST' && p === '/api/fulltest') {
           const b = await body(req, 2 * 1024 * 1024);
           return json(res, 201, fullTests.createCase(b.task, b.details, { whitebox: b.whitebox, stages: b.stages, family: b.family, api: b.api, ui: b.ui, url: b.url, budgetUsd: b.budgetUsd, username: b.username, password: b.password }));
