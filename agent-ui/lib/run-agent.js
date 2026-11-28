@@ -568,7 +568,9 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
     '--tools', (BUILTIN_TOOLS[agent.mode] || BUILTIN_TOOLS.qa).join(','),
     '--allowedTools', ...toolsFor(agent.mode),
     '--disallowedTools', ...DENY_WRITE, 'mcp__claude_ai_Slack__slack_send_message', 'mcp__claude_ai_Slack__slack_send_message_draft', 'mcp__claude_ai_Slack__slack_schedule_message',
-    '--append-system-prompt', sysFor(agent.mode)];
+    // The system prompt goes in a file, not as an argument: with it inline the Execution track came to 35 000 characters,
+    // over the 32 767 of a Windows command line, and the run never started (spawn ENAMETOOLONG).
+    '--append-system-prompt-file', (() => { const f = path.join(workDir, 'system-prompt.md'); fs.writeFileSync(f, sysFor(agent.mode)); return f; })()];
 
   emit(r, { type: 'status', text: `Start: ${agent.label} / ${ticket} (${cwd})` });
 
@@ -580,8 +582,13 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
     try {
       // Bez pamięci roboczej Claude Code: QA MCP startuje w katalogu QA MANAGER i wczytywał notatki operatora
       // (np. o podejrzanym zachowaniu), które wpływały na werdykt. Agent ma pracować na instrukcjach i danych z runu.
-      proc = spawn('claude', [...args, ...extraArgs], { cwd, env: { ...process.env, QA_REPOS_DIR: path.join(DATA_DIR, 'repos').replace(/\\/g, '/'), WORK_DIR: workDir.replace(/\\/g, '/'), CLAUDE_CODE_SUBAGENT_MODEL: MODEL, CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1', MCP_TOOL_TIMEOUT: process.env.MCP_TOOL_TIMEOUT || '1800000' }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
-    } catch (e) { out.spawnError = e; out.done = Promise.resolve({ spawnError: e }); return out; }
+      // QA_CLAUDE_CMD: a Node script that stands in for the claude CLI (end-to-end tests of the flow without a model).
+      const [bin, pre] = process.env.QA_CLAUDE_CMD ? [process.execPath, [process.env.QA_CLAUDE_CMD]] : ['claude', []];
+      proc = spawn(bin, [...pre, ...args, ...extraArgs], { cwd, env: { ...process.env, QA_REPOS_DIR: path.join(DATA_DIR, 'repos').replace(/\\/g, '/'), WORK_DIR: workDir.replace(/\\/g, '/'), CLAUDE_CODE_SUBAGENT_MODEL: MODEL, CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1', MCP_TOOL_TIMEOUT: process.env.MCP_TOOL_TIMEOUT || '1800000' }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    } catch (e) {
+      if (e && e.code === 'ENAMETOOLONG') e.message += ` (command line ${[...args, ...extraArgs].reduce((n, a) => n + String(a).length + 3, 0)} characters; Windows allows 32767)`;
+      out.spawnError = e; out.done = Promise.resolve({ spawnError: e }); return out;
+    }
     r.proc = proc;
     proc.stdin.on('error', () => {});
     proc.stdin.end(promptText);
