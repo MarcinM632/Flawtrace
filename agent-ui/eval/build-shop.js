@@ -17,7 +17,7 @@ function copyTree(from, to) {
   fs.mkdirSync(to, { recursive: true });
   for (const e of fs.readdirSync(from, { withFileTypes: true })) {
     const s = path.join(from, e.name), d = path.join(to, e.name);
-    if (e.isDirectory()) copyTree(s, d); else fs.copyFileSync(s, d);
+    if (e.isDirectory()) copyTree(s, d); else fs.writeFileSync(d, fs.readFileSync(s)); // a fresh mtime: a copy keeps the source mtime on Windows, and git then misses a same-size change
   }
 }
 

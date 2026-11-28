@@ -120,3 +120,11 @@ wynik testu jest gorszy niż brak testu, więc dodatkowe checki go nie nadrabiaj
 **Czego jeszcze nie ma:** zmierzonego wyniku prawdziwego agenta. Wymaga działającego modelu i zaimportowanej
 specyfikacji sklepu, czyli przebiegu `--live` na skonfigurowanej instancji. To pierwsza liczba do zebrania przed
 każdą zmianą promptów: uruchomić przed zmianą i po niej, a potem porównać.
+
+---
+
+# Benchmark całego flow (Full tests)
+
+Powyższe benchmarki mierzą silnik technik i samego agenta Test design. Cały przebieg Full tests z prawdziwymi agentami
+(static, whitebox, design, API, UI) mierzy `eval/`: sklep z 29 wszczepionymi błędami i 5 pułapkami, trzy tickety,
+scorer per faza. Szczegóły i uruchomienie: `eval/README.md` (`npm run eval`).

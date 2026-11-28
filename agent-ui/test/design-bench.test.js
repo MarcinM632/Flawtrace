@@ -37,7 +37,7 @@ test('typowe błędy agenta obniżają wynik: domyślona luka, zły rabat na pro
 });
 
 test('pominięta reguła obniża recall, a sukces dla wartości poza zakresem liczy się jako błędny wynik', () => {
-  const life = bench.score(kase('order-lifecycle'), ref('order-lifecycle').replace(/- for a shipped order POST \/orders\/\{id\}\/cancel.*\n/, ''));
+  const life = bench.score(kase('order-lifecycle'), ref('order-lifecycle').replace(/- for a shipped order POST \/orders\/\{id\}\/cancel.*\r?\n/, ''));
   assert.equal(life.recall, 80);
   assert.deepEqual(life.rules.filter((x) => !x.covered).map((x) => x.id), ['R5']);
   const val = bench.score(kase('order-validation'), ref('order-validation').replace('quantity=101 => 400 rejected, the order list count is unchanged (nothing stored)', 'quantity=101 => 201 created'));
