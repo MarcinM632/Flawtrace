@@ -79,6 +79,15 @@ async function ftStart(){
   ftRenderForm();
 }
 
+/* Evidence beside a result to confirm: the calls the error cites (request and answer), or the run with the browser steps. */
+function ftEvidence(i){
+  if(i.evidence&&i.evidence.length)return '<details class="ft-ev"><summary>Evidence: '+i.evidence.map(e=>esc(e.ref+' '+(e.endpoint||'')+(e.status!=null?' → '+e.status:''))).join(', ')+'</summary>'
+    +i.evidence.map(e=>'<div class="mono"><b>'+esc(e.ref)+'</b> '+esc(e.url||e.endpoint)+(e.request?'<pre>sent: '+esc(e.request)+'</pre>':'')+'<pre>answer: '+esc(e.response)+'</pre></div>').join('')+'</details>';
+  if(i.noEvidence)return '<div class="ft-sub chk warn">No evidence: the error cites no call of this run. Check it yourself before you confirm it as a defect.</div>';
+  if(i.runId)return '<div class="ft-sub"><a href="#run-'+encodeURIComponent(i.runId)+'">Open the UI run with every browser step</a></div>';
+  return '';
+}
+
 /* ---- list ---- */
 function ftRenderList(){
   $('#ftListCount').textContent=FT.cases.length?String(FT.cases.length):'';
@@ -104,7 +113,7 @@ function ftConfirmHtml(v){
   const broken=['api','ui'].filter(k=>['failed','cancelled'].includes(v.stages[k].status));
   return `<div class="ft-sub">Decide for each result. Confirmed defects go to the documentation, and autotests will assert the correct behaviour for them. Nothing is run again.</div>`
     +(broken.length?`<div class="ft-warn">${broken.map(k=>k.toUpperCase()).join(' and ')} track did not finish, so its results are missing.</div>`:'')
-    +c.items.map(i=>{const d=FT.decisions[i.id]||'defect';return `<div class="ft-item"><div class="ft-main"><span class="rv-kind">${i.layer.toUpperCase()}</span> <b>${esc(i.title)}</b>${i.detail?`<div class="ft-sub">${esc(i.detail)}</div>`:''}</div>
+    +c.items.map(i=>{const d=FT.decisions[i.id]||'defect';return `<div class="ft-item"><div class="ft-main"><span class="rv-kind">${i.layer.toUpperCase()}</span> <b>${esc(i.title)}</b>${i.detail?`<div class="ft-sub">${esc(i.detail)}</div>`:''}${ftEvidence(i)}</div>
       <div class="seg" data-ft-dec="${esc(i.id)}"><button data-v="defect" class="${d==='defect'?'on':''}">Defect</button><button data-v="not-defect" class="${d==='not-defect'?'on':''}">Not a defect</button></div></div>`}).join('')
     +`<div class="field"><label for="ftNote">Note <span class="opt">optional</span></label><textarea id="ftNote" rows="2" placeholder="Anything the autotests and the documentation should know."></textarea></div>
       <button class="go" data-ft-act="confirm">Confirm results</button>`;

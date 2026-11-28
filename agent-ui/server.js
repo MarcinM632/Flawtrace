@@ -40,7 +40,18 @@ const onboarding = require('./lib/onboarding').create({ sources, llm: require('.
 const knowledgeBase = require('./lib/kb-init').create({ sources, knowledgeDir: () => sources.knowledgeDir() });
 const structure = require('./lib/structure');
 const agentsLib = require('./lib/agents');
+/** The call log of an API run (WORK_DIR/calls.jsonl of the qa MCP server) as ref -> entry, the evidence of its errors. */
+function callsOf(runId) {
+  let text = '';
+  const dir = path.join(RUNS_DIR, 'work', String(runId));
+  // The run folder without a log: the agent called nothing, so no error it reports has a call behind it.
+  try { text = fs.readFileSync(path.join(dir, 'calls.jsonl'), 'utf8'); } catch (_) { return fs.existsSync(dir) ? {} : null; }
+  const out = {};
+  for (const line of text.split('\n')) { try { const c = JSON.parse(line); if (c && c.ref) out[c.ref] = c; } catch (_) { /* a cut line */ } }
+  return out;
+}
 const fullTests = require('./lib/pipeline').create({
+  callsOf,
   lessons: { record: (x) => lessonsLib.record(sources.knowledgeDir(), x) },
   dir: path.join(DATA_DIR, 'fulltests'), runs, AGENTS, agentAvailable, startRun, autotestsFromRun, persistRun: persist, uiTest: uiTestLib,
   sources, parseAnalysis, parseDesign, parseReport,

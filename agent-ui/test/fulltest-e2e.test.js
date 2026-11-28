@@ -91,6 +91,9 @@ test('Full tests: static -> design -> API and UI together -> confirmation -> les
   const items = v.confirm.items;
   assert.deepEqual(items.map((i) => i.layer).sort(), ['api', 'ui', 'ui']);
   assert.ok(items.some((i) => i.layer === 'api' && /8-character password is rejected/.test(i.title)));
+  // The stand-in agent cites [c1] but never called the environment, so there is no call log: no evidence, and it says so.
+  assert.equal(items.find((i) => i.layer === 'api').noEvidence, true);
+  assert.ok(items.filter((i) => i.layer === 'ui').every((i) => i.runId === st.ui.runId), 'UI items link to their run');
 
   const decisions = Object.fromEntries(items.map((i) => [i.id, i.layer === 'api' ? 'defect' : 'not-defect']));
   const done = await call('POST', `/api/fulltest/${id}/confirm`, { decisions, note: 'UI text is a known copy issue' });

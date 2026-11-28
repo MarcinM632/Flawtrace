@@ -55,10 +55,29 @@ function whiteboxDigest(report, parseAnalysis, { cap = 3500 } = {}) {
   return clip(lines.join('\n'), cap);
 }
 
-/** Failed items of the API track: each error of the QA MCP report. */
-function apiItems(report, status, parseReport) {
+/**
+ * Failed items of the API track: each error of the QA MCP report. calls: the run's call log (ref -> { args, response }),
+ * when known. Every [cN] the error cites becomes evidence the tester sees next to the decision: the request that was
+ * sent and what the environment answered. An error that cites no call of the log is marked noEvidence.
+ */
+function apiItems(report, status, parseReport, calls = null) {
   const v = parseReport('execution', report, status);
-  return ((v && v.errors) || []).map((e, i) => ({ id: 'api:' + (i + 1), layer: 'api', title: clip(e.title || e.where || 'Error ' + (i + 1), 160), detail: clip([e.endpoint, e.expected && 'expected: ' + e.expected, e.actual && 'got: ' + e.actual].filter(Boolean).join(' | '), 300) }));
+  return ((v && v.errors) || []).map((e, i) => {
+    const item = { id: 'api:' + (i + 1), layer: 'api', title: clip(e.title || e.where || 'Error ' + (i + 1), 160), detail: clip([e.endpoint, e.expected && 'expected: ' + e.expected, e.actual && 'got: ' + e.actual].filter(Boolean).join(' | '), 300) };
+    if (!calls) return item;
+    const refs = [...new Set(String([e.actual, e.expected, e.step].join(' ')).match(/\bc\d+\b/g) || [])];
+    const evidence = refs.filter((r) => calls[r]).slice(0, 3).map((r) => evidenceOf(r, calls[r]));
+    return evidence.length ? { ...item, evidence } : { ...item, noEvidence: true };
+  });
+}
+/** One call of the log as evidence: what was sent and what came back, short enough to read beside the decision. */
+function evidenceOf(ref, c) {
+  const res = c.response || {};
+  return {
+    ref, endpoint: c.endpoint || '', status: res.status != null ? res.status : null, url: res.url || '',
+    request: clip(JSON.stringify(c.args && (c.args.body !== undefined ? c.args.body : c.args.query || c.args.path_params || '') || ''), 400),
+    response: clip(c.error ? 'error: ' + c.error : JSON.stringify(res.body === undefined ? null : res.body), 600),
+  };
 }
 
 /** Failed items of the UI track: every [sN] / [aN] line marked FAIL. */
@@ -300,7 +319,8 @@ function create(deps) {
     // 5. The user confirms what the tracks found.
     if (c.confirm.status === 'pending') {
       const am = runMeta(st.api.runId), um = runMeta(st.ui.runId);
-      const items = [...(am && am.report ? apiItems(am.report, am.reportStatus, parseReport) : []), ...(um && um.report ? uiItems(um.report) : [])];
+      const calls = am && deps.callsOf ? deps.callsOf(am.id) : null;
+      const items = [...(am && am.report ? apiItems(am.report, am.reportStatus, parseReport, calls) : []), ...(um && um.report ? uiItems(um.report).map((i) => ({ ...i, runId: um.id })) : [])];
       const broken = ['api', 'ui'].filter((k) => st[k].status === 'failed' || st[k].status === 'cancelled');
       st.api.note = st.api.note || (am ? `${am.reportStatus || am.status}, ${items.filter((i) => i.layer === 'api').length} error(s)` : '');
       st.ui.note = st.ui.note || (um ? `${um.reportStatus || um.status}, ${items.filter((i) => i.layer === 'ui').length} failed` : '');
