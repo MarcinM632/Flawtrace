@@ -2041,3 +2041,9 @@ table.tr tr.bad td{background:color-mix(in srgb,var(--danger, #d33) 6%,transpare
 /* Full tests: readiness of the task, shown before the first start */
 .err .ft-ready{color:var(--text,inherit);display:grid;gap:6px;margin-top:8px;font-weight:400}
 .ft-ready>b{font-weight:600}
+/* The readiness list is advice, not an error: neutral box, and the warnings marked in the warning colour. */
+.err:has(.ft-ready){background:transparent;border:0;padding:0}
+.ft-ready{border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:10px 13px}
+.ft-ready>b{color:var(--text-primary)}
+.ft-ready .chk.warn{border-left:3px solid var(--warn,#d99a2b)}
+.ft-ready .hint{color:var(--text-secondary,inherit)}
