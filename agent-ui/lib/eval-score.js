@@ -132,4 +132,20 @@ function summary(s, meta = {}) {
   return lines.join('\n');
 }
 
-module.exports = { findings, score, summary, matches, LAYERS };
+/** Over several rounds of the same tickets: which defects are found every time, only sometimes (luck), or never. */
+function stability(scores) {
+  const by = new Map();
+  for (const s of scores) {
+    for (const d of s.foundList) { const x = by.get(d.id) || { id: d.id, what: d.what, found: 0 }; x.found += 1; by.set(d.id, x); }
+    for (const d of s.missedList) if (!by.has(d.id)) by.set(d.id, { id: d.id, what: d.what, found: 0 });
+  }
+  const all = [...by.values()].map((x) => ({ ...x, rounds: scores.length }));
+  return {
+    rounds: scores.length,
+    always: all.filter((x) => x.found === scores.length),
+    sometimes: all.filter((x) => x.found > 0 && x.found < scores.length),
+    never: all.filter((x) => x.found === 0),
+  };
+}
+
+module.exports = { findings, score, summary, stability, matches, LAYERS };

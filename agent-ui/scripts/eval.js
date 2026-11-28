@@ -7,6 +7,7 @@
 //   npm run eval -- --budget 3            pause a case after $3 (then it is stopped and scored as it is)
 //   npm run eval -- --score <resultsDir>  score saved reports again, no agents (after a change of the scorer)
 //   --dry                                 only check the setup (shop, spec, repo, agents), start no case
+//   --repeat 3                            the same tickets 3 times: which defects are found every time, which only by luck
 //   --keep                                keep the temporary data folder (runs, clones) for a look
 //
 // What it does: builds the shop repo, starts the shop and a separate Flawtrace instance with its own data folder (your
@@ -21,7 +22,7 @@ const net = require('net');
 const { spawn, execFileSync } = require('child_process');
 const { build } = require('../eval/build-shop');
 const expected = require('../eval/expected');
-const { score, summary, LAYERS } = require('../lib/eval-score');
+const { score, summary, stability, LAYERS } = require('../lib/eval-score');
 
 const APP = path.join(__dirname, '..');
 const EVAL = path.join(APP, 'eval');
@@ -149,6 +150,35 @@ async function main() {
     log(`Flawtrace (eval instance) on ${base}, data in ${dataDir}`);
     if (opt('dry')) { log(`Dry run: setup works (spec, repo, API track, whitebox: ${ft.agents.whitebox.join(',') || 'none'}, UI: ${ft.agents.ui}). No case started.`); fs.rmSync(resultsDir, { recursive: true, force: true }); return; }
 
+    // --repeat N: the same tickets N times. A defect found in only some rounds is luck, not detection (point 5).
+    const repeat = Math.max(1, Math.min(5, Number(opt('repeat', 1)) || 1));
+    const rounds = [];
+    for (let k = 1; k <= repeat; k++) {
+      if (repeat > 1) log(`Round ${k} of ${repeat}`);
+      const res = await round(repeat > 1 ? path.join(resultsDir, 'run-' + k) : resultsDir);
+      if (res.infra) {
+        console.log(`\nNo score${rounds.length ? ' for round ' + k : ''}: the run hit a problem of the model account, not of the agents (${res.infra}).\nThis round was not written to eval/history.jsonl. Run the benchmark again when the account works.`);
+        process.exitCode = 2;
+        break;
+      }
+      rounds.push(res);
+      console.log('\n' + (repeat > 1 ? `Round ${k}: ` : '') + res.text + '\n\nReports and score: ' + res.dir);
+    }
+    if (rounds.length > 1) {
+      const st = stability(rounds.map((r) => r.s));
+      fs.writeFileSync(path.join(resultsDir, 'stability.json'), JSON.stringify(st, null, 2));
+      fs.appendFileSync(historyFile, JSON.stringify({ at: new Date().toISOString(), commit: commit(), kind: 'stability', tickets: only, rounds: rounds.length, always: st.always.length, sometimes: st.sometimes.length, never: st.never.length, flaky: st.sometimes.map((d) => d.id) }) + '\n');
+      console.log(`\nRepeatability over ${rounds.length} rounds: found every time ${st.always.length}, only sometimes ${st.sometimes.length}${st.sometimes.length ? ' (' + st.sometimes.map((d) => `${d.id} ${d.found}/${d.rounds}`).join(', ') + ')' : ''}, never ${st.never.length}.`);
+    }
+  } finally {
+    cleanup();
+    if (!opt('keep')) { await sleep(1000); try { fs.rmSync(work, { recursive: true, force: true }); } catch (_) { console.log('Could not remove ' + work); } }
+    else console.log('Kept: ' + work);
+  }
+
+  /** One round: every ticket once, reports saved under dir, scored, one line in the history. */
+  async function round(resultsDir) {
+    fs.mkdirSync(resultsDir, { recursive: true });
     const started = Date.now();
     const outcomes = {};
     let infra = '';
@@ -157,11 +187,7 @@ async function main() {
       try { outcomes[t] = await runCase(base, t, shopBase, budget, timeoutMin); } catch (e) { outcomes[t] = { error: e.message, notes: [] }; log(`${t}: ${e.message}`); if (e.infra) infra = e.message; }
     };
     if (opt('parallel')) await Promise.all(only.map(one)); else for (const t of only) await one(t);
-    if (infra) {
-      console.log(`\nNo score: the run hit a problem of the model account, not of the agents (${infra}).\nNothing was written to eval/history.jsonl. Run the benchmark again when the account works.`);
-      process.exitCode = 2;
-      return;
-    }
+    if (infra) return { infra };
 
     // Reports of every phase, saved as files so they can be read and scored again.
     const reports = {};
@@ -190,11 +216,7 @@ async function main() {
     fs.writeFileSync(path.join(resultsDir, 'summary.txt'), text + '\n');
     fs.appendFileSync(historyFile, JSON.stringify({ at: new Date().toISOString(), commit: commit(), tickets: only, recall: s.recall, found: s.found, total: s.total, falseAlarms: s.falseAlarms, precision: s.precision,
       phase: Object.fromEntries(LAYERS.map((l) => [l, s.phase[l].ran ? `${s.phase[l].found}/${s.phase[l].expected}` : null])), costUsd: Math.round(cost * 100) / 100, minutes, missed: s.missedList.map((d) => d.id) }) + '\n');
-    console.log('\n' + text + '\n\nReports and score: ' + resultsDir);
-  } finally {
-    cleanup();
-    if (!opt('keep')) { await sleep(1000); try { fs.rmSync(work, { recursive: true, force: true }); } catch (_) { console.log('Could not remove ' + work); } }
-    else console.log('Kept: ' + work);
+    return { s, text, dir: resultsDir };
   }
 }
 

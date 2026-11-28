@@ -226,3 +226,14 @@ Poza zmianą: FREE_SHIPPING_FROM changed from 200 to 300 in src/config.js`;
   assert.deepStrictEqual(s.foundList.map((d) => d.id).sort(), ['W1', 'W5', 'W7']);
   assert.deepStrictEqual([s.phase.whitebox.found, s.phase.whitebox.expected], [3, 4]);
 });
+
+test('stability: over rounds, a defect found every time, only sometimes, or never', () => {
+  const { stability } = require('../lib/eval-score');
+  const a = score({ 'BENCH-1': { static: STATIC_GOOD, whitebox: '', api: API_GOOD, ui: UI_GOOD } }, { DEFECTS, TRAPS });
+  const b = score({ 'BENCH-1': { static: STATIC_GOOD, whitebox: '', api: '', ui: '' } }, { DEFECTS, TRAPS });
+  const st = stability([a, b]);
+  assert.deepStrictEqual(st.always.map((d) => d.id).sort(), ['S1', 'S2', 'S3']);
+  assert.deepStrictEqual(st.sometimes.map((d) => d.id).sort(), ['R1', 'R3', 'R6', 'R7']);
+  assert.deepStrictEqual(st.never.map((d) => d.id).sort(), ['R2', 'R4', 'R5']);
+  assert.strictEqual(st.sometimes[0].rounds, 2);
+});

@@ -20,6 +20,7 @@ npm run eval -- --dry              # check the setup only, no tokens
 npm run eval                       # all three tickets, one after another (real agents, real tokens)
 npm run eval -- --parallel         # the same, at the same time
 npm run eval -- --only BENCH-2     # one ticket
+npm run eval -- --repeat 3         # the same tickets 3 times: what is found every time, what only by luck
 npm run eval -- --score eval/results/<stamp>   # score saved reports again (after a change of expected.js or the scorer)
 ```
 
