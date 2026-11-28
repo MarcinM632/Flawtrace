@@ -18,6 +18,7 @@ const { loadAll, persist, runs } = require('./lib/store');
 const uiTestLib = require('./lib/uitest');
 const uiRun = require('./lib/ui-run');
 const uiFix = require('./lib/ui-fix');
+const uiMutation = require('./lib/ui-mutation');
 const runReport = require('./lib/run-report');
 const ciExport = require('./lib/ci-export');
 const selfHeal = require('./lib/self-heal');
@@ -630,6 +631,14 @@ const server = http.createServer(async (req, res) => {
         return json(res, 202, uiRun.startTestRun(src, creds));
       } catch (e) { return json(res, e.code || 500, { error: e.message }); }
     }
+    // UI Tests: does the passing test catch a broken app? Mutation check through a proxy that breaks one API answer at a time.
+    if ((m = p.match(/^\/api\/runs\/([\w-]+)\/mutation-test$/)) && req.method === 'POST') {
+      const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
+      try {
+        const b = await body(req);
+        return json(res, 202, uiMutation.startMutation(src, { username: String(b.username || '').slice(0, 200), password: String(b.password || '').slice(0, 200) }));
+      } catch (e) { return json(res, e.code || 500, { error: e.message }); }
+    }
     // UI Tests: repair of a failing test. The agent proposes, the app checks the patch and proves it, the user decides.
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/test-fix(?:\/(apply|reject))?$/)) && req.method === 'POST') {
       const src = runs.get(m[1]); if (!src) return json(res, 404, { error: 'Not found' });
@@ -782,6 +791,7 @@ const server = http.createServer(async (req, res) => {
       const r = runs.get(m[1]); if (!r) return json(res, 404, { error: 'Not found' });
       uiRun.reconcile(r.meta);
       uiFix.reconcile(r.meta);
+      uiMutation.reconcile(r.meta);
       // Raport rozłożony na karty dla widoku; stare raporty też (parser rozumie dawny format). null = UI pokaże tekst.
       const mode = (AGENTS[r.meta.agent] || {}).mode || 'qa';
       const view = parseReport(mode, r.meta.report, r.meta.reportStatus);

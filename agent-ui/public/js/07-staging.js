@@ -63,7 +63,24 @@ function tsRunBlock(m){
       +(tr.hasReport?'<div class="stg-act"><a class="btn" id="trReport" target="_blank" rel="noopener" href="/api/runs/'+encodeURIComponent(m.id)+'/test-report/">'+ico('chart',13)+' Open the report with screenshots and video</a></div>':'')
       +(tr.tail?'<details><summary>output</summary><pre>'+esc(tr.tail)+'</pre></details>':'')+'</div>';
   }
-  return h+fixBlock(m)+'</div>';
+  return h+mutationBlock(m)+fixBlock(m)+'</div>';
+}
+/* A passing test is only worth something if it fails when the app is broken: the app breaks one API answer at a time. */
+const MU_VERDICT={strong:['Strong: the tests catch most broken answers','ok'],weak:['Weak: the tests pass while the app is broken','bad'],none:['Not measurable','warn']};
+function mutationBlock(m){
+  const tr=m.testRun,mu=m.mutation;
+  if(!tr||tr.state!=='passed')return '';
+  let h='<div class="sec-head" style="margin-top:20px"><h4>Does the test catch a broken app?</h4><span class="sec-meta">the app changes one answer of the API at a time (a number, a text, a missing field, an error turned into success) and runs the test again</span></div>';
+  if(mu&&mu.state==='running')return h+'<div class="chk warn"><b>Checking</b> · '+(mu.total?mu.done+' of '+mu.total+' broken versions':'baseline run')+' · '+Math.max(0,Math.round((Date.now()-mu.startedAt)/1000))+' s</div>';
+  if(mu&&mu.state==='error')h+='<div class="chk bad">'+esc(mu.error||'The check failed.')+'</div>';
+  if(mu&&mu.state==='done'){
+    const v=MU_VERDICT[mu.verdict]||[mu.verdict,''];
+    const surv=Object.entries(mu.survivors||{});
+    h+='<div class="chk '+v[1]+'"><b>'+esc(v[0])+'</b>'+(mu.score!=null?' · score '+mu.score+'% ('+mu.killed+' caught, '+mu.survived+' not caught'+(mu.notReached?', '+mu.notReached+' not reached':'')+')':'')
+      +(mu.error?'<div>'+esc(mu.error)+'</div>':'')
+      +(surv.length?'<div style="margin-top:.4rem">Not checked by any test:</div><ul class="files">'+surv.map(([ep,list])=>'<li><span class="mono">'+esc(ep)+'</span><span>'+list.map(esc).join('; ')+'</span></li>').join('')+'</ul>':'')+'</div>';
+  }
+  return h+'<div class="stg-act"><button class="btn'+(mu?' sm':'')+'" id="muGo">'+ico('spark',13)+' '+(mu&&mu.state!=='error'?'Check again':'Check the test against a broken app')+'</button></div>';
 }
 /* A failing run: the agent says per test whether the test is outdated or the app changed; a patch is only proposed for the first kind. */
 const FIX_CLASS={SELECTOR:['Outdated locator','p-done'],APP_BUG:['Possible defect in the app','p-failed'],UNCLEAR:['Not enough evidence','p-cancelled']};
@@ -95,11 +112,12 @@ function fixBlock(m){
 }
 let trTimer=null;
 function bindTsRun(m){
-  const busy=(!!m.testRun&&TR_BUSY.includes(m.testRun.state))||(!!m.testFix&&['analyzing','verifying'].includes(m.testFix.state));
+  const busy=(!!m.testRun&&TR_BUSY.includes(m.testRun.state))||(!!m.testFix&&['analyzing','verifying'].includes(m.testFix.state))||(!!m.mutation&&m.mutation.state==='running');
   const fx=(url,body)=>post('/api/runs/'+m.id+url,body||{}).then(()=>reload(m.id)).catch(e=>{toast(e.message,'bad');reload(m.id)});
   if($('#tfGo'))$('#tfGo').onclick=()=>{$('#tfGo').disabled=true;fx('/test-fix',{username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''})};
   if($('#tfApply'))$('#tfApply').onclick=()=>{$('#tfApply').disabled=true;fx('/test-fix/apply').then(()=>toast('Patch applied. Run the test again.'))};
   if($('#tfReject'))$('#tfReject').onclick=()=>fx('/test-fix/reject');
+  if($('#muGo'))$('#muGo').onclick=()=>{$('#muGo').disabled=true;fx('/mutation-test',{username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''})};
   // Self-heal: re-drive the UI agent from the saved intent; starts a fresh UI Tests run on the original goal+URL.
   if($('#shGo'))$('#shGo').onclick=()=>{$('#shGo').disabled=true;post('/api/runs/'+m.id+'/self-heal',{action:'redrive',username:$('#trUser')?$('#trUser').value:'',password:$('#trPass')?$('#trPass').value:''}).then(j=>{toast('Re-driving from intent: a new UI test run started.');if(j&&j.id)location.hash='run-'+j.id;reload(m.id)}).catch(e=>{toast(e.message,'bad');$('#shGo').disabled=false})};
   if(busy&&!trTimer)trTimer=setInterval(()=>{if(!current||current.id!==m.id){clearInterval(trTimer);trTimer=null;return}reload(m.id)},2000);

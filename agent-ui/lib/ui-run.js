@@ -97,7 +97,9 @@ function startTestRun(r, creds) {
   if (!m.url) throw httpErr(400, 'This run has no page address.');
   if (active.has(m.id)) throw httpErr(409, 'The test is already running.');
   const secrets = creds && creds.password ? [creds.password] : [];
+  if (m.mutation && m.mutation.state === 'running') throw httpErr(409, 'The mutation check is running on this project. Wait until it ends.');
   m.testFix = null; // a new run starts a new question; an older patch no longer belongs to it
+  m.mutation = null; // so does an older mutation check: the project may have changed
   const tr = m.testRun = { state: 'preparing', startedAt: Date.now(), finishedAt: null, stats: null, tests: [], tail: '', error: null, hasReport: false, withLogin: !!(creds && (creds.username || creds.password)) };
   const entry = { proc: null, cancelled: false };
   active.set(m.id, entry);
