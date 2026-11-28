@@ -20,7 +20,8 @@ const DEFECTS = [
   { id: 'R1', ticket: 'BENCH-1', primary: 'api', layers: ['api', 'ui'], what: 'The duplicate-email check is case-sensitive: Anna@x.com registers again after anna@x.com',
     match: [[/case|upper|lower|capital/i, /duplicate|already|409|twice|second|again|unique/i]] },
   { id: 'R2', ticket: 'BENCH-1', primary: 'api', layers: ['api', 'ui'], what: 'A password of exactly 8 characters (with a digit) is rejected; the rule is at least 8',
-    match: [[/\b8\b|eight/i, /reject|400|refus|not accept|denied|boundary|exactly/i]] },
+    // The 8-character case itself, not a 7-character check or a finding that only quotes the "at least 8" rule.
+    match: [[/\b8[- ]character password|exactly 8|eight[- ]character|password of 8|8 characters (and|with) a digit[^.]{0,40}(reject|400|refus)/i, /reject|400|refus|not accept|denied|fail/i]] },
   { id: 'R3', ticket: 'BENCH-1', primary: 'api', layers: ['api'], what: 'The registration response contains passwordHash',
     match: [[/passwordHash|password hash|hash of the password|hashed password/i]] },
   { id: 'R4', ticket: 'BENCH-1', primary: 'api', layers: ['api', 'ui'], what: 'An unknown email returns 404 "User not found" instead of 401 "Invalid email or password" (user enumeration)',
@@ -36,7 +37,8 @@ const DEFECTS = [
   { id: 'S2', ticket: 'BENCH-1', primary: 'static', layers: ['static'], what: '"Sign-in must be secure" is not testable: no measurable criterion',
     match: [[/secure/i, /vague|not testable|untestable|measurable|undefined|ambiguous|no criteri|not defined|unclear|subjective/i]] },
   { id: 'S3', ticket: 'BENCH-1', primary: 'static', layers: ['static'], what: 'No limits for the name (length, characters, whitespace)',
-    match: [[/name/i, /length|maximum|max|limit|characters|whitespace|long/i]] },
+    // A limit OF THE NAME: the word "name" near a length/limit word, not any finding that mentions a name and characters.
+    match: [[/\bname\b[^.?\n]{0,60}\b(length|maximum|max|limit|long|whitespace)|\b(length|maximum|max|limit)s?\b[^.?\n]{0,60}\bname\b/i]] },
 
   // ---- BENCH-2 search and pagination
   { id: 'P1', ticket: 'BENCH-2', primary: 'api', layers: ['api', 'ui'], what: 'Search is case-sensitive: "MUG" finds nothing',
@@ -85,7 +87,8 @@ const TRAPS = [
   { id: 'T1', ticket: 'BENCH-1', what: 'The email is saved in lower case, as the ticket says',
     match: [[/lower-?case|lowercased|normali[sz]ed/i, /email/i, /saved|stored|returned|altered|changed|modif|convert/i]], unless: /duplicate|409|twice|already|again|second/i },
   { id: 'T2', ticket: 'BENCH-1', what: 'expiresIn 3600 is the agreed 1-hour token',
-    match: [[/expiresIn|3600/i, /should|expected|wrong|short|long|incorrect/i]] },
+    // A complaint ABOUT the token lifetime, not a finding that just quotes the observed expiresIn of a login.
+    match: [[/(expiresIn|token lifetime|token expiry|3600)[^.\n]{0,60}(too short|too long|wrong|incorrect|should be|instead of|not 1 hour|not one hour)/i]] },
   { id: 'T3', ticket: 'BENCH-2', what: 'A one-character query lists all products, as the ticket says',
     match: [[/one|single|1 char|short/i, /all products|ignored|not filter|every product|whole catalogue|returns all/i]] },
   { id: 'T4', ticket: 'BENCH-3', what: 'An expired code returns 422, as the ticket says (not 400)',

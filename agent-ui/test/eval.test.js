@@ -237,3 +237,18 @@ test('stability: over rounds, a defect found every time, only sometimes, or neve
   assert.deepStrictEqual(st.never.map((d) => d.id).sort(), ['R2', 'R4', 'R5']);
   assert.strictEqual(st.sometimes[0].rounds, 2);
 });
+
+test('patterns credit the right finding (cases seen in the first live run)', () => {
+  const { matches } = require('../lib/eval-score');
+  const byId = Object.fromEntries([...DEFECTS, ...TRAPS].map((d) => [d.id, d]));
+  // R2 is the 8-character case, not the duplicate-email finding or a 7-character check.
+  assert.ok(matches(byId.R2, 'High: a valid 8-character password is rejected\nexpected: Abcdef12 returns 201\ngot: 400'));
+  assert.ok(!matches(byId.R2, 'High: the same email can be registered more than once\nexpected: 409 for a mixed-case repeat, also for 8 accounts'));
+  assert.ok(!matches(byId.R2, 'Comparison: with 7 characters, POST /api/auth/register returned 400 and the alert showed the 8-characters-and-a-digit rule.'));
+  // S3 is a limit of the name, not a finding about the 6-character rule of the form.
+  assert.ok(matches(byId.S3, 'Are there maximum lengths for name, email and password? No source gives one.'));
+  assert.ok(!matches(byId.S3, '[Inconsistency] [Major] Existing behaviour: the registration form shows a 6-character rule. Name of the file: app.js'));
+  // T2 is a complaint about the token lifetime, not a login answer that happens to show expiresIn.
+  assert.ok(!matches(byId.T2, 'Critical: five wrong passwords do not lock the account. expected: 423. got: Status 200 with a token and expiresIn 3600'));
+  assert.ok(matches(byId.T2, 'The token expiresIn 3600 is too short for a working day'));
+});
