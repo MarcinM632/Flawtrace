@@ -25,3 +25,6 @@ cloud-data/
 *.db
 *.db-wal
 *.db-shm
+
+# Live benchmark runs (reports of each run); the summary line of every run is kept in eval/history.jsonl
+agent-ui/eval/results/

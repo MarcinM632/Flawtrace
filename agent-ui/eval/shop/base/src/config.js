@@ -1,0 +1,10 @@
+// Shop settings. Amounts are in PLN.
+module.exports = {
+  SHIPPING_FEE: 15,
+  FREE_SHIPPING_FROM: 200,
+  TOKEN_TTL_SECONDS: 3600,
+  MAX_FAILED_LOGINS: 5,
+  LOCK_MINUTES: 15,
+  DEFAULT_PAGE_SIZE: 10,
+  MAX_PAGE_SIZE: 100,
+};
