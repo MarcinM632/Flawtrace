@@ -569,6 +569,33 @@ function auditDesignConcrete(report, workDir) {
 }
 
 /** Tekst tury korekty dla agenta, gdy audyt coś znalazł. */
+/**
+ * The Static review report, checked for what the app itself reads from it (lib/pipeline.js): the verdict, the
+ * Repo/mode line that decides whether the whitebox phase runs, and findings in the numbered form the app counts.
+ * A report the app cannot read silently skips a phase or passes a broken task, so these go to the correction turn.
+ */
+function auditStatic(report) {
+  const issues = [];
+  const text = String(report || '');
+  if (!text.trim()) return issues;
+  const verdict = (text.match(/STATUS:\s*(TASK OK|NEEDS REWORK|BLOCKED)\b/) || [])[1] || '';
+  if (!verdict) issues.push({ code: 'static-no-verdict', text: 'The report has no verdict line "STATUS: TASK OK | NEEDS REWORK | BLOCKED — <reason>" under ## Verdict, so the app cannot tell whether testing may go on' });
+  if (!/^Repo\/mode:/im.test(text)) issues.push({ code: 'static-no-mode', text: 'The report has no "Repo/mode:" line, so the app cannot tell whether the change exists in the code (whitebox phase)' });
+  const sec = (text.split(/^## Findings\s*$/m)[1] || '').split(/^## /m)[0];
+  const numbered = sec.split('\n').filter((l) => /^\d+\.\s/.test(l));
+  const good = numbered.filter((l) => /^\d+\. \[[A-Za-z ]+\] \[(Critical|Major|Minor)\] /.test(l));
+  const bad = numbered.filter((l) => !good.includes(l));
+  if (bad.length) issues.push({ code: 'static-finding-format', items: bad.slice(0, 5), text: `${bad.length} finding title(s) are not in the form "N. [<Class>] [Critical|Major|Minor] <title>", so the app does not count them:\n  ${bad.slice(0, 5).join('\n  ')}` });
+  const sev = good.map((l) => l.match(/\] \[(Critical|Major|Minor)\] /)[1]);
+  const heavy = sev.filter((s) => s !== 'Minor').length;
+  if (verdict === 'TASK OK' && heavy) issues.push({ code: 'static-verdict-mismatch', text: `The verdict is TASK OK but ${heavy} finding(s) are Major or Critical; TASK OK needs none` });
+  if (verdict === 'NEEDS REWORK' && good.length && !heavy) issues.push({ code: 'static-verdict-mismatch', text: 'The verdict is NEEDS REWORK but every finding is Minor; NEEDS REWORK needs at least one Major or Critical finding' });
+  if (verdict === 'BLOCKED' && !sev.includes('Critical')) issues.push({ code: 'static-verdict-mismatch', text: 'The verdict is BLOCKED but no finding is Critical' });
+  const declared = (text.match(/^Review:.*\bfindings:\s*(\d+)/im) || [])[1];
+  if (declared != null && Number(declared) !== good.length && !(Number(declared) === 0 && /^none:/im.test(sec.trim()))) issues.push({ code: 'static-count-mismatch', text: `The Review line says findings: ${declared}, but ## Findings has ${good.length}` });
+  return issues;
+}
+
 function correctionPrompt(mode, issues) {
   const list = issues.map((i) => '- ' + i.text).join('\n');
   if (mode === 'uitest') {
@@ -666,6 +693,7 @@ function correctionPrompt(mode, issues) {
 }
 
 module.exports = {
+  auditStatic,
   auditDesignBugs,
   auditDesignBusiness,
   auditDesignConcrete,
