@@ -571,6 +571,18 @@ function auditDesignConcrete(report, workDir) {
 /** Tekst tury korekty dla agenta, gdy audyt coś znalazł. */
 function correctionPrompt(mode, issues) {
   const list = issues.map((i) => '- ' + i.text).join('\n');
+  if (mode === 'uitest') {
+    return 'THE APP CHECKED YOUR REPORT AGAINST WHAT THE BROWSER REALLY RETURNED IN THIS RUN and found these problems:\n' + list + '\n\n'
+      + 'Correct the report. A PASS line states only what a browser snapshot of this run showed, with the exact visible words. '
+      + (issues.some((i) => i.code === 'ui-text-not-seen')
+        ? 'For each quoted text that the browser never showed: take a snapshot now and quote the real text, or mark the line FAIL with what the page showed instead, or remove the claim. '
+        : '')
+      + (issues.some((i) => i.code === 'status-mismatch' || i.code === 'ui-findings-empty')
+        ? 'STATUS follows the lines: one FAIL makes it FAILED, VERIFIED needs every line PASS and at least one check. Every FAIL is described under ## Findings. '
+        : '')
+      + 'Do not repeat the whole scenario; use the browser only to read what you need to correct. Never write the password. '
+      + 'Return the WHOLE final answer again in the same format (STATUS, --- TREŚĆ ---, ## Steps, ## Checks, ## Findings, --- KONIEC TREŚCI ---).';
+  }
   if (mode === 'qamcp') {
     return 'APLIKACJA SPRAWDZIŁA TWÓJ RAPORT Z TYM, CO NAPRAWDĘ WYKONAŁEŚ W TYM RUNIE, i znalazła rozbieżności:\n' + list + '\n\n'
       + 'Popraw raport. Zasady: raport opisuje wyłącznie wywołania, które wykonałeś, i wartości, które naprawdę odczytałeś. '

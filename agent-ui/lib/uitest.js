@@ -144,6 +144,42 @@ function parseReport(report) {
   return { steps: steps.length, checks: checks.length, fails };
 }
 
+const normText = (s) => String(s || '').toLowerCase().replace(/\\"/g, '"').replace(/\s+/g, ' ').trim();
+/** Texts quoted in a report line: "..." (also typographic quotes), 3 to 120 characters, a trailing ellipsis dropped. */
+const quoted = (line) => [...String(line).matchAll(/["“„]([^"“”„\n]{3,120}?)["”“]/g)].map((m) => m[1].replace(/(…|\.\.\.)$/, '').trim()).filter((q) => q.length >= 3 && !/^<.*>$/.test(q));
+
+/**
+ * The app's check of a UI Tests report against the run itself. Returns issues ({ code, text }) for the one correction turn.
+ * opts.seen: what the browser tools returned in this run (page snapshots) plus what the agent typed; opts.actions: browser
+ * actions that change the page. A PASS line that quotes a text the browser never showed is a claim without evidence.
+ */
+function auditReport(report, status, { seen = [], actions = null, seenRecorded = true } = {}) {
+  const issues = [];
+  const text = String(report || '');
+  if (!text.trim()) return issues;
+  const rows = text.split('\n').map((l) => ({ line: l.trim(), m: l.match(/^\s*\[([sa]\d+)\]\s*(PASS|FAIL)\b/i) })).filter((x) => x.m);
+  const steps = rows.filter((x) => x.m[1][0] === 's').length, checks = rows.filter((x) => x.m[1][0] === 'a').length;
+  const fails = rows.filter((x) => /fail/i.test(x.m[2]));
+  const st = String(status || '').toUpperCase();
+  const missing = ['Steps', 'Checks', 'Findings'].filter((h) => !new RegExp('^##\\s*' + h + '\\b', 'im').test(text));
+  if (missing.length) issues.push({ code: 'missing-section', items: missing, text: `Missing section${missing.length > 1 ? 's' : ''}: ${missing.map((h) => '## ' + h).join(', ')}` });
+  if (/VERIFIED/.test(st) && fails.length) issues.push({ code: 'status-mismatch', text: `Status is VERIFIED but ${fails.length} line(s) are FAIL (${fails.map((x) => x.m[1]).join(', ')})` });
+  if (/VERIFIED/.test(st) && !checks) issues.push({ code: 'status-mismatch', text: 'Status is VERIFIED but the report has no check [aN]' });
+  if (/FAILED/.test(st) && !fails.length) issues.push({ code: 'status-mismatch', text: 'Status is FAILED but no step or check is FAIL' });
+  if (!/^(VERIFIED|FAILED|BLOCKED)\b/.test(st)) issues.push({ code: 'status-unknown', text: `Status "${status || ''}" is not VERIFIED, FAILED or BLOCKED` });
+  const findings = (text.split(/^##\s*Findings\b/im)[1] || '').replace(/^--- KONIEC TREŚCI ---[\s\S]*$/m, '').trim();
+  if (fails.length && /^(none\.?|-)?$/i.test(findings)) issues.push({ code: 'ui-findings-empty', text: 'Lines are FAIL but ## Findings says nothing: name each defect there, with what the page showed and what the task expected' });
+  if (actions === 0 && steps > 0) issues.push({ code: 'ui-no-actions', text: `The report has ${steps} step(s) but the run made no browser action` });
+  else if (actions != null && steps > 2 * actions + 3) issues.push({ code: 'ui-steps-without-actions', text: `The report has ${steps} steps but the run made only ${actions} browser action(s): describe only the steps you really performed` });
+  if (seenRecorded && seen.length) {
+    const page = normText(seen.join('\n'));
+    const unseen = [];
+    for (const x of rows.filter((r) => /pass/i.test(r.m[2]))) for (const q of quoted(x.line)) if (!page.includes(normText(q))) unseen.push(`[${x.m[1]}] "${q}"`);
+    if (unseen.length) issues.push({ code: 'ui-text-not-seen', items: unseen.slice(0, 8), text: `${unseen.length} quoted text(s) in PASS lines never appeared in what the browser returned in this run:\n  ${unseen.slice(0, 8).join('\n  ')}` });
+  }
+  return issues;
+}
+
 /** Can the user accept this run? Only a fully passed, evidenced one. Returns '' when yes, else the reason. */
 function acceptBlocker(meta) {
   if (meta.agent !== 'uitest') return 'Not a UI Tests run.';
@@ -182,4 +218,4 @@ function buildFlow(meta, events) {
   ].join('\n');
 }
 
-module.exports = { MAX_STEPS, OVERRIDE_UITEST, acceptBlocker, buildFlow, formHints, guard, parseReport, playwrightServer, scrub, skillsText, uiPrompt };
+module.exports = { MAX_STEPS, OVERRIDE_UITEST, acceptBlocker, auditReport, buildFlow, formHints, guard, parseReport, playwrightServer, scrub, skillsText, uiPrompt };

@@ -118,6 +118,15 @@ function writeRiskMetrics(workDir) {
   fs.writeFileSync(path.join(workDir, 'risk-metrics.md'), out.join('\n') + '\n');
 }
 
+/** What the browser tools returned in this run (page snapshots), kept in memory for the UI report audit, never in the event log. */
+function noteSeen(r, text) {
+  const t = String(text || '');
+  if (!t) return;
+  r.seenChars = (r.seenChars || 0) + t.length;
+  if (r.seenChars > 4e6) return;
+  (r.seen = r.seen || []).push(t);
+}
+
 /** Treść tool_result ze stream-json: napis albo lista bloków {type:'text', text}. */
 function toolResultText(content) {
   if (typeof content === 'string') return content;
@@ -606,7 +615,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
                     if (process.platform === 'win32') spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }); else proc.kill();
                   }
                 }
-                if (ev.type === 'endpoint' && b.id) pendingEp.set(b.id, ev);
+                if ((ev.type === 'endpoint' || ev.type === 'browser') && b.id) pendingEp.set(b.id, ev);
               } else if (b.type === 'text' && b.text.trim()) { if (sub === 'main') lastText = b.text; emit(r, { type: 'text', who: sub, text: b.text.slice(0, 1500) }); }
             }
           } else if (j.type === 'user' && j.message && Array.isArray(j.message.content)) {
@@ -614,6 +623,7 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
               const ev = b.type === 'tool_result' && pendingEp.get(b.tool_use_id);
               if (!ev) continue;
               pendingEp.delete(b.tool_use_id);
+              if (ev.type === 'browser') { noteSeen(r, toolResultText(b.content)); continue; }
               // 1200 znaków ucinało dashboard ekspozycji w połowie listy hedgerów, a na tym opierał się werdykt (run 836a).
               ev.output = toolResultText(b.content).replace(/\s+/g, ' ').trim().slice(0, 5000);
               if (b.is_error) ev.error = true;
@@ -659,9 +669,9 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
           const why = uiGuard.check(name.replace(/^mcp__playwright__/, ''), t.input);
           if (why) { r.uiAbort = why; emit(r, { type: 'status', text: why }); }
         }
-        if (ev.type === 'endpoint') pendingAcp.set(t.id, ev);
+        if (ev.type === 'endpoint' || ev.type === 'browser') pendingAcp.set(t.id, ev);
       },
-      onToolResult: (t) => { const ev = pendingAcp.get(t.id); if (ev) { pendingAcp.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
+      onToolResult: (t) => { const ev = pendingAcp.get(t.id); if (ev && ev.type === 'browser') { pendingAcp.delete(t.id); noteSeen(r, t.text); } else if (ev) { pendingAcp.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
       onText: (text) => emit(r, { type: 'text', who: 'main', text: text.slice(0, 1500) }),
       onProc: (p) => { r.proc = p; },
     }).then((res) => {
@@ -704,9 +714,9 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
           const why = uiGuard.check(t.name.replace(/^mcp__playwright__/, ''), t.input);
           if (why) { r.uiAbort = why; emit(r, { type: 'status', text: why }); }
         }
-        if (ev.type === 'endpoint') pendingApi.set(t.id, ev);
+        if (ev.type === 'endpoint' || ev.type === 'browser') pendingApi.set(t.id, ev);
       },
-      onToolResult: (t) => { const ev = pendingApi.get(t.id); if (ev) { pendingApi.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
+      onToolResult: (t) => { const ev = pendingApi.get(t.id); if (ev && ev.type === 'browser') { pendingApi.delete(t.id); noteSeen(r, t.text); } else if (ev) { pendingApi.delete(t.id); ev.output = String(t.text).replace(/\s+/g, ' ').trim().slice(0, 5000); if (t.error) ev.error = true; } },
       onText: (text) => emit(r, { type: 'text', who: 'main', text: text.slice(0, 1500) }),
     }).then((res) => {
       // Co z ochron zadziałało w tym runie: widać w szczegółach runu i w raporcie zbiorczym.
@@ -728,8 +738,14 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
 
   // Audyt raportu przez apkę (lib/report-format.js): QA MCP kontra log wywołań, Analyses / Test design kontra pobrany kod.
   // Gdy coś się nie zgadza, ta sama sesja dostaje jedną turę korekty; to, czego agent nie poprawi, zostaje w meta.audit.
-  const auditKind = isQamcpLike(agent.mode) ? 'qamcp' : agent.mode === 'design' ? 'design' : agent.mode === 'planning' ? 'planning' : agent.mode === 'static' ? 'static' : agent.mode === 'analysis' ? 'analysis' : agent.mode === 'implementation' ? 'implementation' : !agent.mode ? 'qa' : null;
+  const auditKind = agent.mode === 'uitest' ? 'uitest' : isQamcpLike(agent.mode) ? 'qamcp' : agent.mode === 'design' ? 'design' : agent.mode === 'planning' ? 'planning' : agent.mode === 'static' ? 'static' : agent.mode === 'analysis' ? 'analysis' : agent.mode === 'implementation' ? 'implementation' : !agent.mode ? 'qa' : null;
   const runAudit = () => {
+    // UI Tests: the app checks the report against what the browser really returned in this run (lib/uitest.auditReport).
+    if (auditKind === 'uitest') {
+      const actions = r.events.filter((e) => e.type === 'browser' && !/snapshot|screenshot|console|network|wait_for|tabs/.test(e.text || '')).length;
+      const inputs = r.events.filter((e) => e.type === 'browser' && e.input).map((e) => e.input);
+      return { checked: null, issues: uiTest.auditReport(meta.report, meta.reportStatus, { seen: [...(r.seen || []), ...inputs], actions, seenRecorded: !!(r.seen && r.seen.length) }) };
+    }
     if (auditKind === 'qamcp') {
       const issues = auditQamcp(meta.report, meta.reportStatus, r.events, workDir);
       // Pentest: the app itself checks catalogue coverage (endpoints really called vs. the full catalogue),
@@ -767,8 +783,10 @@ Zrecenzuj ten task statycznie zgodnie z CLAUDE.md (kroki 1–8) i ze skillami re
   };
   // Drugi, niezależny agent (lib/verifier.js) sprawdza raport ze źródłami: odwołania, brak własnych słów, proste zdania.
   // Jego zarzuty dołączają do kontroli aplikacji i trafiają do tej samej jednej tury korekty autora.
-  const verifyKind = auditKind || (agent.mode === 'completion' ? 'completion' : null);
+  // UI Tests has no LLM verifier profile: its report is checked by the app against the browser output instead.
+  const verifyKind = auditKind === 'uitest' ? null : auditKind || (agent.mode === 'completion' ? 'completion' : null);
   const runVerifier = async () => {
+    if (!verifyKind) return { ran: false, checked: 0, issues: [], dropped: 0, error: 'not used for this report type' };
     if (!verifyKind || !verifierLib.enabled()) return verifierLib.verifyReport({ report: meta.report, kind: verifyKind, task: '', workDir });
     emit(r, { type: 'status', text: 'Verifier: a second agent is checking the report against the sources…' });
     const v = await verifierLib.verifyReport({ report: meta.report, kind: verifyKind, task: `${ticket}
@@ -779,7 +797,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
   };
   const verifierMeta = (v) => ({ ran: v.ran, checked: v.checked, problems: v.issues.length, dropped: v.dropped, error: v.error || null });
   const auditReport = async (res) => {
-    if (!verifyKind || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
+    if ((!verifyKind && !auditKind) || !meta.report || meta.error || meta.status === 'cancelled' || /PRZERWANO/i.test(meta.reportStatus || '')) return;
     try {
       const first = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
       // Pentest: warstwa transportu/HTTP celu (nagłówki, cookies, TLS, CORS), na którą MCP jest ślepy. Kilka
@@ -804,7 +822,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
       }
       // Gdy kontrola aplikacji już wymaga korekty (a sesja da się wznowić), drogi weryfikator czeka na poprawiony raport:
       // jedna sesja weryfikatora zamiast dwóch. QA_VERIFIER_EARLY=1 przywraca dawne zachowanie (weryfikator przed korektą).
-      const deferVerifier = process.env.QA_VERIFIER_EARLY !== '1' && first.issues.length > 0 && !!res.sessionId && verifierLib.enabled();
+      const deferVerifier = process.env.QA_VERIFIER_EARLY !== '1' && first.issues.length > 0 && !!res.sessionId && verifierLib.enabled() && !!verifyKind;
       const v1 = deferVerifier ? { ran: false, checked: 0, issues: [], dropped: 0, error: 'deferred until the report is corrected' } : await runVerifier();
       if (meta.status === 'cancelled') return;
       const all1 = [...first.issues, ...v1.issues];
@@ -817,6 +835,7 @@ ${notes || ''}`, workDir, onProc: (p) => { r.proc = p; }, isCancelled: () => met
       if (meta.status === 'cancelled') return;
       const again = extractReport((fix && (fix.finalText || fix.lastText)) || '');
       if (again.report) { meta.report = again.report; meta.reportStatus = again.status || meta.reportStatus; meta.finalText = fix.finalText || meta.finalText; }
+      if (isUi) { meta.report = meta.report && uiTest.scrub(meta.report, r.secrets); meta.finalText = uiTest.scrub(meta.finalText, r.secrets); }
       const second = auditKind ? runAudit() : { checked: null, issues: [], noCode: true };
       const v2 = (again.report || deferVerifier) ? await runVerifier() : v1;
       if (meta.status === 'cancelled') return;

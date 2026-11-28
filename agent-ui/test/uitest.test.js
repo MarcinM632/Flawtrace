@@ -92,3 +92,33 @@ test('the test-writing task has the report, the rules and env-var login, never t
   assert.doesNotMatch(flow, /snapshot/, 'reading the page is not an action of the test');
   assert.match(ui.buildFlow(meta({ hasLogin: false }), []), /LOGIN: none/);
 });
+
+test('auditReport: status must follow the lines, FAIL needs Findings, sections are required', () => {
+  const ok = 'STATUS: VERIFIED\n--- TREŚĆ ---\n## Steps\n[s1] PASS — open → heading "Login"\n## Checks\n[a1] PASS — heading "Login" (after s1)\n## Findings\nNone\n--- KONIEC TREŚCI ---';
+  assert.deepEqual(ui.auditReport(ok, 'VERIFIED', { seen: ['- heading "Login" [ref=e1]'], actions: 1 }), []);
+  const codes = (r, st, o) => ui.auditReport(r, st, o).map((i) => i.code).sort();
+  assert.deepEqual(codes(ok.replace('[a1] PASS', '[a1] FAIL'), 'VERIFIED', { seen: ['heading "Login"'], actions: 1 }), ['status-mismatch', 'ui-findings-empty']);
+  assert.deepEqual(codes(ok, 'FAILED', { seen: ['heading "Login"'], actions: 1 }), ['status-mismatch']);
+  assert.deepEqual(codes('STATUS: VERIFIED\n[s1] PASS — x\n[a1] PASS — y', 'VERIFIED', { actions: 1 }), ['missing-section']);
+});
+
+test('auditReport: quoted texts of PASS lines must have been shown by the browser or typed by the agent', () => {
+  const r = '## Steps\n[s1] PASS — fill textbox "Email" with "a@b.test" → heading "Welcome"\n[s2] FAIL — click "Next" → page "Nowhere"\n## Checks\n[a1] PASS — text "Order 42 placed" (after s1)\n## Findings\n- Next is broken';
+  const seen = ['- textbox "Email" [ref=e2]\n- heading "Welcome" [level=1]', '{"element":"Email","text":"a@b.test"}'];
+  const iss = ui.auditReport(r, 'FAILED', { seen, actions: 3 });
+  assert.deepEqual(iss.map((i) => i.code), ['ui-text-not-seen']);
+  assert.deepEqual(iss[0].items, ['[a1] "Order 42 placed"'], 'FAIL lines are not checked: they quote what was expected');
+  assert.deepEqual(ui.auditReport(r, 'FAILED', { seen: [], actions: 3, seenRecorded: false }), [], 'no snapshots recorded (older runner): no claim check');
+});
+
+test('auditReport: steps without browser actions are caught', () => {
+  const r = '## Steps\n' + Array.from({ length: 9 }, (_, i) => `[s${i + 1}] PASS — step`).join('\n') + '\n## Checks\n[a1] PASS — ok\n## Findings\nNone';
+  assert.deepEqual(ui.auditReport(r, 'VERIFIED', { actions: 0 }).map((i) => i.code), ['ui-no-actions']);
+  assert.deepEqual(ui.auditReport(r, 'VERIFIED', { actions: 2 }).map((i) => i.code), ['ui-steps-without-actions']);
+  assert.deepEqual(ui.auditReport(r, 'VERIFIED', { actions: 4 }), []);
+});
+
+test('correction prompt for a UI report names the problems and keeps the format', () => {
+  const p = require('../lib/report-format').correctionPrompt('uitest', [{ code: 'ui-text-not-seen', text: '1 quoted text never appeared' }]);
+  assert.match(p, /never appeared/); assert.match(p, /take a snapshot now/); assert.match(p, /Never write the password/);
+});

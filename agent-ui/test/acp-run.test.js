@@ -46,3 +46,22 @@ test('UI Tests runs on the configured ACP agent: events, denied write, no Claude
   assert.match(texts, /Denied/);
   assert.match(run.meta.report || run.meta.finalText || '', /REPORT: done/);
 });
+
+test('UI Tests report audit: a PASS line quoting a text the browser never returned is caught by the app', async () => {
+  const start = await fetch(base + '/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ agent: 'uitest', ticket: 'UIREPORT check the start page heading', url: 'http://localhost:9/' }) });
+  assert.equal(start.status, 201, await start.clone().text());
+  const { id } = await start.json();
+  let run;
+  for (let i = 0; i < 80; i++) {
+    run = await (await fetch(base + '/api/runs/' + id)).json();
+    if (run.meta.status !== 'running') break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  assert.equal(run.meta.reportStatus, 'VERIFIED', JSON.stringify(run.meta).slice(0, 500));
+  const issues = (run.meta.audit && run.meta.audit.issues) || [];
+  const unseen = issues.find((i) => i.code === 'ui-text-not-seen');
+  assert.ok(unseen, JSON.stringify(run.meta.audit));
+  assert.match(unseen.text, /Your dashboard/);
+  assert.doesNotMatch(unseen.text, /Welcome back/);
+  assert.ok(!run.events.some((e) => e.type === 'browser' && e.output), 'page snapshots are not copied into the event log');
+});

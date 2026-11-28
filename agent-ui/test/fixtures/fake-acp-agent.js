@@ -19,7 +19,13 @@ rl.on('line', async (line) => {
       const id = nextReq++;
       const outcome = await new Promise((ok) => { waiting.set(id, ok); send({ id, method: 'session/request_permission', params: { sessionId: 's1', toolCall: { toolCallId: tool, title: tool, kind }, options: [{ optionId: 'a', name: 'Allow', kind: 'allow_once' }, { optionId: 'r', name: 'Reject', kind: 'reject_once' }] } }); });
       const allowed = outcome.outcome.outcome === 'selected' && outcome.outcome.optionId === 'a';
-      upd({ sessionUpdate: 'tool_call_update', toolCallId: tool, status: allowed ? 'completed' : 'failed', content: [{ type: 'content', content: { type: 'text', text: allowed ? 'ok ' + tool : 'denied' } }] });
+      upd({ sessionUpdate: 'tool_call_update', toolCallId: tool, status: allowed ? 'completed' : 'failed', content: [{ type: 'content', content: { type: 'text', text: !allowed ? 'denied' : text.includes('UIREPORT') && /navigate/.test(tool) ? '- heading "Welcome back" [level=1] [ref=e1]' : 'ok ' + tool } }] });
+    }
+    if (text.includes('UIREPORT')) {
+      // A UI report with one PASS line the page showed and one it never showed: the app's audit must catch the second.
+      upd({ sessionUpdate: 'agent_message_chunk', messageId: 'm2', content: { type: 'text', text: ['STATUS: VERIFIED', '--- TREŚĆ ---', '## Steps', '[s1] PASS — open the page → heading "Welcome back"', '## Checks',
+        '[a1] PASS — heading "Your dashboard" is visible (after s1)', '## Findings', 'None', '--- KONIEC TREŚCI ---'].join('\n') } });
+      return send({ id: m.id, result: { stopReason: 'end_turn' } });
     }
     upd({ sessionUpdate: 'agent_message_chunk', messageId: 'm2', content: { type: 'text', text: 'REPORT: done. mcp=' + JSON.stringify(session.mcp) + ' meta=' + JSON.stringify(session.meta || null) } });
     send({ id: m.id, result: { stopReason: 'end_turn' } });
